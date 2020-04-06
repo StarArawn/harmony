@@ -51,7 +51,7 @@ fn main() {
     let mut asset_manager = AssetManager::new(asset_path);
     asset_manager.load(&renderer.device);
 
-    let gui_renderer = crate::gui::Renderer::new(&asset_manager, &mut renderer.device, wgpu::TextureFormat::Bgra8UnormSrgb, logical_size);
+    let gui_renderer = crate::gui::Renderer::new(&asset_manager, &mut renderer.device, wgpu::TextureFormat::Bgra8UnormSrgb, size);
 
     events_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent { event, .. } => {
@@ -95,7 +95,7 @@ fn main() {
                     border_width: 0,
                     bounds: crate::gui::core::Rectangle {
                         x: 0.0,
-                        y: 0.0,
+                        y: 256.0,
                         width: 256.0,
                         height: 256.0,
                     }

@@ -28,7 +28,7 @@ impl Renderer {
         asset_mananger: &AssetManager,
         device: &mut wgpu::Device,
         format: wgpu::TextureFormat,
-        size: winit::dpi::LogicalSize<u32>,
+        size: winit::dpi::PhysicalSize<u32>,
     ) -> Self {
 
         Self {
