@@ -1,0 +1,5 @@
+{
+    "name": "Unlit",
+    "shader": "unlit.shader",
+    "diffuse": ""
+}
