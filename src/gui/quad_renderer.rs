@@ -279,13 +279,13 @@ impl QuadRenderer {
                 render_pass.set_vertex_buffer(0, &self.vertices, 0, 0);
                 render_pass.set_vertex_buffer(1, &self.instances, 0, 0);
                 
-                render_pass.set_scissor_rect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    // TODO: Address anti-aliasing adjustments properly
-                    bounds.height + 1,
-                );
+                // render_pass.set_scissor_rect(
+                //     bounds.x,
+                //     bounds.y,
+                //     bounds.width,
+                //     // TODO: Address anti-aliasing adjustments properly
+                //     bounds.height + 1,
+                // );
 
                 render_pass.draw_indexed(
                     0..QUAD_INDICES.len() as u32,
