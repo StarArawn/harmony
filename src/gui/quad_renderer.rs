@@ -272,7 +272,7 @@ impl QuadRenderer {
                         ],
                         depth_stencil_attachment: None,
                     });
-
+                    
                 render_pass.set_pipeline(&self.pipeline);
                 render_pass.set_bind_group(0, &self.constants, &[]);
                 render_pass.set_index_buffer(&self.indices, 0, 0);

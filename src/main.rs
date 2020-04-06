@@ -97,7 +97,7 @@ fn main() {
                         x: 0.0,
                         y: 0.0,
                         width: 256.0,
-                        height: 128.0,
+                        height: 256.0,
                     }
                 },
                 1.0,
