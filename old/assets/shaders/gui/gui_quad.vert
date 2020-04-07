@@ -39,4 +39,5 @@ void main() {
     o_BorderWidth = i_BorderWidth * u_Scale;
 
     gl_Position = u_Transform * i_Transform * vec4(v_Pos, 0.0, 1.0);
+    gl_Position.z *= -1;
 }

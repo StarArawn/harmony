@@ -22,7 +22,7 @@ impl Viewport {
         Viewport {
             width,
             height,
-            transformation: ultraviolet::projection::orthographic_gl(0.0, width as f32, 0.0, height as f32, -1.0, 1.0) * opengl_to_wgpu_matrix,
+            transformation: ultraviolet::projection::orthographic_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0) * opengl_to_wgpu_matrix,
         }
     }
 

@@ -263,16 +263,16 @@ impl QuadRenderer {
                                 load_op: wgpu::LoadOp::Load,
                                 store_op: wgpu::StoreOp::Store,
                                 clear_color: wgpu::Color {
-                                    r: 0.0,
-                                    g: 0.0,
-                                    b: 0.0,
-                                    a: 0.0,
+                                    r: 0.012,
+                                    g: 0.388,
+                                    b: 0.576,
+                                    a: 1.0,
                                 },
                             },
                         ],
                         depth_stencil_attachment: None,
                     });
-                    
+                
                 render_pass.set_pipeline(&self.pipeline);
                 render_pass.set_bind_group(0, &self.constants, &[]);
                 render_pass.set_index_buffer(&self.indices, 0, 0);

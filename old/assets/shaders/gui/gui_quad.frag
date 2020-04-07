@@ -62,5 +62,5 @@ void main() {
     float radius_alpha =
         1.0 - smoothstep(max(v_BorderRadius - 0.5, 0), v_BorderRadius + 0.5, d);
 
-    o_Color = vec4(1, 0, 0, 1); //vec4(mixed_color.xyz, mixed_color.w * radius_alpha);
+    o_Color = vec4(mixed_color.xyz, mixed_color.w * radius_alpha);
 }

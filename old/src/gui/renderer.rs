@@ -28,7 +28,7 @@ impl Renderer {
         asset_mananger: &AssetManager,
         device: &mut wgpu::Device,
         format: wgpu::TextureFormat,
-        size: winit::dpi::PhysicalSize<u32>,
+        size: winit::dpi::LogicalSize<u32>,
     ) -> Self {
 
         Self {
@@ -68,7 +68,6 @@ impl Renderer {
             },
             renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
                 let layer = layers.last_mut().unwrap();
-
                 // TODO: Move some of these computations to the GPU (?)
                 layer.quads.push(renderables::Quad {
                     position: [

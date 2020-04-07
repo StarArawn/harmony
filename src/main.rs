@@ -1,108 +1,36 @@
-#![warn(rust_2018_idioms)]
-#![allow(dead_code)]
-#![allow(clippy::module_inception)]
-#![allow(clippy::too_many_arguments)]
-use wgpu;
-
-use winit::{ 
-    dpi::LogicalSize,
-    event::{ Event, ModifiersState, WindowEvent },
-    event_loop::{ ControlFlow },
+use rendy::{
+    factory::{ Config },
+    init::winit::{
+        self,
+        event_loop::{ EventLoop },
+        window::{ WindowBuilder },
+    },
 };
 
-mod winit_state;
-use winit_state::WinitState;
+#[cfg(any(feature = "dx12", feature = "metal", feature = "vulkan"))]
+fn main() {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Warn)
+        .filter_module("harmony", log::LevelFilter::Info)
+        .init();
 
-mod graphics;
-use graphics::Renderer;
+    let config: Config = Default::default();
 
-mod assets;
-use assets::AssetManager;
+    let event_loop = EventLoop::new();
 
-mod gui;
+    let window = WindowBuilder::new()
+        .with_title("rendy-pbr")
+        .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 960.0));
 
-struct WindowSize {
-    width: u32,
-    height: u32,
+    let rendy = rendy::init::AnyWindowedRendy::init_auto(&config, window, &event_loop).unwrap();
+    rendy::with_any_windowed_rendy!((rendy)
+        (factory, families, surface, window) => {
+            // TODO: Do stuff here.
+        }
+    )
 }
 
-const WINDOW_SIZE: WindowSize = WindowSize {
-    width: 1024,
-    height: 768,
-};
-
+#[cfg(not(any(feature = "dx12", feature = "metal", feature = "vulkan")))]
 fn main() {
-    let mut modifiers = ModifiersState::default();
-
-    let (wb, events_loop) = WinitState::create("Harmony", LogicalSize::new(WINDOW_SIZE.width, WINDOW_SIZE.height));
-
-    let (window, size, surface) = {
-        let window = wb.build(&events_loop).unwrap();
-        let size = window.inner_size();
-        let surface = wgpu::Surface::create(&window);
-        (window, size, surface)
-    };
-
-    let logical_size: LogicalSize<u32> = window.inner_size().to_logical(window.scale_factor());
-    
-    let mut renderer = futures::executor::block_on(Renderer::new(window, size, surface));
-
-    let asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
-    let mut asset_manager = AssetManager::new(asset_path);
-    asset_manager.load(&renderer.device);
-
-    let gui_renderer = crate::gui::Renderer::new(&asset_manager, &mut renderer.device, wgpu::TextureFormat::Bgra8UnormSrgb, size);
-
-    events_loop.run(move |event, _, control_flow| match event {
-        Event::WindowEvent { event, .. } => {
-            match event {
-                WindowEvent::ModifiersChanged(new_modifiers) => {
-                    modifiers = new_modifiers;
-                }
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                winit::event::WindowEvent::KeyboardInput {
-                    input:
-                        winit::event::KeyboardInput {
-                            virtual_keycode: Some(winit::event::VirtualKeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => *control_flow = winit::event_loop::ControlFlow::Exit,
-                winit::event::WindowEvent::Resized(dims) => {
-                    println!("resized to {:?}", dims);
-                    // renderer.dimensions = gfx_hal::window::Extent2D {
-                    //     width: dims.width,
-                    //     height: dims.height,
-                    // };
-                    // renderer.recreate_swapchain();
-                },
-                _ => {}
-            }
-        },
-        Event::RedrawEventsCleared => {
-            renderer.window.request_redraw();
-        },
-        Event::RedrawRequested(_) => {
-            let output = renderer.render();
-            gui_renderer.draw(
-                &mut renderer.device,
-                &mut renderer.queue,
-                &output.view,
-                crate::gui::renderables::Renderable::Quad {
-                    background: crate::gui::core::Background::from(crate::gui::core::Color::WHITE),
-                    border_color: crate::gui::core::Color::WHITE,
-                    border_radius: 5,
-                    border_width: 0,
-                    bounds: crate::gui::core::Rectangle {
-                        x: 0.0,
-                        y: 256.0,
-                        width: 256.0,
-                        height: 256.0,
-                    }
-                },
-                1.0,
-            );
-        },
-        _ => (),
-    });
+    panic!("Specify feature: { dx12, metal, vulkan }");
 }
