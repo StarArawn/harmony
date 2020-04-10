@@ -84,7 +84,7 @@ fn main() {
     let asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
     let mut asset_manager = AssetManager::new(asset_path);
     asset_manager.load(&renderer.device);
-    let gui_renderer = crate::gui::Renderer::new(&asset_manager, &mut renderer.device, wgpu::TextureFormat::Bgra8UnormSrgb, LogicalSize::new(size.width, size.height));
+    let mut gui_renderer = crate::gui::Renderer::new(&asset_manager, &mut renderer.device, wgpu::TextureFormat::Bgra8UnormSrgb, LogicalSize::new(size.width, size.height));
 
     let mut stretch = stretch::node::Stretch::new();
     

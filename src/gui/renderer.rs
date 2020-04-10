@@ -35,13 +35,13 @@ impl Renderer {
 
         Self {
             quad_renderer: QuadRenderer::new(asset_mananger, device, format),
-            text_renderer: TextRenderer::new(),
+            text_renderer: TextRenderer::new(device, asset_mananger),
             viewport: Viewport::new(size.width, size.height),
         }
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         device: &mut wgpu::Device,
         queue: &mut wgpu::Queue,
         target: &wgpu::TextureView,
@@ -96,11 +96,11 @@ impl Renderer {
                 self.text_renderer.draw(
                     device,
                     &mut encoder,
-                    asset_manager,
                     target,
                     text,
                     transformation,
                     parent_bounds.into(),
+                    scale_factor,
                 );
             }
             _ => {}

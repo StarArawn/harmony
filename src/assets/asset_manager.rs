@@ -51,7 +51,7 @@ impl AssetManager {
         self.fonts.get_mut(&key).expect(&format!("Asset Error: Could not find {} font asset!", key))
     }
 
-    pub fn get_fonts_mut(&mut self) -> Vec<&mut Font> {
-        self.fonts.values_mut().collect()
+    pub fn get_fonts(&self) -> Vec<&Font> {
+        self.fonts.values().collect()
     }
 }

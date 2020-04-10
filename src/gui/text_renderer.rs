@@ -1,27 +1,44 @@
+use wgpu_glyph::{ GlyphBrush, GlyphBrushBuilder };
 use ultraviolet::mat::Mat4;
 use std::convert::TryInto;
 use winit::dpi::LogicalSize;
 
 pub struct TextRenderer {
+    fonts: Vec<GlyphBrush<'static, ()>>
 }
 
 impl TextRenderer {
     pub fn new(
+        device: &wgpu::Device,
+        asset_manager: &crate::AssetManager,
     ) -> Self {
+
+        let fonts = asset_manager.get_fonts();
+
+        let mut brushes = Vec::new();
+
+        for font in fonts.iter() {
+            let glyph_brush = GlyphBrushBuilder::using_font_bytes(font.data.clone())
+                .unwrap()
+                .initial_cache_size((2048, 2048))
+                .build(device, wgpu::TextureFormat::Bgra8UnormSrgb);
+            brushes.push(glyph_brush);
+        }
         
         Self {
+            fonts: brushes,
         }
     }
 
     pub fn draw(
-        &self,
+        &mut self,
         device: &mut wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        asset_manager: &mut crate::AssetManager,
         target: &wgpu::TextureView,
         renderable: crate::gui::renderables::Text,
         transformation: Mat4,
         bounds: crate::gui::core::Rectangle<u32>,
+        scale_factor: f32,
     ) {
         encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[
@@ -41,23 +58,28 @@ impl TextRenderer {
             depth_stencil_attachment: None,
         });
 
-        let mut fonts = asset_manager.get_fonts_mut();
-
-        for asset_font in fonts.iter_mut() { 
+        for asset_font in self.fonts.iter_mut() { 
             let section = wgpu_glyph::Section {
                 text: &*renderable.text,
-                screen_position: (renderable.bounds.x, renderable.bounds.y),
+                screen_position: (
+                    (renderable.bounds.x * scale_factor).round(),
+                    (renderable.bounds.y * scale_factor).round(),
+                ),
                 color: renderable.color.into_linear(),
-                scale: wgpu_glyph::Scale { x: renderable.size.clone(), y: renderable.size.clone() },
-                bounds: (renderable.bounds.width as f32, renderable.bounds.height as f32),
+                scale: wgpu_glyph::Scale {
+                    x: renderable.size.clone() * scale_factor,
+                    y: renderable.size.clone() * scale_factor
+                },
+                bounds: (
+                    renderable.bounds.width as f32 * scale_factor,
+                    renderable.bounds.height as f32 * scale_factor
+                ),
                 ..wgpu_glyph::Section::default()
             };
-            dbg!(section);
-            asset_font.glyph_brush.queue(section);
+            asset_font.queue(section);
 
             // Draw the text!
-            asset_font.glyph_brush
-                .draw_queued_with_transform_and_scissoring(
+            asset_font.draw_queued_with_transform_and_scissoring(
                     device,
                     encoder,
                     &target,
