@@ -92,6 +92,30 @@ impl TextRenderer {
             //         },
             //     )
             //     .expect("Draw queued");
+
+            asset_font.queue(wgpu_glyph::Section {
+                text: "Hello wgpu_glyph!",
+                screen_position: (30.0, 30.0),
+                color: [0.0, 0.0, 0.0, 1.0],
+                scale: wgpu_glyph::Scale { x: 40.0, y: 40.0 },
+                bounds: (1024.0 * 2.0, 768.0 * 2.0),
+                ..wgpu_glyph::Section::default()
+            });
+
+            // Draw the text!
+            asset_font.draw_queued_with_transform_and_scissoring(
+                    device,
+                    encoder,
+                    &target,
+                    transformation.as_slice().try_into().unwrap(),
+                    wgpu_glyph::Region {
+                        x: 0,
+                        y: 0,
+                        width: 1024 * 2,
+                        height: 768 * 2,
+                    },
+                )
+                .expect("Draw queued");
         }
     }
 }
