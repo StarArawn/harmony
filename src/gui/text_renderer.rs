@@ -79,19 +79,19 @@ impl TextRenderer {
             asset_font.queue(section);
 
             // Draw the text!
-            asset_font.draw_queued_with_transform_and_scissoring(
-                    device,
-                    encoder,
-                    &target,
-                    transformation.as_slice().try_into().unwrap(),
-                    wgpu_glyph::Region {
-                        x: bounds.x,
-                        y: bounds.y,
-                        width: bounds.width,
-                        height: bounds.height,
-                    },
-                )
-                .expect("Draw queued");
+            // asset_font.draw_queued_with_transform_and_scissoring(
+            //         device,
+            //         encoder,
+            //         &target,
+            //         transformation.as_slice().try_into().unwrap(),
+            //         wgpu_glyph::Region {
+            //             x: bounds.x,
+            //             y: bounds.y,
+            //             width: bounds.width,
+            //             height: bounds.height,
+            //         },
+            //     )
+            //     .expect("Draw queued");
         }
     }
 }

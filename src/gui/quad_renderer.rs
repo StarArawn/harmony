@@ -263,9 +263,9 @@ impl QuadRenderer {
                                 load_op: wgpu::LoadOp::Load,
                                 store_op: wgpu::StoreOp::Store,
                                 clear_color: wgpu::Color {
-                                    r: 0.012,
-                                    g: 0.388,
-                                    b: 0.576,
+                                    r: 0.0,
+                                    g: 0.0,
+                                    b: 0.0,
                                     a: 1.0,
                                 },
                             },

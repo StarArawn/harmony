@@ -7,6 +7,7 @@ use crate::gui::core::{ Background, Rectangle, Viewport };
 struct Layer {
     bounds: Rectangle<u32>,
     quads: Vec<renderables::Quad>,
+    text: Vec<renderables::Text>,
 }
 
 impl Layer {
@@ -14,6 +15,7 @@ impl Layer {
         Self {
             bounds,
             quads: Vec::new(),
+            text: Vec::new(),
         }
     }
 }
@@ -37,6 +39,40 @@ impl Renderer {
             quad_renderer: QuadRenderer::new(asset_mananger, device, format),
             text_renderer: TextRenderer::new(device, asset_mananger),
             viewport: Viewport::new(size.width, size.height),
+        }
+    }
+
+    fn match_renderer(&self, layers: &mut Vec<Layer>, renderable: renderables::Renderable, parent_bounds: Rectangle) {
+        match renderable {
+            renderables::Renderable::Group { bounds, renderables } => {
+                for grouped_renderable in renderables {
+                    self.match_renderer(layers, grouped_renderable, bounds);
+                }
+            },
+            renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
+                let layer = layers.last_mut().unwrap();
+                
+                // TODO: Move some of these computations to the GPU (?)
+                let quad = renderables::Quad {
+                    position: [
+                        parent_bounds.x + bounds.x,
+                        parent_bounds.y + bounds.y,
+                    ],
+                    scale: [bounds.width, bounds.height],
+                    color: match background {
+                        Background::Color(color) => color.into_linear(),
+                    },
+                    border_radius: border_radius as f32,
+                    border_width: border_width as f32,
+                    border_color: border_color.into_linear(),
+                };
+                layer.quads.push(quad);
+            },
+            renderables::Renderable::Text(text) => {
+                let layer = layers.last_mut().unwrap();
+                layer.text.push(text);
+            }
+            _ => {}
         }
     }
 
@@ -67,44 +103,7 @@ impl Renderer {
 
         let parent_bounds = bounds.unwrap_or(Default::default());
 
-        match renderable {
-            renderables::Renderable::Group { bounds, renderables } => {
-                for grouped_renderable in renderables {
-                    self.draw(device, queue, target, grouped_renderable, Some(bounds), scale_factor, asset_manager)
-                }
-            },
-            renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
-                let layer = layers.last_mut().unwrap();
-                
-                // TODO: Move some of these computations to the GPU (?)
-                let quad = renderables::Quad {
-                    position: [
-                        parent_bounds.x + bounds.x,
-                        parent_bounds.y + bounds.y,
-                    ],
-                    scale: [bounds.width, bounds.height],
-                    color: match background {
-                        Background::Color(color) => color.into_linear(),
-                    },
-                    border_radius: border_radius as f32,
-                    border_width: border_width as f32,
-                    border_color: border_color.into_linear(),
-                };
-                layer.quads.push(quad);
-            },
-            renderables::Renderable::Text(text) => {
-                self.text_renderer.draw(
-                    device,
-                    &mut encoder,
-                    target,
-                    text,
-                    transformation,
-                    parent_bounds.into(),
-                    scale_factor,
-                );
-            }
-            _ => {}
-        }
+        self.match_renderer(&mut layers, renderable, parent_bounds);
 
         for layer in layers {
             let bounds = layer.bounds * scale_factor;
@@ -119,6 +118,10 @@ impl Renderer {
                     bounds,
                     target,
                 );
+            }
+
+            if !layer.text.is_empty() {
+                self.text_renderer.draw(device, &mut encoder, target, layer.text.first().unwrap().clone(), transformation, bounds, scale_factor);
             }
         }
 
