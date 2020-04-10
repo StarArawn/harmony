@@ -1,0 +1,32 @@
+[package]
+name = "harmony"
+version = "0.1.0"
+authors = ["John Mitchell"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["rendy", "metal"]
+metal = ["rendy/metal"]
+vulkan = ["rendy/vulkan"]
+empty = ["rendy/empty"]
+
+[dependencies]
+arrayvec = "0.5.1"
+futures = "0.3"
+log = "0.4"
+shaderc = "0.6"
+walkdir = "2"
+ultraviolet = "0.4.5"
+env_logger = "0.5"
+zerocopy = "0.3"
+
+[dependencies.rendy]
+optional = true
+# version = "0.5.1"
+# git = "https://github.com/amethyst/rendy"
+path = "../rendy/rendy/"
+# branch = "master"
+# rev = "8c5388c3e5ba63a5d48088e91f6aab88f03e23b9"
+features = ["base", "init-winit", "texture-image", "shader-compiler", "spirv-reflection"]

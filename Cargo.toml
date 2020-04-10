@@ -7,25 +7,19 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["rendy"]
-metal = ["rendy/metal"]
-vulkan = ["rendy/vulkan"]
-empty = ["rendy/empty"]
+default = []
 
 [dependencies]
 arrayvec = "0.5.1"
 futures = "0.3"
+env_logger = "0.7.1"
+glyph_brush = "0.6"
 log = "0.4"
 shaderc = "0.6"
+stretch = "0.3.2"
 walkdir = "2"
+wgpu = "0.5"
+wgpu_glyph = { git="https://github.com/hecrj/wgpu_glyph", branch="update-wgpu" }
+winit = { version = "0.22.0", features = ["web-sys"] }
 ultraviolet = "0.4.5"
-env_logger = "0.5"
 zerocopy = "0.3"
-
-[dependencies.rendy]
-optional = true
-version = "0.5.1"
-#git = "https://github.com/amethyst/rendy"
-# branch = "master"
-#rev = "8c5388c3e5ba63a5d48088e91f6aab88f03e23b9"
-features = ["base", "init-winit", "texture-image", "shader-compiler"]
