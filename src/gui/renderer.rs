@@ -6,6 +6,7 @@ use crate::gui::TextRenderer;
 use crate::gui::renderables;
 use crate::gui::core::{ Background, Rectangle, Viewport };
 
+#[derive(Debug)]
 struct Layer {
     bounds: Rectangle<f32>,
     quads: Vec<renderables::Quad>,
@@ -27,6 +28,7 @@ pub struct Renderer {
     quad_renderer: QuadRenderer,
     text_renderer: TextRenderer,
     viewport: Viewport,
+    layers: Vec<Layer>,
 }
 
 impl Renderer {
@@ -41,10 +43,11 @@ impl Renderer {
             quad_renderer: QuadRenderer::new(asset_mananger, device, format),
             text_renderer: TextRenderer::new(device, asset_mananger),
             viewport: Viewport::new(size.width, size.height),
+            layers: Vec::new(),
         }
     }
 
-    fn match_renderer(&self, layers: &mut Vec<Layer>, renderable: renderables::Renderable, parent_bounds: Rectangle) {
+    fn match_renderer(&mut self, layer: &mut Layer, renderable: renderables::Renderable, parent_bounds: Rectangle) {
         match renderable {
             renderables::Renderable::Group { bounds, renderables } => {
                 let calculate_bounds = Rectangle {
@@ -54,12 +57,10 @@ impl Renderer {
                     height: bounds.height,
                 };
                 for grouped_renderable in renderables {
-                    self.match_renderer(layers, grouped_renderable, calculate_bounds);
+                    self.match_renderer(layer, grouped_renderable, calculate_bounds);
                 }
             },
             renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
-                let layer = layers.last_mut().unwrap();
-                
                 // TODO: Move some of these computations to the GPU (?)
                 let quad = renderables::Quad {
                     position: [
@@ -77,7 +78,6 @@ impl Renderer {
                 layer.quads.push(quad);
             },
             renderables::Renderable::Text(text) => {
-                let layer = layers.last_mut().unwrap();
                 layer.text.push(renderables::Text {
                     bounds: crate::gui::core::Rectangle {
                         x: parent_bounds.x + text.bounds.x,
@@ -88,10 +88,9 @@ impl Renderer {
                 });
             }
             renderables::Renderable::Clip { bounds, offset, content } => {
-                let new_layer = Layer::new(bounds);
-                layers.push(new_layer);
+                let mut new_layer = Layer::new(bounds);
                 self.match_renderer(
-                    layers,
+                    &mut new_layer,
                     content.deref().clone(),
                     Rectangle {
                         x: bounds.x - offset.x,
@@ -99,6 +98,7 @@ impl Renderer {
                         width: bounds.width,
                         height: bounds.height,
                 });
+                self.layers.push(new_layer);
             }
             _ => {}
         }
@@ -120,20 +120,22 @@ impl Renderer {
 
         let (width, height) = self.viewport.dimensions();
         let transformation = self.viewport.transformation();
-
-        let mut layers = Vec::new();
-        layers.push(Layer::new(Rectangle {
+        
+        self.layers.clear();
+        let mut base_layer = Layer::new(Rectangle {
             x: 0.0,
             y: 0.0,
             width: width as f32,
             height: height as f32,
-        }));
+        });
 
         let parent_bounds = bounds.unwrap_or(Default::default());
 
-        self.match_renderer(&mut layers, renderable, parent_bounds);
+        self.match_renderer(&mut base_layer, renderable, parent_bounds);
 
-        for layer in layers {
+        self.layers.insert(0, base_layer);
+
+        for layer in self.layers.iter() {
             let bounds = layer.bounds * scale_factor;
             
             if !layer.quads.is_empty() {
@@ -149,7 +151,7 @@ impl Renderer {
             }
 
             if !layer.text.is_empty() {
-                self.text_renderer.draw(device, &mut encoder, target, layer.text, transformation, bounds, scale_factor);
+                self.text_renderer.draw(device, &mut encoder, target, &layer.text, transformation, bounds, scale_factor);
             }
         }
 

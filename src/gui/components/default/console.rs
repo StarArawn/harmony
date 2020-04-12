@@ -45,7 +45,7 @@ impl Console {
     }
 
     pub fn load(&mut self, asset_manager: &AssetManager)  {
-        let font = asset_manager.get_font("moon.ttf".to_string());
+        let font = asset_manager.get_font("fantasque.ttf".to_string());
         let measure_brush = RefCell::new(glyph_brush::GlyphBrushBuilder::using_font_bytes(font.data.clone()).build());
         self.measure_brush = Some(measure_brush);
     }
@@ -86,7 +86,7 @@ impl Console {
             },
             size: 18.0,
             text: module_name,
-            font: "moon.ttf".to_string(),
+            font: "fantasque.ttf".to_string(),
             color: color,
         });
         let end_text = Renderable::Text(Text {
@@ -98,7 +98,7 @@ impl Console {
             },
             size: 18.0,
             text: message.clone(),
-            font: "moon.ttf".to_string(),
+            font: "fantasque.ttf".to_string(),
             color: Color::from_rgb(1.0, 1.0, 1.0),
         });
         

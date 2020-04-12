@@ -34,7 +34,7 @@ impl TextRenderer {
         device: &mut wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         target: &wgpu::TextureView,
-        renderables: Vec<crate::gui::renderables::Text>,
+        renderables: &Vec<crate::gui::renderables::Text>,
         transformation: Mat4,
         bounds: crate::gui::core::Rectangle<f32>,
         scale_factor: f32,

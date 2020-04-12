@@ -1,3 +1,4 @@
+use ultraviolet::vec::Vec2;
 use log;
 
 use winit::{ 
@@ -7,7 +8,10 @@ use winit::{
 };
 
 use harmony::WinitState;
-use harmony::gui::components::Component;
+use harmony::gui::{
+    core::{ Color },
+    components::{ Component, Text }
+};
 
 struct WindowSize {
     width: u32,
@@ -18,30 +22,6 @@ const WINDOW_SIZE: WindowSize = WindowSize {
     width: 1024,
     height: 768,
 };
-
-// const SURFACE: Color = Color::from_rgb(
-//     0x40 as f32 / 255.0,
-//     0x44 as f32 / 255.0,
-//     0x4B as f32 / 255.0,
-// );
-
-// const ACCENT: Color = Color::from_rgb(
-//     0x6F as f32 / 255.0,
-//     0xFF as f32 / 255.0,
-//     0xE9 as f32 / 255.0,
-// );
-
-// const ACTIVE: Color = Color::from_rgb(
-//     0x72 as f32 / 255.0,
-//     0x89 as f32 / 255.0,
-//     0xDA as f32 / 255.0,
-// );
-
-// const HOVERED: Color = Color::from_rgb(
-//     0x67 as f32 / 255.0,
-//     0x7B as f32 / 255.0,
-//     0xC4 as f32 / 255.0,
-// );
 
 struct AppState {
     gui_scene: GuiScene,
@@ -72,8 +52,19 @@ struct GuiScene {
 
 impl GuiScene {
     pub fn new() -> Self {
+        let text = Text {
+            color: Color::from_rgb(1.0, 1.0, 1.0),
+            text: "Hello World!".to_string(),
+            size: 40.0,
+            font: "fantasque.ttf".to_string(),
+            // TODO: Expose the methods for measuring text to the end user.
+            // We would need to likely wait to create GuiScene until after we've loaded our assets as well
+            // since we need the font data to determine the size of the text.
+            position: Vec2::new((WINDOW_SIZE.width as f32 / 2.0) - 100.0, (WINDOW_SIZE.height as f32 / 2.0) - 40.0),
+        };
+        
         Self {
-            components: Vec::new(),
+            components: vec![Box::new(text)],
         }
     }
 
@@ -97,7 +88,7 @@ fn main() {
 
     let mut modifiers = ModifiersState::default();
 
-    let (wb, event_loop) = WinitState::create("Harmony", LogicalSize::new(WINDOW_SIZE.width, WINDOW_SIZE.height));
+    let (wb, event_loop) = WinitState::create("Harmony - Hello World", LogicalSize::new(WINDOW_SIZE.width, WINDOW_SIZE.height));
 
     let mut application = harmony::Application::new(wb, &event_loop);
     

@@ -1,13 +1,16 @@
+use ultraviolet::vec::Vec2;
+use std::any::Any;
+
 use crate::gui::components::Component;
 use crate::gui::renderables::Renderable;
 use crate::gui::core::{ Color, Rectangle };
-use std::any::Any;
 
 pub struct Text {
     pub font: String,
     pub size: f32,
     pub color: Color,
     pub text: String,
+    pub position: Vec2,
 }
 
 impl Component for Text {
@@ -18,7 +21,12 @@ impl Component for Text {
         Renderable::Text(crate::gui::renderables::Text {
             text: self.text.clone(),
             size: self.size,
-            bounds: parent_bounds,
+            bounds: Rectangle {
+                x: parent_bounds.x + self.position.x,
+                y: parent_bounds.y + self.position.y,
+                width: parent_bounds.width,
+                height: parent_bounds.height,
+            },
             color: self.color,
             font: self.font.clone(),
         })
