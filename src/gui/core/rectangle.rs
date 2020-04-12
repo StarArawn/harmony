@@ -57,15 +57,15 @@ impl Rectangle<f32> {
     }
 }
 
-impl std::ops::Mul<f32> for Rectangle<u32> {
+impl std::ops::Mul<f32> for Rectangle<f32> {
     type Output = Self;
 
     fn mul(self, scale: f32) -> Self {
         Self {
-            x: (self.x as f32 * scale).round() as u32,
-            y: (self.y as f32 * scale).round() as u32,
-            width: (self.width as f32 * scale).round() as u32,
-            height: (self.height as f32 * scale).round() as u32,
+            x: (self.x * scale).round(),
+            y: (self.y * scale).round(),
+            width: (self.width * scale).round(),
+            height: (self.height * scale).round(),
         }
     }
 }

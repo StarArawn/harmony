@@ -221,7 +221,7 @@ impl QuadRenderer {
         instances: &[Quad],
         transformation: Mat4,
         scale: f32,
-        _bounds: Rectangle<u32>,
+        bounds: Rectangle<f32>,
         target: &wgpu::TextureView,
     ) {
         let uniforms = Uniforms::new(transformation, scale);
@@ -260,7 +260,7 @@ impl QuadRenderer {
                             wgpu::RenderPassColorAttachmentDescriptor {
                                 attachment: target,
                                 resolve_target: None,
-                                load_op: wgpu::LoadOp::Load,
+                                load_op: wgpu::LoadOp::Clear,
                                 store_op: wgpu::StoreOp::Store,
                                 clear_color: wgpu::Color {
                                     r: 0.0,
@@ -279,13 +279,13 @@ impl QuadRenderer {
                 render_pass.set_vertex_buffer(0, &self.vertices, 0, 0);
                 render_pass.set_vertex_buffer(1, &self.instances, 0, 0);
                 
-                // render_pass.set_scissor_rect(
-                //     bounds.x,
-                //     bounds.y,
-                //     bounds.width,
-                //     // TODO: Address anti-aliasing adjustments properly
-                //     bounds.height + 1,
-                // );
+                render_pass.set_scissor_rect(
+                    bounds.x as u32,
+                    bounds.y as u32,
+                    bounds.width as u32,
+                    // TODO: Address anti-aliasing adjustments properly
+                    bounds.height as u32 + 1,
+                );
 
                 render_pass.draw_indexed(
                     0..QUAD_INDICES.len() as u32,

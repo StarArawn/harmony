@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::AssetManager;
 use crate::gui::QuadRenderer;
 use crate::gui::TextRenderer;
@@ -5,13 +7,13 @@ use crate::gui::renderables;
 use crate::gui::core::{ Background, Rectangle, Viewport };
 
 struct Layer {
-    bounds: Rectangle<u32>,
+    bounds: Rectangle<f32>,
     quads: Vec<renderables::Quad>,
     text: Vec<renderables::Text>,
 }
 
 impl Layer {
-    pub fn new(bounds: Rectangle<u32>) -> Self {
+    pub fn new(bounds: Rectangle<f32>) -> Self {
         Self {
             bounds,
             quads: Vec::new(),
@@ -45,8 +47,14 @@ impl Renderer {
     fn match_renderer(&self, layers: &mut Vec<Layer>, renderable: renderables::Renderable, parent_bounds: Rectangle) {
         match renderable {
             renderables::Renderable::Group { bounds, renderables } => {
+                let calculate_bounds = Rectangle {
+                    x: parent_bounds.x + bounds.x,
+                    y: parent_bounds.y + bounds.y,
+                    width: bounds.width,
+                    height: bounds.height,
+                };
                 for grouped_renderable in renderables {
-                    self.match_renderer(layers, grouped_renderable, bounds);
+                    self.match_renderer(layers, grouped_renderable, calculate_bounds);
                 }
             },
             renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
@@ -70,7 +78,27 @@ impl Renderer {
             },
             renderables::Renderable::Text(text) => {
                 let layer = layers.last_mut().unwrap();
-                layer.text.push(text);
+                layer.text.push(renderables::Text {
+                    bounds: crate::gui::core::Rectangle {
+                        x: parent_bounds.x + text.bounds.x,
+                        y: parent_bounds.y + text.bounds.y,
+                        ..text.bounds
+                    },
+                    ..text
+                });
+            }
+            renderables::Renderable::Clip { bounds, offset, content } => {
+                let new_layer = Layer::new(bounds);
+                layers.push(new_layer);
+                self.match_renderer(
+                    layers,
+                    content.deref().clone(),
+                    Rectangle {
+                        x: bounds.x - offset.x,
+                        y: bounds.y - offset.y,
+                        width: bounds.width,
+                        height: bounds.height,
+                });
             }
             _ => {}
         }
@@ -84,7 +112,7 @@ impl Renderer {
         renderable: renderables::Renderable,
         bounds: Option<Rectangle>,
         scale_factor: f32,
-        asset_manager: &mut AssetManager,
+        _asset_manager: &mut AssetManager,
     ) {
         let mut encoder = device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor { label: None },
@@ -95,10 +123,10 @@ impl Renderer {
 
         let mut layers = Vec::new();
         layers.push(Layer::new(Rectangle {
-            x: 0,
-            y: 0,
-            width,
-            height,
+            x: 0.0,
+            y: 0.0,
+            width: width as f32,
+            height: height as f32,
         }));
 
         let parent_bounds = bounds.unwrap_or(Default::default());
@@ -121,7 +149,7 @@ impl Renderer {
             }
 
             if !layer.text.is_empty() {
-                self.text_renderer.draw(device, &mut encoder, target, layer.text.first().unwrap().clone(), transformation, bounds, scale_factor);
+                self.text_renderer.draw(device, &mut encoder, target, layer.text, transformation, bounds, scale_factor);
             }
         }
 

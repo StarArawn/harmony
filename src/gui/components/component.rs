@@ -1,6 +1,8 @@
 use crate::gui::renderables::Renderable;
+use std::any::Any;
 
 pub trait Component {
-    fn node(&self, stretch: &mut stretch::Stretch, position_type: stretch::style::PositionType) -> stretch::node::Node;
-    fn draw(&self, stretch: &mut stretch::Stretch, node: stretch::node::Node) -> Renderable;
+    fn update(&mut self, delta_time: f32);
+    fn draw(&self, parent_bounds: crate::gui::core::Rectangle) -> Renderable;
+    fn as_any(&mut self) -> &mut dyn Any;
 }

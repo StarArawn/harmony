@@ -19,7 +19,7 @@ impl AssetManager {
         }
     }
 
-    pub fn load(&mut self, device: &wgpu::Device) {
+    pub fn load(&mut self, device: &wgpu::Device, console: &mut crate::gui::components::default::Console) {
         for entry in WalkDir::new(&self.path) {
             let entry = entry.expect("Error: Could not access file.");
             let file_name = entry.file_name().to_str().unwrap();
@@ -28,12 +28,12 @@ impl AssetManager {
             if file_name.ends_with(".shader") {
                 let shader = Shader::new(device, full_file_path.to_string(), file_name.to_string());
                 self.shaders.insert(file_name.to_string(), shader);
-                println!("Compiled shader: {}", file_name);
+                console.info(crate::gui::components::default::ModuleType::Asset, format!("Compiled shader: {}", file_name));
             }
             if file_name.ends_with(".ttf") || file_name.ends_with(".otf") {
                 let font = Font::new(device, format!("{}{}", full_file_path, file_name).to_string());
                 self.fonts.insert(file_name.to_string(), font);
-                println!("Loaded font: {}", file_name);
+                console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded font: {}", file_name));
             }
         }
     }

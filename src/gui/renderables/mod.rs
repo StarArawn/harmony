@@ -1,3 +1,4 @@
+use ultraviolet::vec::Vec2;
 use crate::gui::core::{ Background, Color, Rectangle };
 
 mod quad;
@@ -36,4 +37,9 @@ pub enum Renderable {
         border_color: Color,
     },
     Text(Text),
+    Clip {
+        offset: Vec2,
+        bounds: Rectangle,
+        content: Box<Renderable>,
+    },
 }
