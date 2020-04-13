@@ -6,6 +6,7 @@
 pub mod core;
 pub mod graphics;
 pub mod gui;
+pub mod scene;
 
 mod application;
 mod assets;

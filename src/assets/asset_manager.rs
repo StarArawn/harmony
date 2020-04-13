@@ -1,13 +1,14 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 
-use crate::graphics::material::Shader;
+use crate::graphics::{mesh::Mesh, material::Shader};
 use crate::gui::core::Font;
 
 pub struct AssetManager {
     path: String,
     shaders: HashMap<String, Shader>,
     fonts: HashMap<String, Font>,
+    meshes: HashMap<String, Mesh>,
 }
 
 impl AssetManager {
@@ -16,6 +17,7 @@ impl AssetManager {
             path,
             shaders: HashMap::new(),
             fonts: HashMap::new(),
+            meshes: HashMap::new(),
         }
     }
 
@@ -35,20 +37,32 @@ impl AssetManager {
                 self.fonts.insert(file_name.to_string(), font);
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded font: {}", file_name));
             }
+            if file_name.ends_with(".gltf") {
+                let mesh= Mesh::new(device, format!("{}{}", full_file_path, file_name));
+                self.meshes.insert(file_name.to_string(), mesh);
+                console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded mesh: {}", file_name));
+            }
         }
     }
 
-    pub fn get_shader(&self, key: String) -> &Shader
-    {
-        self.shaders.get(&key).expect(&format!("Asset Error: Could not find {} shader asset!", key))
+    pub fn get_shader<'a, T>(&'a self, key: T) -> &'a Shader where T: Into<String> {
+        let key = key.into();
+        self.shaders.get(&key).expect(&format!("Asset Error: Could not find {} shader asset!", &key))
     }
 
-    pub fn get_font(&self, key: String) -> &Font {
-        self.fonts.get(&key).expect(&format!("Asset Error: Could not find {} font asset!", key))
+    pub fn get_mesh<T>(&self, key: T) -> &Mesh where T: Into<String> {
+        let key = key.into();
+        self.meshes.get(&key).expect(&format!("Asset Error: Could not find {} mesh asset!", &key))
     }
 
-    pub fn get_font_mut(&mut self, key: String) -> &mut Font {
-        self.fonts.get_mut(&key).expect(&format!("Asset Error: Could not find {} font asset!", key))
+    pub fn get_font<T>(&self, key: T) -> &Font where T: Into<String> {
+        let key = key.into();
+        self.fonts.get(&key).expect(&format!("Asset Error: Could not find {} font asset!", &key))
+    }
+
+    pub fn get_font_mut<T>(&mut self, key: T) -> &mut Font where T: Into<String> {
+        let key = key.into();
+        self.fonts.get_mut(&key).expect(&format!("Asset Error: Could not find {} font asset!", &key))
     }
 
     pub fn get_fonts(&self) -> Vec<&Font> {

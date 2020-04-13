@@ -1,5 +1,3 @@
-use crate::graphics::RenderGraph;
-
 pub struct Renderer {
     surface: wgpu::Surface,
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -8,7 +6,7 @@ pub struct Renderer {
     pub queue: wgpu::Queue,
     pub swap_chain: wgpu::SwapChain,
     pub window: winit::window::Window,
-    pub render_graph: RenderGraph,
+    pub sc_desc: wgpu::SwapChainDescriptor,
 }
 
 impl Renderer {
@@ -48,14 +46,12 @@ impl Renderer {
             queue,
             swap_chain,
             window,
-            render_graph: RenderGraph::new(),
+            sc_desc,
         }
     }
 
     pub fn render(&mut self) -> wgpu::SwapChainOutput {
         let output = self.swap_chain.get_next_texture().unwrap();
-
-        self.render_graph.draw();
 
         output
     }

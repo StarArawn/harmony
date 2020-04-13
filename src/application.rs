@@ -5,11 +5,12 @@ use winit::{
     event_loop::{ ControlFlow, EventLoop },
 };
 
-use crate::gui::Scene as GuiScene;
-use crate::graphics::Renderer;
 use crate::{
+    AssetManager,
     core::input::Input, 
-    AssetManager
+    graphics::{RenderGraph, Renderer},
+    gui::Scene as GuiScene,
+    scene::Scene,
 };
 
 pub trait AppState {
@@ -28,10 +29,10 @@ pub trait AppState {
 }
 
 pub struct Application {
-    renderer: Renderer,
+    pub(crate) renderer: Renderer,
     gui_renderer: Option<crate::gui::Renderer>,
     gui_renderables: Vec<crate::gui::renderables::Renderable>,
-    asset_manager: AssetManager,
+    pub asset_manager: AssetManager,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
@@ -39,6 +40,8 @@ pub struct Application {
     pub delta_time: f32,
     pub(crate) console: crate::gui::components::default::Console,
     pub input: Input,
+    pub current_scene: Option<Scene<'static>>,
+    pub(crate) render_graph: Option<RenderGraph>, 
 }
 
 impl Application {
@@ -66,13 +69,21 @@ impl Application {
             delta_time: 0.0,
             console,
             input: Input::new(),
+            current_scene: None,
+            render_graph: None,
         }
     }
 
+    pub fn set_scene(&mut self, current_scene: Scene<'static>) {
+        self.current_scene = Some(current_scene);
+    }
+    
     pub fn load<T>(&mut self, app_state: &mut T) where T: AppState { 
         self.asset_manager.load(&self.renderer.device, &mut self.console);
         self.console.load(&self.asset_manager);
         app_state.load(self);
+
+        self.render_graph = Some(RenderGraph::new(self));
 
         let size = self.renderer.window.inner_size();
         
@@ -109,6 +120,10 @@ impl Application {
                     }
                     self.console.update(&self.input, self.delta_time);
 
+                    if self.current_scene.is_some() {
+                        self.current_scene.as_mut().unwrap().update(dt);
+                    }
+
                     self.input.clear();
                 }
                 
@@ -117,6 +132,14 @@ impl Application {
             Event::RedrawRequested(_) => {
                 let start = Instant::now();
                 let output = self.renderer.render();
+
+                // Render the graph.
+                if self.render_graph.is_some() {
+                    let render_graph = self.render_graph.as_mut().unwrap();
+                    if self.current_scene.is_some() {
+                        render_graph.render(&mut self.renderer, &self.asset_manager, &mut self.current_scene.as_mut().unwrap().world, &output);
+                    }
+                }
                 
                 // Gather console components
                 let mut root_components: Vec<crate::gui::renderables::Renderable> = self.console.get_components().iter().map(|component| component.draw(bounds)).collect();
