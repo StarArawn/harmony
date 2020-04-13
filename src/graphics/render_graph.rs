@@ -44,6 +44,7 @@ impl RenderGraph {
     }
 
     pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) {
+        dbg!("Got here!");
         for node in self.nodes.iter_mut() {
             let node: &mut RenderGraphNode = node;
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {

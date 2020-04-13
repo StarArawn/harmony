@@ -65,7 +65,6 @@ impl SimplePipeline for UnlitPipeline {
             };
             RunNow::setup(&mut render_mesh, world);
             render_mesh.run_now(world);
-            //TODO: Run code here to render meshes
         }
         
 

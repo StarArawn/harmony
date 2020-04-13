@@ -22,23 +22,23 @@ const WINDOW_SIZE: WindowSize = WindowSize {
 };
 
 struct AppState {
-    scene: Scene<'static>,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
-            scene: Scene::new(None, None), // If we pass None in this case it sets up specs for us.
         }
     }
 }
 
 impl harmony::AppState for AppState {
-    fn load(&mut self, _app: &mut harmony::Application) {
-        
-        self.scene.world.create_entity().with(Mesh {
+    fn load(&mut self, app: &mut harmony::Application) {
+        let mut scene = Scene::new(None, None);
+        scene.world.create_entity().with(Mesh {
             mesh_name: "cube.gltf".into(),
         }).build();
+
+        app.current_scene = Some(scene);
     }
     fn update(&mut self, _app: &mut harmony::Application) {
     }
@@ -50,10 +50,10 @@ impl harmony::AppState for AppState {
 
 
 fn main() {
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module("harmony", log::LevelFilter::Info)
-        .init();
+    // env_logger::Builder::from_default_env()
+    //     .filter_level(log::LevelFilter::Warn)
+    //     .filter_module("harmony", log::LevelFilter::Info)
+    //     .init();
 
     let mut modifiers = ModifiersState::default();
 
