@@ -49,7 +49,7 @@ impl RenderGraph {
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
                 node.command_buffers.clear();
                 node.command_buffers.push(node.simple_pipeline.render(frame, &renderer.device, asset_manager, world, &node.pipeline));
-                self.dirty = false;
+                node.dirty = false;
             }
 
             renderer.queue.submit(&node.command_buffers);
