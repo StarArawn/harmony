@@ -108,7 +108,7 @@ impl Mesh {
             dbg!(primitive_topology);
 
             let vertex_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&vertices), wgpu::BufferUsage::VERTEX);
-            let index_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::VERTEX);
+            let index_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
             sub_meshes.push(SubMesh {
                 vertices,

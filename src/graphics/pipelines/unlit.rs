@@ -15,7 +15,6 @@ use crate::{
 
 #[derive(Debug)]
 pub struct UnlitPipeline {
-    constants: wgpu::BindGroup,
     constants_buffer: wgpu::Buffer,
 }
 
@@ -58,6 +57,7 @@ impl SimplePipeline for UnlitPipeline {
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&pipeline.pipeline);
+            render_pass.set_bind_group(0, &pipeline.bind_group, &[]);
             
             let mut render_mesh = RenderMesh {
                 asset_manager,
@@ -80,22 +80,26 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     fn load_shader<'a>(&self, asset_manager: &'a crate::AssetManager) -> &'a crate::graphics::material::Shader {
         asset_manager.get_shader("unlit.shader")
     }
-    fn create_layout(&self, device: &mut wgpu::Device) -> (wgpu::BindGroupLayout, wgpu::PipelineLayout) {
+    fn create_layout(&self, device: &mut wgpu::Device) -> (wgpu::BindGroup, wgpu::PipelineLayout) {
         // We can create whatever layout we want here.
-        let constant_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            }],
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            bindings: &[],
             label: None,
         });
-        // Once we create the layout we don't need the bind group layout.
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[&constant_layout],
+
+        // Create bind group.
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            bindings: &[],
+            label: None,
         });
 
-        (constant_layout, layout)
+        // Once we create the layout we don't need the bind group layout.
+        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            bind_group_layouts: &[&bind_group_layout],
+        });
+
+        (bind_group, layout)
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
@@ -159,25 +163,13 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         vertex_state_builder
     }
 
-    fn build(self, device: &wgpu::Device, constant_layout: &wgpu::BindGroupLayout) -> UnlitPipeline {
+    fn build(self, device: &wgpu::Device) -> UnlitPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device
             .create_buffer_with_data(bytemuck::bytes_of(&Uniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
         
-        let constants = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: constant_layout,
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &constants_buffer,
-                    range: 0..std::mem::size_of::<Uniforms>() as u64,
-                },
-            }],
-            label: None,
-        });
 
         UnlitPipeline {
-            constants,
             constants_buffer,
         }
     }

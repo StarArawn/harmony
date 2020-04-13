@@ -19,7 +19,7 @@ impl RenderGraph {
         let mut nodes = Vec::new();
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
         let pipeline = unlit_pipeline_desc.pipeline(app);
-        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layout));
+        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device));
         nodes.push(RenderGraphNode {
             pipeline,
             simple_pipeline,
@@ -44,7 +44,6 @@ impl RenderGraph {
     }
 
     pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) {
-        dbg!("Got here!");
         for node in self.nodes.iter_mut() {
             let node: &mut RenderGraphNode = node;
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
