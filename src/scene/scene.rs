@@ -12,6 +12,8 @@ impl<'a> Scene<'a> {
         // Add our components here
         let mut world = world.unwrap_or(World::new());
         world.register::<components::Mesh>();
+        world.register::<components::CameraData>();
+        world.register::<components::Transform>();
 
         // Add our systems here..
         let dispatch_buider = dispatch_buider.unwrap_or(DispatcherBuilder::new());

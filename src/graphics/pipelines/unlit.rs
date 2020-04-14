@@ -1,3 +1,4 @@
+use ultraviolet::Mat4;
 use specs::RunNow;
 use bytemuck::{ Pod, Zeroable };
 use std::mem;
@@ -16,16 +17,17 @@ use crate::{
 #[derive(Debug)]
 pub struct UnlitPipeline {
     constants_buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
 }
 
 #[repr(C)]
 #[derive(Default, Debug, Clone, Copy)]
-struct Uniforms {
-    transform: [f32; 16],
+pub struct UnlitUniforms {
+    pub view_projection: Mat4,
 }
 
-unsafe impl Zeroable for Uniforms { }
-unsafe impl Pod for Uniforms { }
+unsafe impl Zeroable for UnlitUniforms { }
+unsafe impl Pod for UnlitUniforms { }
 
 impl SimplePipeline for UnlitPipeline {
     fn prepare(&mut self) -> PrepareResult { 
@@ -39,34 +41,19 @@ impl SimplePipeline for UnlitPipeline {
         );
 
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[
-                    wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &frame.view,
-                        resolve_target: None,
-                        load_op: wgpu::LoadOp::Clear,
-                        store_op: wgpu::StoreOp::Store,
-                        clear_color: wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        },
-                    },
-                ],
-                depth_stencil_attachment: None,
-            });
-            render_pass.set_pipeline(&pipeline.pipeline);
-            render_pass.set_bind_group(0, &pipeline.bind_group, &[]);
-            
             let mut render_mesh = RenderMesh {
+                device,
                 asset_manager,
-                render_pass,    
+                encoder: &mut encoder,
+                frame,
+                pipeline,
+                bind_group: &self.bind_group,
+                constants_buffer: &self.constants_buffer,
             };
             RunNow::setup(&mut render_mesh, world);
             render_mesh.run_now(world);
         }
-        
+    
 
         encoder.finish()
     }
@@ -80,17 +67,14 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     fn load_shader<'a>(&self, asset_manager: &'a crate::AssetManager) -> &'a crate::graphics::material::Shader {
         asset_manager.get_shader("unlit.shader")
     }
-    fn create_layout(&self, device: &mut wgpu::Device) -> (wgpu::BindGroup, wgpu::PipelineLayout) {
+    fn create_layout(&self, device: &mut wgpu::Device) -> (wgpu::BindGroupLayout, wgpu::PipelineLayout) {
         // We can create whatever layout we want here.
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[],
-            label: None,
-        });
-
-        // Create bind group.
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            bindings: &[],
+            bindings:  &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX,
+                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+            }],
             label: None,
         });
 
@@ -99,7 +83,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
             bind_group_layouts: &[&bind_group_layout],
         });
 
-        (bind_group, layout)
+        (bind_group_layout, layout)
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
@@ -163,14 +147,27 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         vertex_state_builder
     }
 
-    fn build(self, device: &wgpu::Device) -> UnlitPipeline {
+    fn build(self, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout ) -> UnlitPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device
-            .create_buffer_with_data(bytemuck::bytes_of(&Uniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
+            .create_buffer_with_data(bytemuck::bytes_of(&UnlitUniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
         
+        // Create bind group.
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: bind_group_layout,
+            bindings: &[wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &constants_buffer,
+                    range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
+                },
+            }],
+            label: None,
+        });
 
         UnlitPipeline {
             constants_buffer,
+            bind_group,
         }
     }
 }

@@ -9,7 +9,7 @@ use winit::{
 
 use harmony::WinitState;
 use harmony::scene::Scene;
-use harmony::scene::components::Mesh;
+use harmony::scene::components::{CameraData, Mesh};
 
 struct WindowSize {
     width: u32,
@@ -38,6 +38,14 @@ impl harmony::AppState for AppState {
             mesh_name: "cube.gltf".into(),
         }).build();
 
+        let actual_window_size = app.get_window_actual_size();
+
+        // We can't render anything without a camera. Add one here.
+        // Thankfully we have a method to help.
+        let camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.0, 10.0);
+        harmony::scene::entities::camera::create(&mut scene.world, camera_data);
+
+        // You can access the scene here once we store it.
         app.current_scene = Some(scene);
     }
     fn update(&mut self, _app: &mut harmony::Application) {

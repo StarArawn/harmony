@@ -77,6 +77,14 @@ impl Application {
     pub fn set_scene(&mut self, current_scene: Scene<'static>) {
         self.current_scene = Some(current_scene);
     }
+
+    pub fn get_window_actual_size(&self) -> winit::dpi::LogicalSize<f32> {
+        let size = self.renderer.window.inner_size();
+        winit::dpi::LogicalSize {
+            width: size.width as f32,
+            height: size.height as f32,
+        }
+    }
     
     pub fn load<T>(&mut self, app_state: &mut T) where T: AppState { 
         self.asset_manager.load(&self.renderer.device, &mut self.console);
