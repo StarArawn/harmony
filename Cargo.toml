@@ -21,7 +21,8 @@ specs = "0.16.1"
 stretch = "0.3.2"
 ultraviolet = "0.4.5"
 walkdir = "2"
-wgpu = "0.5"
+wgpu = "0.5.0"
+wgpu-core = { version = "0.5.1" }
 wgpu_glyph = { git="https://github.com/hecrj/wgpu_glyph", branch="update-wgpu" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"

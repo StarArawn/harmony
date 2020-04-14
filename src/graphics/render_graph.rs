@@ -50,7 +50,7 @@ impl RenderGraph {
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
                 let command_buffer = node.simple_pipeline.render(frame, &renderer.device, asset_manager, world, &node.pipeline);
                 command_buffers.push(command_buffer);
-                node.dirty = false;
+                //node.dirty = false;
             }
         }
 

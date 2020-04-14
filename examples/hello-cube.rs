@@ -1,4 +1,4 @@
-// use log;
+use log;
 use specs::prelude::*;
 
 use winit::{ 
@@ -50,10 +50,10 @@ impl harmony::AppState for AppState {
 
 
 fn main() {
-    // env_logger::Builder::from_default_env()
-    //     .filter_level(log::LevelFilter::Warn)
-    //     .filter_module("harmony", log::LevelFilter::Info)
-    //     .init();
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Warn)
+        .filter_module("harmony", log::LevelFilter::Info)
+        .init();
 
     let mut modifiers = ModifiersState::default();
 

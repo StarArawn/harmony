@@ -13,7 +13,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
     fn run(&mut self, mesh: Self::SystemData) {
         use specs::Join;
 
-        for mesh in mesh.join() {
+        for mesh in mesh.join() {  
             let mesh: &Mesh = mesh;
             let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
             for sub_mesh in asset_mesh.sub_meshes.iter() {

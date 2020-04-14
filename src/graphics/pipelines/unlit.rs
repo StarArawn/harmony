@@ -150,12 +150,12 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
                     wgpu::VertexAttributeDescriptor {
                         format: wgpu::VertexFormat::Float2,
                         offset: 4 * (3 + 3),
-                        shader_location: 1,
+                        shader_location: 2,
                     },
                     wgpu::VertexAttributeDescriptor {
                         format: wgpu::VertexFormat::Float4,
                         offset: 4 * (3 + 3 + 2),
-                        shader_location: 1,
+                        shader_location: 3,
                     },
                 ],
             );
