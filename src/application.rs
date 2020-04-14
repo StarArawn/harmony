@@ -132,12 +132,12 @@ impl Application {
             Event::RedrawRequested(_) => {
                 let start = Instant::now();
                 let output = self.renderer.render();
-
+                let mut command_buffers = Vec::new();
                 // Render the graph.
                 if self.render_graph.is_some() {
                     let render_graph = self.render_graph.as_mut().unwrap();
                     if self.current_scene.is_some() {
-                        render_graph.render(&mut self.renderer, &self.asset_manager, &mut self.current_scene.as_mut().unwrap().world, &output);
+                        command_buffers.extend(render_graph.render(&mut self.renderer, &self.asset_manager, &mut self.current_scene.as_mut().unwrap().world, &output));
                     }
                 }
                 
@@ -151,15 +151,17 @@ impl Application {
                 };
 
                 let gui_renderer = self.gui_renderer.as_mut().unwrap();
-                gui_renderer.draw(
+                command_buffers.extend(gui_renderer.draw(
                     &mut self.renderer.device,
-                    &mut self.renderer.queue,
                     &output.view,
                     root,
                     Some(bounds),
                     self.renderer.window.scale_factor() as f32,
                     &mut self.asset_manager,
-                );
+                ));
+
+                // Then we submit the work
+                self.renderer.queue.submit(&command_buffers);
 
                 app_state.draw(self);
 

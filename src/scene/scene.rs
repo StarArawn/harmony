@@ -16,7 +16,7 @@ impl<'a> Scene<'a> {
         // Add our systems here..
         let dispatch_buider = dispatch_buider.unwrap_or(DispatcherBuilder::new());
         
-        let mut dispatcher = dispatch_buider.build();
+        let dispatcher = dispatch_buider.build();
 
         Scene {
             world,

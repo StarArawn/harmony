@@ -107,13 +107,12 @@ impl Renderer {
     pub fn draw(
         &mut self,
         device: &mut wgpu::Device,
-        queue: &mut wgpu::Queue,
         target: &wgpu::TextureView,
         renderable: renderables::Renderable,
         bounds: Option<Rectangle>,
         scale_factor: f32,
         _asset_manager: &mut AssetManager,
-    ) {
+    ) -> Vec<wgpu::CommandBuffer> {
         let mut encoder = device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor { label: None },
         );
@@ -155,7 +154,6 @@ impl Renderer {
             }
         }
 
-        // Then we submit the work
-        queue.submit(&[encoder.finish()]);
+        vec![encoder.finish()]
     }
 }

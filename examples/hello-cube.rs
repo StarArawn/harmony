@@ -1,4 +1,4 @@
-use log;
+// use log;
 use specs::prelude::*;
 
 use winit::{ 
