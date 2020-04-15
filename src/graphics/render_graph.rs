@@ -19,7 +19,7 @@ impl RenderGraph {
         let mut nodes = Vec::new();
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
         let pipeline = unlit_pipeline_desc.pipeline(app);
-        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layout));
+        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.asset_manager, &app.renderer.device, &pipeline.bind_group_layout));
         nodes.push(RenderGraphNode {
             pipeline,
             simple_pipeline,

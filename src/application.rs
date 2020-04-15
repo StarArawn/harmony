@@ -87,7 +87,7 @@ impl Application {
     }
     
     pub fn load<T>(&mut self, app_state: &mut T) where T: AppState { 
-        self.asset_manager.load(&self.renderer.device, &mut self.console);
+        self.asset_manager.load(&self.renderer.device, &mut self.renderer.queue, &mut self.console);
         self.console.load(&self.asset_manager);
         app_state.load(self);
 

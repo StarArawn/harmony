@@ -1,5 +1,7 @@
 use ultraviolet::{ Vec2, Vec3, Vec4 };
 use bytemuck::{ Pod, Zeroable};
+use std::path::Path;
+use std::ffi::OsStr;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -24,6 +26,9 @@ pub struct SubMesh {
     material_id: Option<usize>,
     pub(crate) vertex_buffer: wgpu::Buffer,
     pub(crate) index_buffer: wgpu::Buffer,
+
+    // TODO: Move materials somewhere else..
+    pub(crate) main_texture: Option<String>,
 }
 
 pub struct Mesh {
@@ -51,7 +56,11 @@ impl Mesh {
         let mut sub_meshes = Vec::new();
         let primitives = gltf_mesh.primitives();
 
+        let images: Vec<gltf::Image<'_>> = document.images().collect();
+
         for primitive in primitives {
+            let mut main_texture = None;
+
             let reader = primitive.reader(get_buffer_data);
             let positions: Vec<_> = reader
                 .read_positions()
@@ -92,6 +101,27 @@ impl Mesh {
             } else {
                 panic!("model doesn't have indices");
             };
+
+            let material: gltf::Material = primitive.material();
+            
+            let info = material.pbr_metallic_roughness().base_color_texture();
+            if info.is_some() {
+                let info = info.unwrap();
+                let tex = info.texture();
+                let image: Option<&gltf::Image<'_>> = images.get(tex.index());
+                if image.is_some() {
+                    let image = image.unwrap();
+                    let source = image.source();
+                    match source {
+                        gltf::image::Source::Uri { uri, .. } => {
+                            main_texture = Some(Path::new(&uri)
+                                .file_name()
+                                .and_then(OsStr::to_str).unwrap().to_string());
+                        },
+                        _ => (),
+                    }
+                }
+            }
     
             // let mut mesh = Mesh { indices, vertices };
             // mesh.calculate_tangents();
@@ -110,6 +140,7 @@ impl Mesh {
             let vertex_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&vertices), wgpu::BufferUsage::VERTEX);
             let index_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
+
             sub_meshes.push(SubMesh {
                 vertices,
                 indices,
@@ -118,26 +149,8 @@ impl Mesh {
                 material_id: primitive.material().index(),
                 vertex_buffer,
                 index_buffer,
+                main_texture,
             });
-        }
-        
-        // Load materials these get stored separately.
-        for material in document.materials() {
-            // Kinda dumb but we can see the types if we do this..
-            // rust analyzer apparently can't figure out the iterators in gltf. 
-            let material: gltf::Material<'_> = material;
-            // TODO: Perhaps support PBR specular workflow as well?
-            let pbr = material.pbr_metallic_roughness();
-            log::info!("found material {:?}", material.name());
-            let _color_factor = pbr.base_color_factor();
-            let _color_texture = pbr.base_color_texture();
-            let _metallic_factor = pbr.metallic_factor();
-            let _metallic_roughness_texture = pbr.metallic_roughness_texture();
-            let _roughness_factor = pbr.roughness_factor();
-            let _emissive_factor = material.emissive_factor();
-            let _emissive_texture = material.emissive_texture();
-            let _occlusion_map = material.occlusion_texture();
-            let _normal_tex = material.normal_texture();
         }
 
         Mesh {

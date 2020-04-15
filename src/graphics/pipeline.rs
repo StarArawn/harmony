@@ -99,7 +99,7 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
         false
     }
 
-    fn build(self, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout) -> Self::Pipeline;
+    fn build(self, asset_manager: &AssetManager, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout) -> Self::Pipeline;
 }
 
 pub struct VertexStateBuilder {

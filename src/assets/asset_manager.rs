@@ -1,7 +1,7 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 
-use crate::graphics::{mesh::Mesh, material::Shader};
+use crate::graphics::{mesh::Mesh, material::{ Image, Shader }};
 use crate::gui::core::Font;
 
 pub struct AssetManager {
@@ -9,6 +9,7 @@ pub struct AssetManager {
     shaders: HashMap<String, Shader>,
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
+    images: HashMap<String, Image>,
 }
 
 impl AssetManager {
@@ -18,10 +19,13 @@ impl AssetManager {
             shaders: HashMap::new(),
             fonts: HashMap::new(),
             meshes: HashMap::new(),
+            images: HashMap::new(),
         }
     }
 
-    pub fn load(&mut self, device: &wgpu::Device, console: &mut crate::gui::components::default::Console) {
+    pub fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue, console: &mut crate::gui::components::default::Console) {
+        let mut init_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
         for entry in WalkDir::new(&self.path) {
             let entry = entry.expect("Error: Could not access file.");
             let file_name = entry.file_name().to_str().unwrap();
@@ -42,7 +46,14 @@ impl AssetManager {
                 self.meshes.insert(file_name.to_string(), mesh);
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded mesh: {}", file_name));
             }
+            if file_name.ends_with(".png") {
+                let image = Image::new(device, &mut init_encoder, format!("{}{}", full_file_path, file_name), file_name.to_string());
+                self.images.insert(file_name.to_string(), image);
+                console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded image: {}", file_name));
+            }
         }
+
+        queue.submit(&[init_encoder.finish()]);
     }
 
     pub fn get_shader<'a, T>(&'a self, key: T) -> &'a Shader where T: Into<String> {
@@ -53,6 +64,15 @@ impl AssetManager {
     pub fn get_mesh<T>(&self, key: T) -> &Mesh where T: Into<String> {
         let key = key.into();
         self.meshes.get(&key).expect(&format!("Asset Error: Could not find {} mesh asset!", &key))
+    }
+
+    pub fn get_image<T>(&self, key: T) -> &Image where T: Into<String> {
+        let key = key.into();
+        self.images.get(&key).expect(&format!("Asset Error: Could not find {} image asset!", &key))
+    }
+
+    pub fn get_images(&self) -> Vec<&Image> {
+        self.images.values().collect()
     }
 
     pub fn get_font<T>(&self, key: T) -> &Font where T: Into<String> {

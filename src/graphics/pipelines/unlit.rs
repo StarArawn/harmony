@@ -1,7 +1,7 @@
 use ultraviolet::Mat4;
 use specs::RunNow;
 use bytemuck::{ Pod, Zeroable };
-use std::mem;
+use std::{collections::HashMap, mem};
 
 use crate::{
     AssetManager,
@@ -17,7 +17,7 @@ use crate::{
 #[derive(Debug)]
 pub struct UnlitPipeline {
     constants_buffer: wgpu::Buffer,
-    bind_group: wgpu::BindGroup,
+    bind_groups: HashMap<String, wgpu::BindGroup>,
 }
 
 #[repr(C)]
@@ -47,8 +47,8 @@ impl SimplePipeline for UnlitPipeline {
                 encoder: &mut encoder,
                 frame,
                 pipeline,
-                bind_group: &self.bind_group,
                 constants_buffer: &self.constants_buffer,
+                bind_groups: &self.bind_groups,
             };
             RunNow::setup(&mut render_mesh, world);
             render_mesh.run_now(world);
@@ -70,11 +70,27 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     fn create_layout(&self, device: &mut wgpu::Device) -> (wgpu::BindGroupLayout, wgpu::PipelineLayout) {
         // We can create whatever layout we want here.
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            }],
+            bindings:  &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::SampledTexture {
+                        multisampled: false,
+                        component_type: wgpu::TextureComponentType::Float,
+                        dimension: wgpu::TextureViewDimension::D2,
+                    },
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler { comparison: false },
+                },
+            ],
             label: None,
         });
 
@@ -147,27 +163,65 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         vertex_state_builder
     }
 
-    fn build(self, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout ) -> UnlitPipeline {
+    fn build(self, asset_manager: &AssetManager, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout ) -> UnlitPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device
             .create_buffer_with_data(bytemuck::bytes_of(&UnlitUniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
-        
-        // Create bind group.
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: bind_group_layout,
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &constants_buffer,
-                    range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
-                },
-            }],
+
+        let mut bind_groups = HashMap::new();
+
+        let shared_binding = wgpu::Binding {
+            binding: 0,
+            resource: wgpu::BindingResource::Buffer {
+                buffer: &constants_buffer,
+                range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
+            },
+        };
+
+        bind_groups.insert("none".to_string(), device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &constants_buffer,
+                        range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
+                    },
+                }
+            ],
             label: None,
-        });
+        }));
+
+        let images = asset_manager.get_images();
+
+        for image in images {
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &bind_group_layout,
+                bindings: &[
+                    wgpu::Binding {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer {
+                            buffer: &constants_buffer,
+                            range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
+                        },
+                    },
+                    wgpu::Binding {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&image.view),
+                    },
+                    wgpu::Binding {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&image.sampler),
+                    }
+                ],
+                label: None,
+            });
+            bind_groups.insert(image.name.clone(), bind_group);
+        }
 
         UnlitPipeline {
             constants_buffer,
-            bind_group,
+            bind_groups
         }
     }
 }

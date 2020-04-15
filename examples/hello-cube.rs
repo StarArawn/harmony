@@ -1,5 +1,6 @@
 use log;
 use specs::prelude::*;
+use ultraviolet::Vec3;
 
 use winit::{ 
     dpi::LogicalSize,
@@ -42,7 +43,12 @@ impl harmony::AppState for AppState {
 
         // We can't render anything without a camera. Add one here.
         // Thankfully we have a method to help.
-        let camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.0, 10.0);
+        let mut camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.0, 10.0);
+        camera_data.update_view(
+            Vec3::new(1.5, -5.0, 3.0),
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.0),
+        );
         harmony::scene::entities::camera::create(&mut scene.world, camera_data);
 
         // You can access the scene here once we store it.

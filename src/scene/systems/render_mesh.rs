@@ -7,6 +7,7 @@ use crate::{
     },
     scene::components::{ CameraData, Mesh }
 };
+use std::{collections::HashMap, rc::Rc};
 
 pub struct RenderMesh<'a> {
     pub(crate) device: &'a wgpu::Device,
@@ -14,8 +15,8 @@ pub struct RenderMesh<'a> {
     pub(crate) encoder: &'a mut wgpu::CommandEncoder,
     pub(crate) frame: &'a wgpu::SwapChainOutput,
     pub(crate) pipeline: &'a Pipeline,
-    pub(crate) bind_group: &'a wgpu::BindGroup,
     pub(crate) constants_buffer: &'a wgpu::Buffer,
+    pub(crate) bind_groups: &'a HashMap<String, wgpu::BindGroup>,
 }
 
 impl<'a> System<'a> for RenderMesh<'a> {
@@ -68,12 +69,17 @@ impl<'a> System<'a> for RenderMesh<'a> {
             depth_stencil_attachment: None,
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
-        render_pass.set_bind_group(0, self.bind_group, &[]);
 
         for mesh in mesh.join() {  
             let mesh: &Mesh = mesh;
             let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
             for sub_mesh in asset_mesh.sub_meshes.iter() {
+                if sub_mesh.main_texture.is_some() {
+                    render_pass.set_bind_group(0, self.bind_groups.get(sub_mesh.main_texture.as_ref().unwrap()).as_ref().unwrap(), &[]);
+                } else {
+                    render_pass.set_bind_group(0, self.bind_groups.get("none").as_ref().unwrap(), &[]);
+                }
+                
                 render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
                 render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
                 render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
