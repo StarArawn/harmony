@@ -55,11 +55,11 @@ impl harmony::AppState for AppState {
             .with(RotateSystem, "RotateSystem", &[]);
 
         let mut scene = Scene::new(None, Some(dispatch_builder));
-        scene.world.create_entity()
-            .with(Mesh::new("cube.gltf"))
-            .with(Material::new(0)) // Need to be an index to the material.
-            .with(Transform::new(app))
-            .build();
+        // scene.world.create_entity()
+        //     .with(Mesh::new("cube.gltf"))
+        //     .with(Material::new(0)) // Need to be an index to the material.
+        //     .with(Transform::new(app))
+        //     .build();
         
         scene.world.create_entity()
             .with(SkyboxData::new("venice_sunrise_4k.hdr"))
@@ -69,10 +69,10 @@ impl harmony::AppState for AppState {
 
         // We can't render anything without a camera. Add one here.
         // Thankfully we have a method to help.
-        let mut camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.01, 10.0);
+        let mut camera_data = CameraData::new_perspective(360.0, actual_window_size.width / actual_window_size.height, 0.01, 10.0);
         camera_data.update_view(
             Vec3::new(0.0, -5.0, 0.0),
-            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(90.0, 0.0, 0.0),
             Vec3::new(0.0, 0.0, 1.0),
         );
         harmony::scene::entities::camera::create(&mut scene.world, camera_data);

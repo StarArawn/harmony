@@ -16,8 +16,7 @@ void main() {
     }
     mat3 invModelView = transpose(mat3(view));
     vec3 unProjected = (inverse(proj) * pos).xyz;
-    vec3 uv = invModelView * unProjected;
-    v_Uv = uv;
+    v_Uv = invModelView * unProjected;
 
     gl_Position = pos;
     gl_Position.z *= -1.0;
