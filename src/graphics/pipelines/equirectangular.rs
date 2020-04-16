@@ -30,10 +30,10 @@ impl SimplePipeline for CubeProjectionPipeline {
             let render_texture = device.create_texture(&wgpu::TextureDescriptor {
                 size: wgpu::Extent3d {
                     width: ENV_CUBEMAP_RES,
-                    height: ENV_CUBEMAP_RES,
+                    height: ENV_CUBEMAP_RES * 6,
                     depth: 1,
                 },
-                array_layer_count: 6,
+                array_layer_count: 1,
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -59,12 +59,12 @@ impl SimplePipeline for CubeProjectionPipeline {
 
             let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor {
                 format: wgpu::TextureFormat::Rgba32Float,
-                dimension: wgpu::TextureViewDimension::Cube,
+                dimension: wgpu::TextureViewDimension::D2,
                 aspect: wgpu::TextureAspect::default(),
                 base_mip_level: 0,
                 level_count: 1,
                 base_array_layer: 0,
-                array_layer_count: 6,
+                array_layer_count: 1,
             });
             hdr_image.cubemap_texture = Some(render_texture);
             hdr_image.cubemap_view = Some(render_texture_view);
