@@ -19,4 +19,5 @@ void main() {
     v_Uv = invModelView * unProjected;
 
     gl_Position = pos;
+    gl_Position.z *= -1.0;
 }

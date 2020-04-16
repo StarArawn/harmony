@@ -176,14 +176,14 @@ impl Application {
                 };
 
                 let gui_renderer = self.gui_renderer.as_mut().unwrap();
-                command_buffers.extend(gui_renderer.draw(
-                    &mut self.renderer.device,
-                    &output.view,
-                    root,
-                    Some(bounds),
-                    self.renderer.window.scale_factor() as f32,
-                    &mut self.asset_manager,
-                ));
+                // command_buffers.extend(gui_renderer.draw(
+                //     &mut self.renderer.device,
+                //     &output.view,
+                //     root,
+                //     Some(bounds),
+                //     self.renderer.window.scale_factor() as f32,
+                //     &mut self.asset_manager,
+                // ));
 
                 // Then we submit the work
                 self.renderer.queue.submit(&command_buffers);

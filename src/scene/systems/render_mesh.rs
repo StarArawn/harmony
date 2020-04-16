@@ -28,6 +28,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
 
     fn run(&mut self, (camera_data, meshes, materials, mut transforms): Self::SystemData) {
         use specs::Join;
+        if transforms.count() == 0 { return; }
         let filtered_camera_data: Vec<&CameraData> = camera_data.join().filter(|data: &&CameraData| data.active).collect();
         let camera_data= filtered_camera_data.first();
 
@@ -107,7 +108,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
                 wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: self.frame_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
+                    load_op: wgpu::LoadOp::Load,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color {
                         r: 0.0,

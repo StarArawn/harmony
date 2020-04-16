@@ -55,13 +55,13 @@ impl<'a> System<'a> for RenderSkybox<'a> {
                 wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: self.frame_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Load,
+                    load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color {
                         r: 0.0,
                         g: 0.0,
                         b: 0.0,
-                        a: 1.0,
+                        a: 0.0,
                     },
                 },
             ],

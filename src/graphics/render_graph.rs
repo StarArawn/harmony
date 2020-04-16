@@ -19,6 +19,7 @@ pub struct RenderGraphNode {
 
 pub struct RenderGraph {
     nodes: HashMap<String, RenderGraphNode>,
+    order: Vec<String>,
 }
 
 impl RenderGraph {
@@ -68,6 +69,7 @@ impl RenderGraph {
 
         RenderGraph {
             nodes,
+            order: vec!["skybox".to_string(), "unlit".to_string()]
         }
     }
 
@@ -90,8 +92,8 @@ impl RenderGraph {
 
     pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &mut AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) -> Vec<wgpu::CommandBuffer>{
         let mut command_buffers = Vec::new();
-        for node in self.nodes.values_mut() {
-            let node: &mut RenderGraphNode = node;
+        for node_name in self.order.iter() {
+            let node: &mut RenderGraphNode = self.nodes.get_mut(node_name).unwrap();
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
                 let command_buffer = node.simple_pipeline.render(Some(&frame.view), &renderer.device, &node.pipeline, Some(asset_manager), Some(world));
                 command_buffers.push(command_buffer);
