@@ -7,5 +7,5 @@ layout(location = 0) in vec3 v_Uv;
 layout(location = 0) out vec4 f_Color;
 
 void main() {
-    f_Color = vec4(1.0, 0.0, 0.0, 1.0); //texture(samplerCube(t_Cubemap, s_Cubemap), v_Uv);
+    f_Color = texture(samplerCube(t_Cubemap, s_Cubemap), v_Uv);
 }

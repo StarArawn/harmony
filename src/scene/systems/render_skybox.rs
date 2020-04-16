@@ -16,6 +16,7 @@ pub struct RenderSkybox<'a> {
     pub(crate) pipeline: &'a Pipeline,
     pub(crate) constants_buffer: &'a wgpu::Buffer,
     pub(crate) global_bind_group: &'a wgpu::BindGroup,
+    pub(crate) depth: &'a wgpu::TextureView,
 }
 
 impl<'a> System<'a> for RenderSkybox<'a> {
@@ -65,7 +66,15 @@ impl<'a> System<'a> for RenderSkybox<'a> {
                     },
                 },
             ],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: self.depth,
+                depth_load_op: wgpu::LoadOp::Clear,
+                depth_store_op: wgpu::StoreOp::Store,
+                stencil_load_op: wgpu::LoadOp::Clear,
+                stencil_store_op: wgpu::StoreOp::Store,
+                clear_depth: 1.0,
+                clear_stencil: 0,
+            }),
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
         render_pass.set_bind_group(0, self.global_bind_group, &[]);

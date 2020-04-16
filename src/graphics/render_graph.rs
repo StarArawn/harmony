@@ -95,7 +95,7 @@ impl RenderGraph {
         for node_name in self.order.iter() {
             let node: &mut RenderGraphNode = self.nodes.get_mut(node_name).unwrap();
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
-                let command_buffer = node.simple_pipeline.render(Some(&frame.view), &renderer.device, &node.pipeline, Some(asset_manager), Some(world));
+                let command_buffer = node.simple_pipeline.render(Some(&frame.view), &renderer.device, &node.pipeline, Some(asset_manager), Some(world), Some(&renderer.forward_depth));
                 command_buffers.push(command_buffer);
                 //node.dirty = false;
             }

@@ -1,5 +1,3 @@
-use image::Pixel;
-use image::Rgb;
 use std::{io, fs};
 use crate::Application;
 
@@ -127,7 +125,7 @@ impl HDRImage {
 
         let mut final_pipeline = cube_projection_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts);
 
-        let command_buffer = final_pipeline.render(None, &app.renderer.device, &pipeline, Some(&mut app.asset_manager), None);
+        let command_buffer = final_pipeline.render(None, &app.renderer.device, &pipeline, Some(&mut app.asset_manager), None, None);
         
         app.renderer.queue.submit(&[command_buffer]);
     }

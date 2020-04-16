@@ -19,7 +19,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         PrepareResult::Reuse
     }
 
-    fn render(&mut self, _frame: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, mut asset_manager: Option<&mut AssetManager>, _world: Option<&mut specs::World>) -> wgpu::CommandBuffer {
+    fn render(&mut self, _frame: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, mut asset_manager: Option<&mut AssetManager>, _world: Option<&mut specs::World>, _depth: Option<&wgpu::TextureView>) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder = device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor { label: None },
@@ -57,7 +57,15 @@ impl SimplePipeline for CubeProjectionPipeline {
                 label: None,
             });
 
-            let render_texture_view = render_texture.create_default_view();
+            let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor {
+                format: wgpu::TextureFormat::Rgba32Float,
+                dimension: wgpu::TextureViewDimension::Cube,
+                aspect: wgpu::TextureAspect::default(),
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                array_layer_count: 6,
+            });
             hdr_image.cubemap_texture = Some(render_texture);
             hdr_image.cubemap_view = Some(render_texture_view);
 
@@ -133,7 +141,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
             front_face: wgpu::FrontFace::Cw,
-            cull_mode: wgpu::CullMode::Back,
+            cull_mode: wgpu::CullMode::None,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,

@@ -170,12 +170,12 @@ impl Application {
                 let mut root_components: Vec<crate::gui::renderables::Renderable> = self.console.get_components().iter().map(|component| component.draw(bounds)).collect();
                 root_components.extend(self.gui_renderables.clone());
 
-                let root = crate::gui::renderables::Renderable::Group {
+                let _root = crate::gui::renderables::Renderable::Group {
                     bounds,
                     renderables: root_components,
                 };
 
-                let gui_renderer = self.gui_renderer.as_mut().unwrap();
+                let _gui_renderer = self.gui_renderer.as_mut().unwrap();
                 // command_buffers.extend(gui_renderer.draw(
                 //     &mut self.renderer.device,
                 //     &output.view,

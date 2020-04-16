@@ -10,7 +10,7 @@ use crate::{
         Pipeline,
         pipeline::{ VertexStateBuilder, PrepareResult },
         SimplePipeline,
-        SimplePipelineDesc,
+        SimplePipelineDesc, renderer::DEPTH_FORMAT,
     }, scene::systems::RenderMesh
 };
 
@@ -34,7 +34,7 @@ impl SimplePipeline for UnlitPipeline {
         PrepareResult::Reuse
     }
 
-    fn render(&mut self, frame_view: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, asset_manager: Option<&mut AssetManager>, mut world: Option<&mut specs::World>) -> wgpu::CommandBuffer {
+    fn render(&mut self, frame_view: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, asset_manager: Option<&mut AssetManager>, mut world: Option<&mut specs::World>, depth: Option<&wgpu::TextureView>) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder = device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor { label: None },
@@ -48,6 +48,7 @@ impl SimplePipeline for UnlitPipeline {
                 pipeline,
                 constants_buffer: &self.constants_buffer,
                 global_bind_group: &self.global_bind_group,
+                depth: depth.as_ref().unwrap(),
             };
             RunNow::setup(&mut render_mesh, world.as_mut().unwrap());
             render_mesh.run_now(world.as_mut().unwrap());
@@ -146,7 +147,15 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder { 

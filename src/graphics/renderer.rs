@@ -1,3 +1,5 @@
+pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+
 pub struct Renderer {
     surface: wgpu::Surface,
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -7,6 +9,7 @@ pub struct Renderer {
     pub swap_chain: wgpu::SwapChain,
     pub window: winit::window::Window,
     pub sc_desc: wgpu::SwapChainDescriptor,
+    pub forward_depth: wgpu::TextureView,
 }
 
 impl Renderer {
@@ -38,6 +41,22 @@ impl Renderer {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: sc_desc.width,
+                height: sc_desc.height,
+                depth: 1,
+            },
+            array_layer_count: 1,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            label: None,
+        });
+
+
         Self {
             surface,
             size,
@@ -47,6 +66,7 @@ impl Renderer {
             swap_chain,
             window,
             sc_desc,
+            forward_depth: depth_texture.create_default_view(),
         }
     }
 
