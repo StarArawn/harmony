@@ -10,6 +10,7 @@ pub struct HDRImage {
     pub(crate) cubemap_view: Option<wgpu::TextureView>,
     pub(crate) cubemap_sampler: wgpu::Sampler,
     pub(crate) cubemap_bind_group: Option<wgpu::BindGroup>,
+    pub(crate) render_texture: Option<wgpu::Texture>,
 }
 
 unsafe fn any_as_u8_slice<T: Sized>(any: &T) -> &[u8] {
@@ -111,6 +112,7 @@ impl HDRImage {
             cubemap_view: None,
             cubemap_sampler,
             cubemap_bind_group: None,
+            render_texture: None,
         }
     }
 

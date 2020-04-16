@@ -38,7 +38,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba32Float,
-                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
                 label: None,
             });
 
@@ -57,23 +57,13 @@ impl SimplePipeline for CubeProjectionPipeline {
                 label: None,
             });
 
-            let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor {
-                format: wgpu::TextureFormat::Rgba32Float,
-                dimension: wgpu::TextureViewDimension::D2,
-                aspect: wgpu::TextureAspect::default(),
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                array_layer_count: 1,
-            });
-            hdr_image.cubemap_texture = Some(render_texture);
-            hdr_image.cubemap_view = Some(render_texture_view);
+            let render_texture_view = render_texture.create_default_view();
 
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     color_attachments: &[
                         wgpu::RenderPassColorAttachmentDescriptor {
-                            attachment: hdr_image.cubemap_view.as_ref().unwrap(),
+                            attachment: &render_texture_view,
                             resolve_target: None,
                             load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
@@ -92,6 +82,58 @@ impl SimplePipeline for CubeProjectionPipeline {
                 render_pass.draw(0..6, 0..6);
             }
 
+            let cubemap_texture = device.create_texture(&wgpu::TextureDescriptor {
+                size: wgpu::Extent3d {
+                    width: ENV_CUBEMAP_RES,
+                    height: ENV_CUBEMAP_RES,
+                    depth: 1,
+                },
+                array_layer_count: 6,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba32Float,
+                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+                label: None,
+            });
+
+            for i in 0..6 {
+                encoder.copy_texture_to_texture(
+                    wgpu::TextureCopyView {
+                        texture: &render_texture,
+                        mip_level: 0,
+                        array_layer: 0,
+                        origin: wgpu::Origin3d {
+                            x: 0,
+                            y: ENV_CUBEMAP_RES * i,
+                            z: 0,
+                        },
+                    },
+                    wgpu::TextureCopyView {
+                        texture: &cubemap_texture,
+                        mip_level: 0,
+                        array_layer: i,
+                        origin: wgpu::Origin3d::ZERO,
+                    },
+                    wgpu::Extent3d {
+                        width: ENV_CUBEMAP_RES,
+                        height: ENV_CUBEMAP_RES,
+                        depth: 0,
+                    }
+                );
+            }
+
+            hdr_image.cubemap_view = Some(cubemap_texture.create_view(&wgpu::TextureViewDescriptor {
+                format: wgpu::TextureFormat::Rgba32Float,
+                dimension: wgpu::TextureViewDimension::Cube,
+                aspect: wgpu::TextureAspect::default(),
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                array_layer_count: 6,
+            }));
+            hdr_image.cubemap_texture = Some(cubemap_texture);
+            hdr_image.render_texture = Some(render_texture);
         }
 
         encoder.finish()

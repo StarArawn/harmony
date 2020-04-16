@@ -38,38 +38,38 @@ impl RenderGraph {
         });
 
         // Skybox pipeline 
-        // let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        // let pipeline = skybox_pipeline_desc.pipeline(app);
-        // let material_layout = &pipeline.bind_group_layouts[1];
-        // for cubemap_image in app.asset_manager.hdr_images.values_mut() {
-        //     let bind_group = app.renderer.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        //         layout: &material_layout,
-        //         bindings: &[
-        //             wgpu::Binding {
-        //                 binding: 0,
-        //                 resource: wgpu::BindingResource::TextureView(cubemap_image.cubemap_view.as_ref().unwrap()),
-        //             },
-        //             wgpu::Binding {
-        //                 binding: 1,
-        //                 resource: wgpu::BindingResource::Sampler(&cubemap_image.cubemap_sampler),
-        //             }
-        //         ],
-        //         label: None,
-        //     });
-        //     cubemap_image.cubemap_bind_group = Some(bind_group);
-        // }
-        // let skybox_pipeline: Box<dyn SimplePipeline> = Box::new(skybox_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
-        // nodes.insert("skybox".to_string(), RenderGraphNode {
-        //     pipeline,
-        //     simple_pipeline: skybox_pipeline,
-        //     command_buffer: None,
-        //     dirty: true, // Nodes always dirty at first.
-        // });
+        let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
+        let pipeline = skybox_pipeline_desc.pipeline(app);
+        let material_layout = &pipeline.bind_group_layouts[1];
+        for cubemap_image in app.asset_manager.hdr_images.values_mut() {
+            let bind_group = app.renderer.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &material_layout,
+                bindings: &[
+                    wgpu::Binding {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(cubemap_image.cubemap_view.as_ref().unwrap()),
+                    },
+                    wgpu::Binding {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&cubemap_image.cubemap_sampler),
+                    }
+                ],
+                label: None,
+            });
+            cubemap_image.cubemap_bind_group = Some(bind_group);
+        }
+        let skybox_pipeline: Box<dyn SimplePipeline> = Box::new(skybox_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+        nodes.insert("skybox".to_string(), RenderGraphNode {
+            pipeline,
+            simple_pipeline: skybox_pipeline,
+            command_buffer: None,
+            dirty: true, // Nodes always dirty at first.
+        });
 
 
         RenderGraph {
             nodes,
-            order: vec!["unlit".to_string()]
+            order: vec!["skybox".to_string(), "unlit".to_string()]
         }
     }
 

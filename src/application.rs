@@ -90,7 +90,7 @@ impl Application {
         self.asset_manager.load(&self.renderer.device, &mut self.renderer.queue, &mut self.console);
         self.console.load(&self.asset_manager);
         
-        // super::graphics::material::HDRImage::create_cube_map(self);
+        super::graphics::material::HDRImage::create_cube_map(self);
 
         self.render_graph = Some(RenderGraph::new(self));
         
@@ -158,7 +158,7 @@ impl Application {
                 let start = Instant::now();
                 let output = self.renderer.render();
                 let mut command_buffers = Vec::new();
-                super::graphics::material::HDRImage::create_cube_map(self);
+                
                 // Render the graph.
                 if self.render_graph.is_some() {
                     let render_graph = self.render_graph.as_mut().unwrap();
