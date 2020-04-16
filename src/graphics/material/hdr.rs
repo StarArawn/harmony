@@ -1,4 +1,5 @@
 use image::Pixel;
+use image::Rgb;
 use std::{io, fs};
 use crate::Application;
 
@@ -50,21 +51,21 @@ impl HDRImage {
         });
 
         let image_data = decoded
-            .into_iter()
-            .map(|p| p.channels().to_vec())
-            .flatten()
-            .collect::<Vec<f32>>();
-            
-        let image_bytes = unsafe {
-            any_as_u8_slice(&image_data)
-        };
-        let temp_buf = device.create_buffer_with_data(image_bytes, wgpu::BufferUsage::COPY_SRC);
+            .iter()
+            .flat_map(|pixel| vec![pixel[0], pixel[1], pixel[2], 1.0])
+            .collect::<Vec<_>>();
+        dbg!(image_data.len());
+        dbg!((w * h) * (4 * 4));
+        let image_bytes =
+            unsafe { std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4) }
+                .to_vec();
+        let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
 
         init_encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
                 offset: 0,
-                bytes_per_row: 4 * w,
+                bytes_per_row: (4 * 4) * w,
                 rows_per_image: 0,
             },
             wgpu::TextureCopyView {
