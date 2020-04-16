@@ -1,12 +1,10 @@
 use ultraviolet::Mat4;
 use specs::RunNow;
 use bytemuck::{ Pod, Zeroable };
-use std::mem;
 
 use crate::{
     AssetManager,
     graphics::{
-        mesh::MeshVertexData,
         Pipeline,
         pipeline::{ VertexStateBuilder, PrepareResult },
         SimplePipeline,
@@ -24,7 +22,8 @@ pub struct SkyboxPipeline {
 #[repr(C)]
 #[derive(Default, Debug, Clone, Copy)]
 pub struct SkyboxUniforms {
-    pub view_projection: Mat4,
+    pub proj: Mat4,
+    pub view: Mat4,
 }
 
 unsafe impl Zeroable for SkyboxUniforms { }
@@ -135,10 +134,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder { 
-        let vertex_size = mem::size_of::<MeshVertexData>();
-
         let mut vertex_state_builder = VertexStateBuilder::new();
-        
         vertex_state_builder
             .set_index_format(wgpu::IndexFormat::Uint16);
 

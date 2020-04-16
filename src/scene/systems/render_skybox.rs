@@ -1,4 +1,4 @@
-use specs::{ReadStorage, System, WriteStorage};
+use specs::{ReadStorage, System};
 use crate::AssetManager;
 use crate::{
     graphics::{
@@ -34,10 +34,10 @@ impl<'a> System<'a> for RenderSkybox<'a> {
         }
 
         let camera_data = camera_data.unwrap();
-        let camera_matrix = camera_data.get_matrix();
 
         let uniforms = SkyboxUniforms {
-            view_projection: camera_matrix,
+            proj: camera_data.projection,
+            view: camera_data.view,
         };
 
         let constants_buffer = self.device.create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
@@ -55,7 +55,7 @@ impl<'a> System<'a> for RenderSkybox<'a> {
                 wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: self.frame_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
+                    load_op: wgpu::LoadOp::Load,
                     store_op: wgpu::StoreOp::Store,
                     clear_color: wgpu::Color {
                         r: 0.0,

@@ -28,10 +28,10 @@ impl RenderGraph {
         // Unlit pipeline
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
         let pipeline = unlit_pipeline_desc.pipeline(app);
-        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+        let unlit_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
         nodes.insert("unlit".to_string(), RenderGraphNode {
             pipeline,
-            simple_pipeline,
+            simple_pipeline: unlit_pipeline,
             command_buffer: None,
             dirty: true, // Nodes always dirty at first.
         });
@@ -57,6 +57,14 @@ impl RenderGraph {
             });
             cubemap_image.cubemap_bind_group = Some(bind_group);
         }
+        let skybox_pipeline: Box<dyn SimplePipeline> = Box::new(skybox_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+        nodes.insert("skybox".to_string(), RenderGraphNode {
+            pipeline,
+            simple_pipeline: skybox_pipeline,
+            command_buffer: None,
+            dirty: true, // Nodes always dirty at first.
+        });
+
 
         RenderGraph {
             nodes,
