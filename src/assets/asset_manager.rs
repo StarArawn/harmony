@@ -1,8 +1,8 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 
-use crate::graphics::{mesh::Mesh, material::{ Image, Shader, Material }};
-use crate::gui::core::Font;
+use crate::graphics::{mesh::Mesh, material::{ Image, Shader, Material, HDRImage }};
+use crate::{gui::core::Font};
 
 pub struct AssetManager {
     path: String,
@@ -10,6 +10,7 @@ pub struct AssetManager {
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
     pub(crate) images: HashMap<String, Image>,
+    pub(crate) hdr_images: HashMap<String, HDRImage>,
     pub(crate) materials: HashMap<i32, Material>,
 }
 
@@ -21,11 +22,12 @@ impl AssetManager {
             fonts: HashMap::new(),
             meshes: HashMap::new(),
             images: HashMap::new(),
+            hdr_images: HashMap::new(),
             materials: HashMap::new(),
         }
     }
 
-    pub fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue, console: &mut crate::gui::components::default::Console) {
+    pub(crate) fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue, console: &mut crate::gui::components::default::Console) {
         let mut init_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         for entry in WalkDir::new(&self.path) {
@@ -54,10 +56,15 @@ impl AssetManager {
                 self.meshes.insert(file_name.to_string(), mesh);
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded mesh: {}", file_name));
             }
-            if file_name.ends_with(".png") {
+            if file_name.ends_with(".png") || file_name.ends_with(".jpg") {
                 let image = Image::new(device, &mut init_encoder, format!("{}{}", full_file_path, file_name), file_name.to_string());
                 self.images.insert(file_name.to_string(), image);
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded image: {}", file_name));
+            }
+            if file_name.ends_with(".hdr") {
+                let image = HDRImage::new(device, &mut init_encoder, format!("{}{}", full_file_path, file_name), file_name.to_string());
+                self.hdr_images.insert(file_name.to_string(), image);
+                console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded hdr image: {}", file_name));
             }
         }
         queue.submit(&[init_encoder.finish()]);
@@ -105,6 +112,11 @@ impl AssetManager {
 
     pub fn get_images(&self) -> Vec<&Image> {
         self.images.values().collect()
+    }
+
+    pub fn get_hdr_image<T>(&self, key: T) -> &HDRImage where T: Into<String> {
+        let key = key.into();
+        self.hdr_images.get(&key).expect(&format!("Asset Error: Could not find {} hdr image asset!", &key))
     }
 
     pub fn get_font<T>(&self, key: T) -> &Font where T: Into<String> {

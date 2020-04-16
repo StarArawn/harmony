@@ -12,7 +12,7 @@ pub struct RenderMesh<'a> {
     pub(crate) device: &'a wgpu::Device,
     pub(crate) asset_manager: &'a AssetManager,
     pub(crate) encoder: &'a mut wgpu::CommandEncoder,
-    pub(crate) frame: &'a wgpu::SwapChainOutput,
+    pub(crate) frame_view: &'a wgpu::TextureView,
     pub(crate) pipeline: &'a Pipeline,
     pub(crate) constants_buffer: &'a wgpu::Buffer,
     pub(crate) global_bind_group: &'a wgpu::BindGroup,
@@ -105,7 +105,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
         let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[
                 wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.frame.view,
+                    attachment: self.frame_view,
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,

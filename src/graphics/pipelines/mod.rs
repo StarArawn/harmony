@@ -1,2 +1,7 @@
 mod unlit;
-pub use unlit::{ UnlitPipeline, UnlitPipelineDesc, UnlitUniforms };
+pub(crate) use unlit::{ UnlitPipelineDesc, UnlitUniforms };
+
+mod skybox;
+pub(crate) use skybox::{ SkyboxPipelineDesc,  SkyboxUniforms };
+
+pub(crate) mod equirectangular;

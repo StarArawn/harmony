@@ -90,6 +90,8 @@ impl Application {
         self.asset_manager.load(&self.renderer.device, &mut self.renderer.queue, &mut self.console);
         self.console.load(&self.asset_manager);
         
+        super::graphics::material::HDRImage::create_cube_map(self);
+
         self.render_graph = Some(RenderGraph::new(self));
         
         app_state.load(self);
@@ -160,7 +162,7 @@ impl Application {
                 if self.render_graph.is_some() {
                     let render_graph = self.render_graph.as_mut().unwrap();
                     if self.current_scene.is_some() {
-                        command_buffers.extend(render_graph.render(&mut self.renderer, &self.asset_manager, &mut self.current_scene.as_mut().unwrap().world, &output));
+                        command_buffers.extend(render_graph.render(&mut self.renderer, &mut self.asset_manager, &mut self.current_scene.as_mut().unwrap().world, &output));
                     }
                 }
                 

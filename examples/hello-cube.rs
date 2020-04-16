@@ -10,7 +10,7 @@ use winit::{
 
 use harmony::WinitState;
 use harmony::scene::Scene;
-use harmony::scene::components::{CameraData, Mesh, Transform, Material};
+use harmony::scene::components::{CameraData, Mesh, Transform, Material, SkyboxData};
 
 struct WindowSize {
     width: u32,
@@ -59,6 +59,10 @@ impl harmony::AppState for AppState {
             .with(Mesh::new("cube.gltf"))
             .with(Material::new(0)) // Need to be an index to the material.
             .with(Transform::new(app))
+            .build();
+        
+        scene.world.create_entity()
+            .with(SkyboxData::new("venice_sunrise_4k.hdr"))
             .build();
 
         let actual_window_size = app.get_window_actual_size();

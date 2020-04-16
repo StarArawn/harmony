@@ -1,7 +1,13 @@
 use std::collections::HashMap;
 use crate::{ AssetManager, Application };
-use super::{ Pipeline, SimplePipeline, SimplePipelineDesc };
-use super::{pipeline::PrepareResult, pipelines::UnlitPipelineDesc, Renderer};
+use super::{
+    pipeline::PrepareResult,
+    pipelines::{ UnlitPipelineDesc, SkyboxPipelineDesc},
+    Renderer,
+    Pipeline,
+    SimplePipeline,
+    SimplePipelineDesc,
+};
 
 // TODO: handle node dependencies somehow.
 pub struct RenderGraphNode {
@@ -18,16 +24,40 @@ pub struct RenderGraph {
 impl RenderGraph {
     pub fn new(app: &mut Application) -> Self {
         let mut nodes = HashMap::new();
+
+        // Unlit pipeline
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
         let pipeline = unlit_pipeline_desc.pipeline(app);
         let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
-
         nodes.insert("unlit".to_string(), RenderGraphNode {
             pipeline,
             simple_pipeline,
             command_buffer: None,
             dirty: true, // Nodes always dirty at first.
         });
+
+        // Skybox pipeline 
+        let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
+        let pipeline = skybox_pipeline_desc.pipeline(app);
+        let material_layout = &pipeline.bind_group_layouts[1];
+        for cubemap_image in app.asset_manager.hdr_images.values_mut() {
+            let bind_group = app.renderer.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &material_layout,
+                bindings: &[
+                    wgpu::Binding {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(cubemap_image.cubemap_view.as_ref().unwrap()),
+                    },
+                    wgpu::Binding {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&cubemap_image.cubemap_sampler),
+                    }
+                ],
+                label: None,
+            });
+            cubemap_image.cubemap_bind_group = Some(bind_group);
+        }
+
         RenderGraph {
             nodes,
         }
@@ -50,12 +80,12 @@ impl RenderGraph {
         self.nodes.len()
     }
 
-    pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) -> Vec<wgpu::CommandBuffer>{
+    pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &mut AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) -> Vec<wgpu::CommandBuffer>{
         let mut command_buffers = Vec::new();
         for node in self.nodes.values_mut() {
             let node: &mut RenderGraphNode = node;
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
-                let command_buffer = node.simple_pipeline.render(frame, &renderer.device, asset_manager, world, &node.pipeline);
+                let command_buffer = node.simple_pipeline.render(Some(&frame.view), &renderer.device, &node.pipeline, Some(asset_manager), Some(world));
                 command_buffers.push(command_buffer);
                 //node.dirty = false;
             }
