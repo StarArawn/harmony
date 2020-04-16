@@ -1,8 +1,11 @@
-mod mesh;
+pub(crate) mod mesh;
 pub use mesh::Mesh;
 
-mod transform;
+pub(crate) mod transform;
 pub use transform::Transform;
 
-mod camera_data;
+pub(crate) mod camera_data;
 pub use camera_data::CameraData;
+
+pub(crate) mod material;
+pub use material::Material;

@@ -29,7 +29,6 @@ impl Image {
         });
 
         let image_bytes: Vec<u8> = img.into_raw();
-        dbg!(&image_bytes.len());
         let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
 
         encoder.copy_buffer_to_texture(

@@ -9,6 +9,6 @@ mod render_graph;
 pub use render_graph::RenderGraph;
 
 mod pipeline;
-pub use pipeline::{ Pipeline, SimplePipeline, SimplePipelineDesc };
+pub use pipeline::{ BindGroupWithData, Pipeline, SimplePipeline, SimplePipelineDesc };
 
 pub mod pipelines;

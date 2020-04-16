@@ -2,6 +2,8 @@ use ultraviolet::{ Vec2, Vec3, Vec4 };
 use bytemuck::{ Pod, Zeroable};
 use std::path::Path;
 use std::ffi::OsStr;
+use crate::{graphics::material::Material};
+use super::material::UnlitMaterial;
 
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -27,8 +29,8 @@ pub struct SubMesh {
     pub(crate) vertex_buffer: wgpu::Buffer,
     pub(crate) index_buffer: wgpu::Buffer,
 
-    // TODO: Move materials somewhere else..
-    pub(crate) main_texture: Option<String>,
+    // Material index is stored here.
+    pub(crate) material_index: i32,
 }
 
 pub struct Mesh {
@@ -37,10 +39,11 @@ pub struct Mesh {
 
 impl Mesh {
     /// Imports glTF 2.0
-    pub fn new<T>(device: &wgpu::Device, path: T) -> Mesh
+    pub fn new<T>(device: &wgpu::Device, path: T, material_start_index: i32) -> (Mesh, Vec<Material>)
     where
         T: Into<String>
     {
+        let mut materials = Vec::new();
         let cloned_path = path.into().clone();
         let (document, data, _) = gltf::import(cloned_path).expect("Loaded the gltf file successfully!");
         let get_buffer_data = |buffer: gltf::Buffer<'_>| data.get(buffer.index()).map(|x| &*x.0);
@@ -59,8 +62,6 @@ impl Mesh {
         let images: Vec<gltf::Image<'_>> = document.images().collect();
 
         for primitive in primitives {
-            let mut main_texture = None;
-
             let reader = primitive.reader(get_buffer_data);
             let positions: Vec<_> = reader
                 .read_positions()
@@ -102,9 +103,14 @@ impl Mesh {
                 panic!("model doesn't have indices");
             };
 
-            let material: gltf::Material = primitive.material();
-            
-            let info = material.pbr_metallic_roughness().base_color_texture();
+            let gltf_material: gltf::Material<'_> = primitive.material();
+            let pbr = gltf_material.pbr_metallic_roughness();
+
+            let color_factor = pbr.base_color_factor();
+            let mut main_texture = None;
+            let color = Vec4::new(color_factor[0], color_factor[1], color_factor[2], color_factor[3]);
+
+            let info = pbr.base_color_texture();
             if info.is_some() {
                 let info = info.unwrap();
                 let tex = info.texture();
@@ -114,28 +120,26 @@ impl Mesh {
                     let source = image.source();
                     match source {
                         gltf::image::Source::Uri { uri, .. } => {
-                            main_texture = Some(Path::new(&uri)
+                            let main_texture_file_name = Some(Path::new(&uri)
                                 .file_name()
                                 .and_then(OsStr::to_str).unwrap().to_string());
+                            if main_texture_file_name.is_some() {
+                                main_texture = Some(main_texture_file_name.unwrap());
+                            }
                         },
                         _ => (),
                     }
                 }
             }
-    
-            // let mut mesh = Mesh { indices, vertices };
+
+            let material_index = material_start_index + materials.len() as i32;
+            let material = UnlitMaterial::new(main_texture.unwrap_or("white.png".to_string()), color, material_index);
+            materials.push(Material::Unlit(material));
+
+            // TODO: Calculate these if they don't exist.
             // mesh.calculate_tangents();
-    
-            // let mesh_data = ParsedMesh {
-            //     mesh,
-            //     mode: primitive.mode(),
-            //     material: primitive.material().index(),
-            // };
-            // meshes.push(mesh_data);
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
-
-            dbg!(primitive_topology);
 
             let vertex_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&vertices), wgpu::BufferUsage::VERTEX);
             let index_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
@@ -149,13 +153,16 @@ impl Mesh {
                 material_id: primitive.material().index(),
                 vertex_buffer,
                 index_buffer,
-                main_texture,
+                material_index,
             });
         }
 
-        Mesh {
-            sub_meshes
-        }
+        (
+            Mesh {
+                sub_meshes
+            },
+            materials
+        )
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {

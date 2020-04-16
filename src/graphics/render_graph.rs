@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::{ AssetManager, Application };
 use super::{ Pipeline, SimplePipeline, SimplePipelineDesc };
 use super::{pipeline::PrepareResult, pipelines::UnlitPipelineDesc, Renderer};
@@ -11,16 +12,17 @@ pub struct RenderGraphNode {
 }
 
 pub struct RenderGraph {
-    nodes: Vec<RenderGraphNode>
+    nodes: HashMap<String, RenderGraphNode>,
 }
 
 impl RenderGraph {
     pub fn new(app: &mut Application) -> Self {
-        let mut nodes = Vec::new();
+        let mut nodes = HashMap::new();
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
         let pipeline = unlit_pipeline_desc.pipeline(app);
-        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.asset_manager, &app.renderer.device, &pipeline.bind_group_layout));
-        nodes.push(RenderGraphNode {
+        let simple_pipeline: Box<dyn SimplePipeline> = Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+
+        nodes.insert("unlit".to_string(), RenderGraphNode {
             pipeline,
             simple_pipeline,
             command_buffer: None,
@@ -29,6 +31,11 @@ impl RenderGraph {
         RenderGraph {
             nodes,
         }
+    }
+
+    pub fn get<T>(&self, key: T) -> &RenderGraphNode where T: Into<String> {
+        let key = &key.into();
+        self.nodes.get(key).unwrap_or_else(|| panic!(format!("Couldn't find render graph node called: {}", key)))
     }
 
     pub fn add<T: SimplePipeline + Sized + 'static>(&mut self, _pipeline: T) {
@@ -45,7 +52,7 @@ impl RenderGraph {
 
     pub fn render(&mut self, renderer: &mut Renderer, asset_manager: &AssetManager, world: &mut specs::World, frame: &wgpu::SwapChainOutput) -> Vec<wgpu::CommandBuffer>{
         let mut command_buffers = Vec::new();
-        for node in self.nodes.iter_mut() {
+        for node in self.nodes.values_mut() {
             let node: &mut RenderGraphNode = node;
             if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
                 let command_buffer = node.simple_pipeline.render(frame, &renderer.device, asset_manager, world, &node.pipeline);

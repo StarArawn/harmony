@@ -1,16 +1,22 @@
 use crate::{AssetManager, Application};
-use super::material::Shader;
+use super::material::{Shader};
 
 #[derive(Debug)]
 pub struct Pipeline {
     pub(crate) pipeline: wgpu::RenderPipeline,
-    pub(crate) bind_group_layout: wgpu::BindGroupLayout,
+    pub(crate) bind_group_layouts: Vec<wgpu::BindGroupLayout>,
 }
 
 #[derive(PartialEq)]
 pub enum PrepareResult {
     Record,
     Reuse,
+}
+
+#[derive(Debug)]
+pub struct BindGroupWithData {
+    pub(crate) uniform_buf: wgpu::Buffer,
+    pub(crate) bind_group: wgpu::BindGroup,
 }
 
 pub trait SimplePipeline : std::fmt::Debug + Send + Sync + 'static {
@@ -38,7 +44,7 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
             entry_point: "main",
         });
 
-        let (bind_group_layout, layout) = self.create_layout(mut_device);
+        let (bind_group_layouts, layout) = self.create_layout(mut_device);
         let rasterization_state = self.rasterization_state_desc();
         let primitive_topology = self.primitive_topology();
         let color_states = self.color_states_desc(&app.renderer.sc_desc);
@@ -76,14 +82,14 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
         });
         Pipeline {
             pipeline,
-            bind_group_layout,
+            bind_group_layouts,
         }
     }
 
     // TODO: Support other types of shaders like geometry.
     // Also support having only a vertex shader.
     fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
-    fn create_layout(&self, _device: &mut wgpu::Device) -> (wgpu::BindGroupLayout, wgpu::PipelineLayout);
+    fn create_layout(&self, _device: &mut wgpu::Device) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout);
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor;
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology;
     fn color_states_desc(&self, sc_desc: &wgpu::SwapChainDescriptor) -> Vec<wgpu::ColorStateDescriptor>;
@@ -99,7 +105,7 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
         false
     }
 
-    fn build(self, asset_manager: &AssetManager, device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout) -> Self::Pipeline;
+    fn build(self, device: &wgpu::Device, bind_group_layouts: &Vec<wgpu::BindGroupLayout>) -> Self::Pipeline;
 }
 
 pub struct VertexStateBuilder {

@@ -89,9 +89,24 @@ impl Application {
     pub fn load<T>(&mut self, app_state: &mut T) where T: AppState { 
         self.asset_manager.load(&self.renderer.device, &mut self.renderer.queue, &mut self.console);
         self.console.load(&self.asset_manager);
+        
+        self.render_graph = Some(RenderGraph::new(self));
+        
         app_state.load(self);
 
-        self.render_graph = Some(RenderGraph::new(self));
+        // Once materials have been created we need to create more info for them.
+        let materials: Vec<&mut super::graphics::material::Material> = self.asset_manager.materials.values_mut().collect();
+        {
+            let images = &self.asset_manager.images;
+            for material in materials {
+                match material {
+                    super::graphics::material::Material::Unlit(unlit_material) => {
+                        let local_bind_group_layout = &self.render_graph.as_ref().unwrap().get("unlit").pipeline.bind_group_layouts[2];
+                        unlit_material.create_bind_group(images, &self.renderer.device, local_bind_group_layout);
+                    }
+                }
+            }
+        }
 
         let size = self.renderer.window.inner_size();
         

@@ -10,7 +10,7 @@ use winit::{
 
 use harmony::WinitState;
 use harmony::scene::Scene;
-use harmony::scene::components::{CameraData, Mesh};
+use harmony::scene::components::{CameraData, Mesh, Transform, Material};
 
 struct WindowSize {
     width: u32,
@@ -32,20 +32,42 @@ impl AppState {
     }
 }
 
+struct RotateSystem;
+
+impl<'a> System<'a> for RotateSystem {
+    type SystemData = (
+        Read<'a, harmony::scene::resources::DeltaTime>,
+        WriteStorage<'a, harmony::scene::components::Transform>
+    );
+
+    fn run(&mut self, (delta_time, mut transforms): Self::SystemData) {
+        for transform in (&mut transforms).join() {
+            // Rust analyzer doesn't really always type stuff right
+            let transform: &mut Transform = transform;
+            transform.rotation.x += 5.0 * delta_time.0;
+        }
+    }
+}
+
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        let mut scene = Scene::new(None, None);
-        scene.world.create_entity().with(Mesh {
-            mesh_name: "cube.gltf".into(),
-        }).build();
+        let dispatch_builder = DispatcherBuilder::default()
+            .with(RotateSystem, "RotateSystem", &[]);
+
+        let mut scene = Scene::new(None, Some(dispatch_builder));
+        scene.world.create_entity()
+            .with(Mesh::new("cube.gltf"))
+            .with(Material::new(0)) // Need to be an index to the material.
+            .with(Transform::new(app))
+            .build();
 
         let actual_window_size = app.get_window_actual_size();
 
         // We can't render anything without a camera. Add one here.
         // Thankfully we have a method to help.
-        let mut camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.0, 10.0);
+        let mut camera_data = CameraData::new_perspective(45.0, actual_window_size.width / actual_window_size.height, 0.01, 10.0);
         camera_data.update_view(
-            Vec3::new(1.5, -5.0, 3.0),
+            Vec3::new(0.0, -5.0, 0.0),
             Vec3::new(0.0, 0.0, 0.0),
             Vec3::new(0.0, 0.0, 1.0),
         );

@@ -1,7 +1,7 @@
 use walkdir::WalkDir;
 use std::collections::HashMap;
 
-use crate::graphics::{mesh::Mesh, material::{ Image, Shader }};
+use crate::graphics::{mesh::Mesh, material::{ Image, Shader, Material }};
 use crate::gui::core::Font;
 
 pub struct AssetManager {
@@ -9,7 +9,8 @@ pub struct AssetManager {
     shaders: HashMap<String, Shader>,
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
-    images: HashMap<String, Image>,
+    pub(crate) images: HashMap<String, Image>,
+    pub(crate) materials: HashMap<i32, Material>,
 }
 
 impl AssetManager {
@@ -20,6 +21,7 @@ impl AssetManager {
             fonts: HashMap::new(),
             meshes: HashMap::new(),
             images: HashMap::new(),
+            materials: HashMap::new(),
         }
     }
 
@@ -42,7 +44,13 @@ impl AssetManager {
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded font: {}", file_name));
             }
             if file_name.ends_with(".gltf") {
-                let mesh= Mesh::new(device, format!("{}{}", full_file_path, file_name));
+                let current_index = self.materials.len() as i32;
+                let (mesh, materials)= Mesh::new(device, format!("{}{}", full_file_path, file_name), current_index);
+                let mut index = current_index;
+                for material in materials {
+                    self.materials.insert(index, material);
+                    index += 1;
+                }
                 self.meshes.insert(file_name.to_string(), mesh);
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded mesh: {}", file_name));
             }
@@ -52,7 +60,6 @@ impl AssetManager {
                 console.info(crate::gui::components::default::ModuleType::Asset, format!("Loaded image: {}", file_name));
             }
         }
-
         queue.submit(&[init_encoder.finish()]);
     }
 
@@ -66,9 +73,34 @@ impl AssetManager {
         self.meshes.get(&key).expect(&format!("Asset Error: Could not find {} mesh asset!", &key))
     }
 
+    pub fn get_meshes(&self) -> Vec<&Mesh> {
+        self.meshes.values().collect()
+    }
+
+    pub fn get_meshes_mut(&mut self) -> Vec<&mut Mesh> {
+        self.meshes.values_mut().collect()
+    }
+
+    pub fn get_material(&self, index: i32) -> &Material {
+        self.materials.get(&index).expect(&format!("Asset Error: Could not find material @index {} asset!", index))
+    }
+
+    pub fn get_materials_mut(&mut self) -> Vec<&mut Material> {
+        self.materials.values_mut().collect()
+    }
+
+    pub fn get_materials(&self) -> Vec<&Material> {
+        self.materials.values().collect()
+    }
+
     pub fn get_image<T>(&self, key: T) -> &Image where T: Into<String> {
         let key = key.into();
         self.images.get(&key).expect(&format!("Asset Error: Could not find {} image asset!", &key))
+    }
+
+    pub fn get_image_option<T>(&self, key: T) -> Option<&Image> where T: Into<String> {
+        let key = key.into();
+        self.images.get(&key)
     }
 
     pub fn get_images(&self) -> Vec<&Image> {
