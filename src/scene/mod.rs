@@ -1,7 +1,7 @@
 pub mod components;
 pub mod entities;
-pub mod systems;
 pub mod resources;
+pub mod systems;
 
 mod scene;
 pub use scene::Scene;

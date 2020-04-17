@@ -1,12 +1,12 @@
 // This file uses wgpu to render our different renderable objects. Note they should be collected first.
 use nalgebra_glm::Mat4;
-use std::mem;
 use std::convert::TryInto;
-use zerocopy::{AsBytes};
+use std::mem;
+use zerocopy::AsBytes;
 
-use crate::AssetManager;
 use crate::gui::core::Rectangle;
 use crate::gui::renderables::Quad;
+use crate::AssetManager;
 
 pub struct QuadRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -42,7 +42,6 @@ impl Default for Uniforms {
     }
 }
 
-
 #[repr(C)]
 #[derive(AsBytes, Clone, Copy)]
 pub struct Vertex {
@@ -66,26 +65,26 @@ const QUAD_VERTS: [Vertex; 4] = [
     },
 ];
 
-
 impl QuadRenderer {
     pub fn new(
         asset_mananger: &AssetManager,
         device: &mut wgpu::Device,
         format: wgpu::TextureFormat,
     ) -> Self {
-        let constant_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                }],
-                label: None,
-            });
+        let constant_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            bindings: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX,
+                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+            }],
+            label: None,
+        });
 
-        let constants_buffer = device
-            .create_buffer_with_data([Uniforms::default()].to_vec().as_bytes(), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
-        
+        let constants_buffer = device.create_buffer_with_data(
+            [Uniforms::default()].to_vec().as_bytes(),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+
         let constants = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &constant_layout,
             bindings: &[wgpu::Binding {
@@ -98,49 +97,47 @@ impl QuadRenderer {
             label: None,
         });
 
-        let layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                bind_group_layouts: &[&constant_layout],
-            });
+        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            bind_group_layouts: &[&constant_layout],
+        });
 
         let shader = asset_mananger.get_shader(String::from("gui_quad.shader"));
 
-        let pipeline =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                layout: &layout,
-                vertex_stage: wgpu::ProgrammableStageDescriptor {
-                    module: &shader.vertex,
-                    entry_point: "main",
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            layout: &layout,
+            vertex_stage: wgpu::ProgrammableStageDescriptor {
+                module: &shader.vertex,
+                entry_point: "main",
+            },
+            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+                module: &shader.fragment,
+                entry_point: "main",
+            }),
+            rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+                front_face: wgpu::FrontFace::Cw,
+                cull_mode: wgpu::CullMode::None,
+                depth_bias: 0,
+                depth_bias_slope_scale: 0.0,
+                depth_bias_clamp: 0.0,
+            }),
+            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+            color_states: &[wgpu::ColorStateDescriptor {
+                format,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
                 },
-                fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                    module: &shader.fragment,
-                    entry_point: "main",
-                }),
-                rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                    front_face: wgpu::FrontFace::Cw,
-                    cull_mode: wgpu::CullMode::None,
-                    depth_bias: 0,
-                    depth_bias_slope_scale: 0.0,
-                    depth_bias_clamp: 0.0,
-                }),
-                primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-                color_states: &[wgpu::ColorStateDescriptor {
-                    format,
-                    color_blend: wgpu::BlendDescriptor {
-                        src_factor: wgpu::BlendFactor::SrcAlpha,
-                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                        operation: wgpu::BlendOperation::Add,
-                    },
-                    alpha_blend: wgpu::BlendDescriptor {
-                        src_factor: wgpu::BlendFactor::One,
-                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                        operation: wgpu::BlendOperation::Add,
-                    },
-                    write_mask: wgpu::ColorWrite::ALL,
-                }],
-                depth_stencil_state: None,
-                vertex_state: wgpu::VertexStateDescriptor {
-                    index_format: wgpu::IndexFormat::Uint16,
+                alpha_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                write_mask: wgpu::ColorWrite::ALL,
+            }],
+            depth_stencil_state: None,
+            vertex_state: wgpu::VertexStateDescriptor {
+                index_format: wgpu::IndexFormat::Uint16,
                 vertex_buffers: &[
                     wgpu::VertexBufferDescriptor {
                         stride: mem::size_of::<Vertex>() as u64,
@@ -188,15 +185,17 @@ impl QuadRenderer {
                         ],
                     },
                 ],
-                },
-                sample_count: 1,
-                sample_mask: !0,
-                alpha_to_coverage_enabled: false,
-            });
+            },
+            sample_count: 1,
+            sample_mask: !0,
+            alpha_to_coverage_enabled: false,
+        });
 
-        let vertices = device.create_buffer_with_data(&QUAD_VERTS.as_bytes(), wgpu::BufferUsage::VERTEX);
+        let vertices =
+            device.create_buffer_with_data(&QUAD_VERTS.as_bytes(), wgpu::BufferUsage::VERTEX);
 
-        let indices = device.create_buffer_with_data(&QUAD_INDICES.as_bytes(), wgpu::BufferUsage::INDEX);
+        let indices =
+            device.create_buffer_with_data(&QUAD_INDICES.as_bytes(), wgpu::BufferUsage::INDEX);
 
         let instances = device.create_buffer(&wgpu::BufferDescriptor {
             size: mem::size_of::<Quad>() as u64 * Quad::MAX as u64,
@@ -226,7 +225,8 @@ impl QuadRenderer {
     ) {
         let uniforms = Uniforms::new(transformation, scale);
 
-        let constants_buffer = device.create_buffer_with_data(&[uniforms].as_bytes(), wgpu::BufferUsage::COPY_SRC);
+        let constants_buffer =
+            device.create_buffer_with_data(&[uniforms].as_bytes(), wgpu::BufferUsage::COPY_SRC);
 
         encoder.copy_buffer_to_buffer(
             &constants_buffer,
@@ -243,7 +243,10 @@ impl QuadRenderer {
             let end = (i + Quad::MAX).min(total);
             let amount = end - i;
 
-            let instance_buffer = device.create_buffer_with_data(&instances[i..end].as_bytes(), wgpu::BufferUsage::COPY_SRC);
+            let instance_buffer = device.create_buffer_with_data(
+                &instances[i..end].as_bytes(),
+                wgpu::BufferUsage::COPY_SRC,
+            );
 
             encoder.copy_buffer_to_buffer(
                 &instance_buffer,
@@ -254,31 +257,28 @@ impl QuadRenderer {
             );
 
             {
-                let mut render_pass =
-                    encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[
-                            wgpu::RenderPassColorAttachmentDescriptor {
-                                attachment: target,
-                                resolve_target: None,
-                                load_op: wgpu::LoadOp::Load,
-                                store_op: wgpu::StoreOp::Store,
-                                clear_color: wgpu::Color {
-                                    r: 0.0,
-                                    g: 0.0,
-                                    b: 0.0,
-                                    a: 0.0,
-                                },
-                            },
-                        ],
-                        depth_stencil_attachment: None,
-                    });
-                
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: target,
+                        resolve_target: None,
+                        load_op: wgpu::LoadOp::Load,
+                        store_op: wgpu::StoreOp::Store,
+                        clear_color: wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 0.0,
+                        },
+                    }],
+                    depth_stencil_attachment: None,
+                });
+
                 render_pass.set_pipeline(&self.pipeline);
                 render_pass.set_bind_group(0, &self.constants, &[]);
                 render_pass.set_index_buffer(&self.indices, 0, 0);
                 render_pass.set_vertex_buffer(0, &self.vertices, 0, 0);
                 render_pass.set_vertex_buffer(1, &self.instances, 0, 0);
-                
+
                 render_pass.set_scissor_rect(
                     bounds.x as u32,
                     bounds.y as u32,
@@ -287,11 +287,7 @@ impl QuadRenderer {
                     bounds.height as u32 + 1,
                 );
 
-                render_pass.draw_indexed(
-                    0..QUAD_INDICES.len() as u32,
-                    0,
-                    0..amount as u32,
-                );
+                render_pass.draw_indexed(0..QUAD_INDICES.len() as u32, 0, 0..amount as u32);
             }
 
             i += Quad::MAX;

@@ -2,8 +2,8 @@ use nalgebra_glm::Vec2;
 use std::any::Any;
 
 use crate::gui::components::Component;
+use crate::gui::core::{Color, Rectangle};
 use crate::gui::renderables::Renderable;
-use crate::gui::core::{ Color, Rectangle };
 
 pub struct Text {
     pub font: String,
@@ -14,8 +14,7 @@ pub struct Text {
 }
 
 impl Component for Text {
-    fn update(&mut self, _delta_time: f32) {
-    }
+    fn update(&mut self, _delta_time: f32) {}
 
     fn draw(&self, parent_bounds: Rectangle) -> Renderable {
         Renderable::Text(crate::gui::renderables::Text {

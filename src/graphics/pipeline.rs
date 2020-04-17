@@ -1,5 +1,5 @@
-use crate::{AssetManager, Application};
-use super::material::{Shader};
+use super::material::Shader;
+use crate::{Application, AssetManager};
 
 #[derive(Debug)]
 pub struct Pipeline {
@@ -19,16 +19,27 @@ pub struct BindGroupWithData {
     pub(crate) bind_group: wgpu::BindGroup,
 }
 
-pub trait SimplePipeline : std::fmt::Debug + Send + Sync + 'static {
+pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
     fn prepare(&mut self) -> PrepareResult;
 
-    fn render(&mut self, frame: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, asset_manager: Option<&mut AssetManager>, world: Option<&mut specs::World>, depth: Option<&wgpu::TextureView>) -> wgpu::CommandBuffer;
+    fn render(
+        &mut self,
+        frame: Option<&wgpu::TextureView>,
+        device: &wgpu::Device,
+        pipeline: &Pipeline,
+        asset_manager: Option<&mut AssetManager>,
+        world: Option<&mut specs::World>,
+        depth: Option<&wgpu::TextureView>,
+    ) -> wgpu::CommandBuffer;
 }
 
-pub trait SimplePipelineDesc : std::fmt::Debug {
+pub trait SimplePipelineDesc: std::fmt::Debug {
     type Pipeline: SimplePipeline;
 
-    fn builder(self) -> Self where Self: Sized + Default {
+    fn builder(self) -> Self
+    where
+        Self: Sized + Default,
+    {
         self
     }
 
@@ -54,13 +65,15 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
         let sample_mask = self.sampler_mask();
         let alpha_to_coverage_enabled = self.alpha_to_coverage_enabled();
 
-        let vertex_buffers: Vec<wgpu::VertexBufferDescriptor<'_>> = vertex_state_builder.buffer_desc.iter().map(|desc| {
-            wgpu::VertexBufferDescriptor {
+        let vertex_buffers: Vec<wgpu::VertexBufferDescriptor<'_>> = vertex_state_builder
+            .buffer_desc
+            .iter()
+            .map(|desc| wgpu::VertexBufferDescriptor {
                 stride: desc.stride,
                 step_mode: desc.step_mode,
-                attributes: &desc.attributes
-            }
-        }).collect();
+                attributes: &desc.attributes,
+            })
+            .collect();
 
         let vertex_state = wgpu::VertexStateDescriptor {
             index_format: vertex_state_builder.index_format,
@@ -89,10 +102,16 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
     // TODO: Support other types of shaders like geometry.
     // Also support having only a vertex shader.
     fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
-    fn create_layout(&self, _device: &mut wgpu::Device) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout);
+    fn create_layout(
+        &self,
+        _device: &mut wgpu::Device,
+    ) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout);
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor;
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology;
-    fn color_states_desc(&self, sc_desc: &wgpu::SwapChainDescriptor) -> Vec<wgpu::ColorStateDescriptor>;
+    fn color_states_desc(
+        &self,
+        sc_desc: &wgpu::SwapChainDescriptor,
+    ) -> Vec<wgpu::ColorStateDescriptor>;
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor>;
     fn vertex_state_desc(&self) -> VertexStateBuilder;
     fn create_samplers(&self, _device: &mut wgpu::Device) -> u32 {
@@ -105,7 +124,11 @@ pub trait SimplePipelineDesc : std::fmt::Debug {
         false
     }
 
-    fn build(self, device: &wgpu::Device, bind_group_layouts: &Vec<wgpu::BindGroupLayout>) -> Self::Pipeline;
+    fn build(
+        self,
+        device: &wgpu::Device,
+        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+    ) -> Self::Pipeline;
 }
 
 pub struct VertexStateBuilder {
@@ -114,7 +137,7 @@ pub struct VertexStateBuilder {
 }
 
 impl VertexStateBuilder {
-    pub fn new() ->  Self {
+    pub fn new() -> Self {
         Self {
             index_format: wgpu::IndexFormat::Uint32,
             buffer_desc: Vec::new(),
@@ -130,7 +153,7 @@ impl VertexStateBuilder {
         &'a mut self,
         stride: wgpu::BufferAddress,
         step_mode: wgpu::InputStepMode,
-        attributes: Vec<wgpu::VertexAttributeDescriptor>
+        attributes: Vec<wgpu::VertexAttributeDescriptor>,
     ) -> &'a mut Self {
         self.buffer_desc.push(VertexBufferDescriptor {
             stride,

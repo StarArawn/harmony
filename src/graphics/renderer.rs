@@ -13,7 +13,11 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(window: winit::window::Window, size: winit::dpi::PhysicalSize<u32>, surface: wgpu::Surface) -> Self {
+    pub async fn new(
+        window: winit::window::Window,
+        size: winit::dpi::PhysicalSize<u32>,
+        surface: wgpu::Surface,
+    ) -> Self {
         let adapter = wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::Default,
@@ -23,15 +27,16 @@ impl Renderer {
         )
         .await
         .unwrap();
-    
-        let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            extensions: wgpu::Extensions {
-                anisotropic_filtering: false,
-            },
-            limits: wgpu::Limits::default(),
-        })
-        .await;
-    
+
+        let (device, queue) = adapter
+            .request_device(&wgpu::DeviceDescriptor {
+                extensions: wgpu::Extensions {
+                    anisotropic_filtering: false,
+                },
+                limits: wgpu::Limits::default(),
+            })
+            .await;
+
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -54,7 +59,6 @@ impl Renderer {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             label: None,
         });
-
 
         Self {
             surface,

@@ -1,4 +1,4 @@
-use zerocopy::{AsBytes};
+use zerocopy::AsBytes;
 
 #[repr(C)]
 #[derive(Debug, AsBytes, Clone, Copy)]

@@ -1,9 +1,7 @@
-use nalgebra_glm::{
-    Vec2
-};
 use crate::gui::components::Component;
-use crate::gui::core::{ Rectangle };
+use crate::gui::core::Rectangle;
 use crate::gui::renderables::Renderable;
+use nalgebra_glm::Vec2;
 use std::any::Any;
 
 pub struct AnimationBuilder {
@@ -24,8 +22,11 @@ impl AnimationBuilder {
             position: None,
         }
     }
-    
-    pub fn set_easing_function<'a, T>(&'a mut self, function: T) -> &'a mut Self where T: Fn(f32) -> f32 + Sized + 'static {
+
+    pub fn set_easing_function<'a, T>(&'a mut self, function: T) -> &'a mut Self
+    where
+        T: Fn(f32) -> f32 + Sized + 'static,
+    {
         self.easing_function = Some(Box::new(function));
         self
     }
@@ -45,7 +46,10 @@ impl AnimationBuilder {
         self
     }
 
-    pub fn with_child<'a, T>(&'a mut self, child: T) -> &'a mut Self where T: Component + Sized + 'static {
+    pub fn with_child<'a, T>(&'a mut self, child: T) -> &'a mut Self
+    where
+        T: Component + Sized + 'static,
+    {
         self.children.push(Box::new(child));
         self
     }
@@ -53,7 +57,9 @@ impl AnimationBuilder {
     pub fn build(self) -> Animation {
         Animation {
             children: self.children,
-            easing_function: self.easing_function.unwrap_or(Box::new(crate::gui::animation::EasingFunctions::linear)),
+            easing_function: self
+                .easing_function
+                .unwrap_or(Box::new(crate::gui::animation::EasingFunctions::linear)),
             start_time: std::time::Instant::now(),
             duration: self.duration,
             position: self.position.unwrap_or(Vec2::new(0.0, 0.0)),
@@ -82,7 +88,9 @@ impl Animation {
 impl Component for Animation {
     fn update(&mut self, _delta_time: f32) {
         let mut time = self.start_time.elapsed().as_secs_f32() / self.duration;
-        if time > 1.0 { time = 1.0; }
+        if time > 1.0 {
+            time = 1.0;
+        }
 
         time = self.easing_function.as_ref()(time);
         let new_position = self.position.lerp(&self.destination, time);
@@ -93,26 +101,28 @@ impl Component for Animation {
         // Compute layout
         // TODO: Move this out of here.
         //stretch.compute_layout(node, Size::undefined()).unwrap();
-        
-        let bounds =Rectangle {
+
+        let bounds = Rectangle {
             x: self.position.x,
             y: self.position.y,
             width: 1.0,
             height: 1.0,
         };
 
-        let renderables = self.children.iter().map(|x| {
-            x.as_ref().draw(bounds)
-        }).collect();
+        let renderables = self
+            .children
+            .iter()
+            .map(|x| x.as_ref().draw(bounds))
+            .collect();
 
         let group = Renderable::Group {
             bounds,
             renderables,
         };
-        
+
         group
     }
-    
+
     fn as_any(&mut self) -> &mut dyn Any {
         self
     }

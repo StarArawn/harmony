@@ -1,4 +1,4 @@
-use specs::{ Component, DenseVecStorage };
+use specs::{Component, DenseVecStorage};
 
 #[derive(Default)]
 pub struct Material {
@@ -10,7 +10,7 @@ impl Material {
     /// Mesh name is used to get the correct materials for the mesh.
     pub fn new(material_index: i32) -> Self {
         Self {
-           index: material_index,
+            index: material_index,
         }
     }
 }

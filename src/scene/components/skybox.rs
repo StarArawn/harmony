@@ -1,4 +1,4 @@
-use specs::{ Component, DenseVecStorage };
+use specs::{Component, DenseVecStorage};
 
 #[derive(Default)]
 pub struct SkyboxData {
@@ -8,10 +8,11 @@ pub struct SkyboxData {
 
 impl SkyboxData {
     /// Mesh name is used to get the correct materials for the mesh.
-    pub fn new<T>(name: T) -> Self where T: Into<String>{
-        Self {
-           name: name.into(),
-        }
+    pub fn new<T>(name: T) -> Self
+    where
+        T: Into<String>,
+    {
+        Self { name: name.into() }
     }
 }
 

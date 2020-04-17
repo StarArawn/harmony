@@ -1,9 +1,9 @@
-use nalgebra_glm::{ Vec2, Vec3, Vec4 };
-use bytemuck::{ Pod, Zeroable};
-use std::path::Path;
-use std::ffi::OsStr;
-use crate::{graphics::material::Material};
 use super::material::UnlitMaterial;
+use crate::graphics::material::Material;
+use bytemuck::{Pod, Zeroable};
+use nalgebra_glm::{Vec2, Vec3, Vec4};
+use std::ffi::OsStr;
+use std::path::Path;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -16,8 +16,8 @@ pub struct MeshVertexData {
 
 // We implement these traits so our vertex struct can be converted into bytes.
 // TODO: Go across the entire project and replace zerocopy with bytemuck.
-unsafe impl Zeroable for MeshVertexData { }
-unsafe impl Pod for MeshVertexData { }
+unsafe impl Zeroable for MeshVertexData {}
+unsafe impl Pod for MeshVertexData {}
 
 impl Default for MeshVertexData {
     fn default() -> Self {
@@ -25,7 +25,7 @@ impl Default for MeshVertexData {
             position: Vec3::zeros(),
             normal: Vec3::zeros(),
             uv: Vec2::zeros(),
-            tangent: Vec4::zeros(), 
+            tangent: Vec4::zeros(),
         }
     }
 }
@@ -50,15 +50,20 @@ pub struct Mesh {
 
 impl Mesh {
     /// Imports glTF 2.0
-    pub fn new<T>(device: &wgpu::Device, path: T, material_start_index: i32) -> (Mesh, Vec<Material>)
+    pub fn new<T>(
+        device: &wgpu::Device,
+        path: T,
+        material_start_index: i32,
+    ) -> (Mesh, Vec<Material>)
     where
-        T: Into<String>
+        T: Into<String>,
     {
         let mut materials = Vec::new();
         let cloned_path = path.into().clone();
-        let (document, data, _) = gltf::import(cloned_path).expect("Loaded the gltf file successfully!");
+        let (document, data, _) =
+            gltf::import(cloned_path).expect("Loaded the gltf file successfully!");
         let get_buffer_data = |buffer: gltf::Buffer<'_>| data.get(buffer.index()).map(|x| &*x.0);
-        
+
         // let mut meshes = Vec::new();
         let meshes = document.meshes().collect::<Vec<gltf::Mesh<'_>>>();
         if meshes.len() > 1 {
@@ -77,7 +82,8 @@ impl Mesh {
             let positions: Vec<_> = reader
                 .read_positions()
                 .map(|iter| iter.collect())
-                .ok_or(format!("mesh primitive is missing positions")).unwrap();
+                .ok_or(format!("mesh primitive is missing positions"))
+                .unwrap();
 
             let mut vertices: Vec<MeshVertexData> = positions
                 .iter()
@@ -86,7 +92,7 @@ impl Mesh {
                     ..MeshVertexData::default()
                 })
                 .collect();
-    
+
             if let Some(normals) = reader.read_normals() {
                 for (i, normal) in normals.enumerate() {
                     vertices[i].normal = Vec3::from(normal.clone());
@@ -106,9 +112,8 @@ impl Mesh {
             } else {
                 // TODO: Calculate tangents if we don't have them.
             }
-    
-            let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices()
-            {
+
+            let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
                 index_enum.into_u32().collect()
             } else {
                 panic!("model doesn't have indices");
@@ -119,7 +124,12 @@ impl Mesh {
 
             let color_factor = pbr.base_color_factor();
             let mut main_texture = None;
-            let color = Vec4::new(color_factor[0], color_factor[1], color_factor[2], color_factor[3]);
+            let color = Vec4::new(
+                color_factor[0],
+                color_factor[1],
+                color_factor[2],
+                color_factor[3],
+            );
 
             let info = pbr.base_color_texture();
             if info.is_some() {
@@ -131,20 +141,28 @@ impl Mesh {
                     let source = image.source();
                     match source {
                         gltf::image::Source::Uri { uri, .. } => {
-                            let main_texture_file_name = Some(Path::new(&uri)
-                                .file_name()
-                                .and_then(OsStr::to_str).unwrap().to_string());
+                            let main_texture_file_name = Some(
+                                Path::new(&uri)
+                                    .file_name()
+                                    .and_then(OsStr::to_str)
+                                    .unwrap()
+                                    .to_string(),
+                            );
                             if main_texture_file_name.is_some() {
                                 main_texture = Some(main_texture_file_name.unwrap());
                             }
-                        },
+                        }
                         _ => (),
                     }
                 }
             }
 
             let material_index = material_start_index + materials.len() as i32;
-            let material = UnlitMaterial::new(main_texture.unwrap_or("white.png".to_string()), color, material_index);
+            let material = UnlitMaterial::new(
+                main_texture.unwrap_or("white.png".to_string()),
+                color,
+                material_index,
+            );
             materials.push(Material::Unlit(material));
 
             // TODO: Calculate these if they don't exist.
@@ -152,8 +170,12 @@ impl Mesh {
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-            let vertex_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&vertices), wgpu::BufferUsage::VERTEX);
-            let index_buffer = device.create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+            let vertex_buffer = device.create_buffer_with_data(
+                &bytemuck::cast_slice(&vertices),
+                wgpu::BufferUsage::VERTEX,
+            );
+            let index_buffer = device
+                .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
 
             sub_meshes.push(SubMesh {
@@ -168,33 +190,17 @@ impl Mesh {
             });
         }
 
-        (
-            Mesh {
-                sub_meshes
-            },
-            materials
-        )
+        (Mesh { sub_meshes }, materials)
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
         match mode {
-            gltf::mesh::Mode::Points => {
-                wgpu::PrimitiveTopology::PointList
-            },
-            gltf::mesh::Mode::Lines => {
-                wgpu::PrimitiveTopology::LineList
-            },
-            gltf::mesh::Mode::LineStrip => {
-                wgpu::PrimitiveTopology::LineStrip
-            },
-            gltf::mesh::Mode::Triangles => {
-                wgpu::PrimitiveTopology::TriangleList
-            },
-            gltf::mesh::Mode::TriangleStrip => {
-                wgpu::PrimitiveTopology::TriangleStrip
-            },
+            gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
+            gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
+            gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
+            gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
+            gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
             _ => panic!(format!("Error loading mesht topology isn't supported!")),
         }
     }
-
 }

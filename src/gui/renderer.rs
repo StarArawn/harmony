@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
-use crate::AssetManager;
+use crate::gui::core::{Background, Rectangle, Viewport};
+use crate::gui::renderables;
 use crate::gui::QuadRenderer;
 use crate::gui::TextRenderer;
-use crate::gui::renderables;
-use crate::gui::core::{ Background, Rectangle, Viewport };
+use crate::AssetManager;
 
 #[derive(Debug)]
 struct Layer {
@@ -23,7 +23,6 @@ impl Layer {
     }
 }
 
-
 pub struct Renderer {
     quad_renderer: QuadRenderer,
     text_renderer: TextRenderer,
@@ -38,7 +37,6 @@ impl Renderer {
         format: wgpu::TextureFormat,
         size: winit::dpi::LogicalSize<u32>,
     ) -> Self {
-
         Self {
             quad_renderer: QuadRenderer::new(asset_mananger, device, format),
             text_renderer: TextRenderer::new(device, asset_mananger),
@@ -47,9 +45,17 @@ impl Renderer {
         }
     }
 
-    fn match_renderer(&mut self, layer: &mut Layer, renderable: renderables::Renderable, parent_bounds: Rectangle) {
+    fn match_renderer(
+        &mut self,
+        layer: &mut Layer,
+        renderable: renderables::Renderable,
+        parent_bounds: Rectangle,
+    ) {
         match renderable {
-            renderables::Renderable::Group { bounds, renderables } => {
+            renderables::Renderable::Group {
+                bounds,
+                renderables,
+            } => {
                 let calculate_bounds = Rectangle {
                     x: parent_bounds.x + bounds.x,
                     y: parent_bounds.y + bounds.y,
@@ -59,14 +65,17 @@ impl Renderer {
                 for grouped_renderable in renderables {
                     self.match_renderer(layer, grouped_renderable, calculate_bounds);
                 }
-            },
-            renderables::Renderable::Quad { bounds, background, border_radius, border_width, border_color } => {
+            }
+            renderables::Renderable::Quad {
+                bounds,
+                background,
+                border_radius,
+                border_width,
+                border_color,
+            } => {
                 // TODO: Move some of these computations to the GPU (?)
                 let quad = renderables::Quad {
-                    position: [
-                        parent_bounds.x + bounds.x,
-                        parent_bounds.y + bounds.y,
-                    ],
+                    position: [parent_bounds.x + bounds.x, parent_bounds.y + bounds.y],
                     scale: [bounds.width, bounds.height],
                     color: match background {
                         Background::Color(color) => color.into_linear(),
@@ -76,7 +85,7 @@ impl Renderer {
                     border_color: border_color.into_linear(),
                 };
                 layer.quads.push(quad);
-            },
+            }
             renderables::Renderable::Text(text) => {
                 layer.text.push(renderables::Text {
                     bounds: crate::gui::core::Rectangle {
@@ -87,7 +96,11 @@ impl Renderer {
                     ..text
                 });
             }
-            renderables::Renderable::Clip { bounds, offset, content } => {
+            renderables::Renderable::Clip {
+                bounds,
+                offset,
+                content,
+            } => {
                 let mut new_layer = Layer::new(bounds);
                 self.match_renderer(
                     &mut new_layer,
@@ -97,7 +110,8 @@ impl Renderer {
                         y: bounds.y - offset.y,
                         width: bounds.width,
                         height: bounds.height,
-                });
+                    },
+                );
                 self.layers.push(new_layer);
             }
             _ => {}
@@ -113,13 +127,12 @@ impl Renderer {
         scale_factor: f32,
         _asset_manager: &mut AssetManager,
     ) -> Vec<wgpu::CommandBuffer> {
-        let mut encoder = device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: None },
-        );
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         let (width, height) = self.viewport.dimensions();
         let transformation = self.viewport.transformation();
-        
+
         self.layers.clear();
         let mut base_layer = Layer::new(Rectangle {
             x: 0.0,
@@ -136,7 +149,7 @@ impl Renderer {
 
         for layer in self.layers.iter() {
             let bounds = layer.bounds * scale_factor;
-            
+
             if !layer.quads.is_empty() {
                 self.quad_renderer.draw(
                     device,
@@ -150,7 +163,15 @@ impl Renderer {
             }
 
             if !layer.text.is_empty() {
-                self.text_renderer.draw(device, &mut encoder, target, &layer.text, transformation, bounds, scale_factor);
+                self.text_renderer.draw(
+                    device,
+                    &mut encoder,
+                    target,
+                    &layer.text,
+                    transformation,
+                    bounds,
+                    scale_factor,
+                );
             }
         }
 

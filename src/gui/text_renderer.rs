@@ -1,17 +1,13 @@
-use wgpu_glyph::{ GlyphBrush, GlyphBrushBuilder };
 use nalgebra_glm::Mat4;
 use std::convert::TryInto;
+use wgpu_glyph::{GlyphBrush, GlyphBrushBuilder};
 
 pub struct TextRenderer {
-    fonts: Vec<GlyphBrush<'static, ()>>
+    fonts: Vec<GlyphBrush<'static, ()>>,
 }
 
 impl TextRenderer {
-    pub fn new(
-        device: &wgpu::Device,
-        asset_manager: &crate::AssetManager,
-    ) -> Self {
-
+    pub fn new(device: &wgpu::Device, asset_manager: &crate::AssetManager) -> Self {
         let fonts = asset_manager.get_fonts();
 
         let mut brushes = Vec::new();
@@ -23,10 +19,8 @@ impl TextRenderer {
                 .build(device, wgpu::TextureFormat::Bgra8UnormSrgb);
             brushes.push(glyph_brush);
         }
-        
-        Self {
-            fonts: brushes,
-        }
+
+        Self { fonts: brushes }
     }
 
     pub fn draw(
@@ -39,7 +33,7 @@ impl TextRenderer {
         bounds: crate::gui::core::Rectangle<f32>,
         scale_factor: f32,
     ) {
-        for asset_font in self.fonts.iter_mut() { 
+        for asset_font in self.fonts.iter_mut() {
             for renderable in renderables.iter() {
                 let section = wgpu_glyph::Section {
                     text: &*renderable.text,
@@ -50,11 +44,11 @@ impl TextRenderer {
                     color: renderable.color.into_linear(),
                     scale: wgpu_glyph::Scale {
                         x: renderable.size.clone() * scale_factor,
-                        y: renderable.size.clone() * scale_factor
+                        y: renderable.size.clone() * scale_factor,
                     },
                     bounds: (
                         renderable.bounds.width as f32 * scale_factor,
-                        renderable.bounds.height as f32 * scale_factor
+                        renderable.bounds.height as f32 * scale_factor,
                     ),
                     z: -1.0,
                     ..wgpu_glyph::Section::default()
@@ -78,7 +72,8 @@ impl TextRenderer {
             //     .expect("Draw queued");
 
             // Draw the text!
-            asset_font.draw_queued_with_transform_and_scissoring(
+            asset_font
+                .draw_queued_with_transform_and_scissoring(
                     device,
                     encoder,
                     &target,

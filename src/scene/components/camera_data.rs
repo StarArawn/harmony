@@ -1,5 +1,5 @@
-use nalgebra_glm::{ Vec3, Mat4 };
-use specs::{ Component, DenseVecStorage };
+use nalgebra_glm::{Mat4, Vec3};
+use specs::{Component, DenseVecStorage};
 
 pub struct CameraData {
     pub active: bool,

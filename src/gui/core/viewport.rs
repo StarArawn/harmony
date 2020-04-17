@@ -22,16 +22,20 @@ impl Viewport {
     /// Creates a new [`Viewport`] with the given dimensions.
     pub fn new(width: u32, height: u32) -> Viewport {
         let opengl_to_wgpu_matrix: Mat4 = Mat4::new(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.5, 0.0,
-            0.0, 0.0, 0.5, 1.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5, 1.0,
         );
 
         Viewport {
             width,
             height,
-            transformation: nalgebra_glm::ortho_lh(0.0, width as f32, height as f32, 0.0, -1.0, 1.0) * opengl_to_wgpu_matrix,
+            transformation: nalgebra_glm::ortho_lh(
+                0.0,
+                width as f32,
+                height as f32,
+                0.0,
+                -1.0,
+                1.0,
+            ) * opengl_to_wgpu_matrix,
         }
     }
 

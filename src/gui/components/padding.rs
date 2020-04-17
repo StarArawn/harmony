@@ -1,7 +1,7 @@
-use nalgebra_glm::Vec4;
 use crate::gui::components::Component;
 use crate::gui::core::Rectangle;
 use crate::gui::renderables::Renderable;
+use nalgebra_glm::Vec4;
 use std::any::Any;
 
 pub struct PaddingBuilder {
@@ -17,7 +17,10 @@ impl PaddingBuilder {
         }
     }
 
-    pub fn with_child<'a, T>(&'a mut self, child: T) -> &'a mut Self where T: Component + Sized + 'static {
+    pub fn with_child<'a, T>(&'a mut self, child: T) -> &'a mut Self
+    where
+        T: Component + Sized + 'static,
+    {
         self.children.push(Box::new(child));
         self
     }
@@ -36,8 +39,7 @@ pub struct Padding {
 }
 
 impl Component for Padding {
-    fn update(&mut self, _delta_time: f32) {
-    }
+    fn update(&mut self, _delta_time: f32) {}
 
     fn draw(&self, parent_bounds: Rectangle) -> Renderable {
         let bounds = Rectangle {

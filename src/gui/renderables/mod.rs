@@ -1,5 +1,5 @@
+use crate::gui::core::{Background, Color, Rectangle};
 use nalgebra_glm::Vec2;
-use crate::gui::core::{ Background, Color, Rectangle };
 
 mod quad;
 pub use quad::Quad;

@@ -1,17 +1,17 @@
-use nalgebra_glm::Vec2;
 use log;
+use nalgebra_glm::Vec2;
 
-use winit::{ 
+use winit::{
     dpi::LogicalSize,
-    event::{ Event, ModifiersState, WindowEvent },
-    event_loop::{ ControlFlow },
+    event::{Event, ModifiersState, WindowEvent},
+    event_loop::ControlFlow,
 };
 
-use harmony::WinitState;
 use harmony::gui::{
-    core::{ Color },
-    components::{ Component, Text }
+    components::{Component, Text},
+    core::Color,
 };
+use harmony::WinitState;
 
 struct WindowSize {
     width: u32,
@@ -36,14 +36,14 @@ impl AppState {
 }
 
 impl harmony::AppState for AppState {
-    fn load(&mut self, _app: &mut harmony::Application) { }
+    fn load(&mut self, _app: &mut harmony::Application) {}
     fn update(&mut self, app: &mut harmony::Application) {
         self.gui_scene.update(app.delta_time);
     }
     fn draw_gui(&mut self, _app: &mut harmony::Application) -> Option<&dyn harmony::gui::Scene> {
         Some(&self.gui_scene)
     }
-    fn draw(&mut self, _app: &mut harmony::Application) { }
+    fn draw(&mut self, _app: &mut harmony::Application) {}
 }
 
 struct GuiScene {
@@ -60,9 +60,12 @@ impl GuiScene {
             // TODO: Expose the methods for measuring text to the end user.
             // We would need to likely wait to create GuiScene until after we've loaded our assets as well
             // since we need the font data to determine the size of the text.
-            position: Vec2::new((WINDOW_SIZE.width as f32 / 2.0) - 100.0, (WINDOW_SIZE.height as f32 / 2.0) - 40.0),
+            position: Vec2::new(
+                (WINDOW_SIZE.width as f32 / 2.0) - 100.0,
+                (WINDOW_SIZE.height as f32 / 2.0) - 40.0,
+            ),
         };
-        
+
         Self {
             components: vec![Box::new(text)],
         }
@@ -77,7 +80,9 @@ impl GuiScene {
 
 // This let's the gui system pull the components out of your scene.
 impl harmony::gui::Scene for GuiScene {
-    fn get_components(&self) -> &Vec<Box<dyn Component>> { &self.components }
+    fn get_components(&self) -> &Vec<Box<dyn Component>> {
+        &self.components
+    }
 }
 
 fn main() {
@@ -88,10 +93,15 @@ fn main() {
 
     let mut modifiers = ModifiersState::default();
 
-    let (wb, event_loop) = WinitState::create("Harmony - Hello World", LogicalSize::new(WINDOW_SIZE.width, WINDOW_SIZE.height));
+    let (wb, event_loop) = WinitState::create(
+        "Harmony - Hello World",
+        LogicalSize::new(WINDOW_SIZE.width, WINDOW_SIZE.height),
+    );
 
-    let mut application = harmony::Application::new(wb, &event_loop);
-    
+    // Tell harmony where our asset path is.
+    let asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
+    let mut application = harmony::Application::new(wb, &event_loop, asset_path);
+
     let mut app_state = AppState::new();
 
     application.load(&mut app_state);
@@ -99,22 +109,20 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         application.run(&mut app_state, &event, control_flow);
         match event {
-            Event::WindowEvent { event, .. } => {
-                match event {
-                    WindowEvent::ModifiersChanged(new_modifiers) => {
-                        modifiers = new_modifiers;
-                    }
-                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                    winit::event::WindowEvent::KeyboardInput {
-                        input:
-                            winit::event::KeyboardInput {
-                                virtual_keycode: Some(winit::event::VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => *control_flow = winit::event_loop::ControlFlow::Exit,
-                    _ => {}
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::ModifiersChanged(new_modifiers) => {
+                    modifiers = new_modifiers;
                 }
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                winit::event::WindowEvent::KeyboardInput {
+                    input:
+                        winit::event::KeyboardInput {
+                            virtual_keycode: Some(winit::event::VirtualKeyCode::Escape),
+                            ..
+                        },
+                    ..
+                } => *control_flow = winit::event_loop::ControlFlow::Exit,
+                _ => {}
             },
             _ => (),
         };

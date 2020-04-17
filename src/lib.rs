@@ -12,6 +12,6 @@ mod application;
 mod assets;
 mod winit_state;
 
-pub use application::{ Application, AppState };
+pub use application::{AppState, Application};
 pub use assets::AssetManager;
 pub use winit_state::WinitState;

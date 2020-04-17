@@ -1,5 +1,5 @@
-use std::{io, fs};
 use crate::Application;
+use std::{fs, io};
 
 pub struct HDRImage {
     pub name: String,
@@ -19,17 +19,25 @@ unsafe fn any_as_u8_slice<T: Sized>(any: &T) -> &[u8] {
 }
 
 impl HDRImage {
-    pub fn new<T>(device: &wgpu::Device, init_encoder: &mut wgpu::CommandEncoder, path: T, file_name: T) -> Self where T: Into<String> {
+    pub fn new<T>(
+        device: &wgpu::Device,
+        init_encoder: &mut wgpu::CommandEncoder,
+        path: T,
+        file_name: T,
+    ) -> Self
+    where
+        T: Into<String>,
+    {
         let path = path.into();
         let file_name = file_name.into();
-        
+
         // Load the image
-        let decoder = image::hdr::HdrDecoder::new(io::BufReader::new(
-            fs::File::open(&path).unwrap(),
-        )).unwrap();
+        let decoder =
+            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(&path).unwrap()))
+                .unwrap();
         let metadata = decoder.metadata();
         let decoded = decoder.read_image_hdr().unwrap();
-        
+
         let (w, h) = (metadata.width, metadata.height);
 
         let texture_extent = wgpu::Extent3d {
@@ -37,7 +45,7 @@ impl HDRImage {
             height: h,
             depth: 1,
         };
-        
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_extent,
             mip_level_count: 1,
@@ -54,9 +62,10 @@ impl HDRImage {
             .collect::<Vec<_>>();
         dbg!(image_data.len());
         dbg!((w * h) * (4 * 4));
-        let image_bytes =
-            unsafe { std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4) }
-                .to_vec();
+        let image_bytes = unsafe {
+            std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
+        }
+        .to_vec();
         let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
 
         init_encoder.copy_buffer_to_texture(
@@ -89,7 +98,6 @@ impl HDRImage {
 
         let view = texture.create_default_view();
 
-
         let cubemap_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -117,17 +125,26 @@ impl HDRImage {
 
     pub(crate) fn create_cube_map(app: &mut Application) {
         use crate::graphics::{SimplePipeline, SimplePipelineDesc};
-        
+
         // We need to convert our regular texture map to a cube texture map with 6 faces.
         // Should be straight forward enough if we use equirectangular projection.
         // First we need a custom pipeline that will run in here to do the conversion.
-        let mut cube_projection_pipeline_desc = crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::default();
+        let mut cube_projection_pipeline_desc =
+            crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::default();
         let pipeline = cube_projection_pipeline_desc.pipeline(app);
 
-        let mut final_pipeline = cube_projection_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts);
+        let mut final_pipeline =
+            cube_projection_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts);
 
-        let command_buffer = final_pipeline.render(None, &app.renderer.device, &pipeline, Some(&mut app.asset_manager), None, None);
-        
+        let command_buffer = final_pipeline.render(
+            None,
+            &app.renderer.device,
+            &pipeline,
+            Some(&mut app.asset_manager),
+            None,
+            None,
+        );
+
         app.renderer.queue.submit(&[command_buffer]);
     }
 }

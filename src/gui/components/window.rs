@@ -1,8 +1,8 @@
-use nalgebra_glm::{ Vec2, Vec4 };
+use nalgebra_glm::{Vec2, Vec4};
 use std::any::Any;
 
 use crate::gui::components::Component;
-use crate::gui::core::{ Background, Color, Rectangle };
+use crate::gui::core::{Background, Color, Rectangle};
 use crate::gui::renderables::Renderable;
 
 pub struct WindowBuilder {
@@ -33,7 +33,10 @@ impl WindowBuilder {
             content: None,
         }
     }
-    pub fn set_title<'a, T>(&'a mut self, title: T) -> &'a mut Self where T: Into<String> {
+    pub fn set_title<'a, T>(&'a mut self, title: T) -> &'a mut Self
+    where
+        T: Into<String>,
+    {
         self.title = Some(title.into());
         self
     }
@@ -58,28 +61,48 @@ impl WindowBuilder {
         self
     }
 
-    pub fn set_border<'a>(&'a mut self, border_width: Option<u16>, border_color: Option<Color>, border_radius: Option<u16>) -> &'a mut Self {
+    pub fn set_border<'a>(
+        &'a mut self,
+        border_width: Option<u16>,
+        border_color: Option<Color>,
+        border_radius: Option<u16>,
+    ) -> &'a mut Self {
         self.border_width = border_width;
         self.border_color = border_color;
         self.border_radius = border_radius;
         self
     }
 
-    pub fn set_padding<'a>(&'a mut self, left: f32, right: f32, top: f32, bottom: f32) -> &'a mut Self {
+    pub fn set_padding<'a>(
+        &'a mut self,
+        left: f32,
+        right: f32,
+        top: f32,
+        bottom: f32,
+    ) -> &'a mut Self {
         self.padding = Some(Vec4::new(left, right, top, bottom));
         self
     }
 
-    pub fn set_margin<'a>(&'a mut self, left: f32, right: f32, top: f32, bottom: f32) -> &'a mut Self {
+    pub fn set_margin<'a>(
+        &'a mut self,
+        left: f32,
+        right: f32,
+        top: f32,
+        bottom: f32,
+    ) -> &'a mut Self {
         self.margin = Some(Vec4::new(left, right, top, bottom));
         self
     }
 
-    pub fn set_content<'a, T>(&'a mut self, content: T) -> &'a mut Self where T: Component + Sized + 'static {
+    pub fn set_content<'a, T>(&'a mut self, content: T) -> &'a mut Self
+    where
+        T: Component + Sized + 'static,
+    {
         self.content = Some(Box::new(content));
         self
     }
-    
+
     pub fn build(self) -> Window {
         let title = self.title.unwrap_or(Default::default());
         let background = self.background.unwrap_or(Default::default());
@@ -135,11 +158,8 @@ impl Default for Window {
     }
 }
 
-
 impl Component for Window {
-    fn update(&mut self, _delta_time: f32) {
-
-    }
+    fn update(&mut self, _delta_time: f32) {}
 
     fn draw(&self, bounds: Rectangle) -> Renderable {
         let bounds = Rectangle {
@@ -206,8 +226,8 @@ impl Component for Window {
                     },
                     offset: Vec2::new(0.0, 0.0),
                     content: Box::new(self.content.as_ref().unwrap().draw(content_bounds)),
-                }
-            ]
+                },
+            ],
         }
     }
 

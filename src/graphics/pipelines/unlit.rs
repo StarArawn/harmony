@@ -1,17 +1,19 @@
+use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Mat4;
 use specs::RunNow;
-use bytemuck::{ Pod, Zeroable };
 use std::mem;
 
 use crate::{
-    AssetManager,
     graphics::{
         mesh::MeshVertexData,
+        pipeline::{PrepareResult, VertexStateBuilder},
+        // renderer::DEPTH_FORMAT,
         Pipeline,
-        pipeline::{ VertexStateBuilder, PrepareResult },
         SimplePipeline,
-        SimplePipelineDesc, renderer::DEPTH_FORMAT,
-    }, scene::systems::RenderMesh
+        SimplePipelineDesc,
+    },
+    scene::systems::RenderMesh,
+    AssetManager,
 };
 
 #[derive(Debug)]
@@ -34,20 +36,26 @@ impl Default for UnlitUniforms {
     }
 }
 
-
-unsafe impl Zeroable for UnlitUniforms { }
-unsafe impl Pod for UnlitUniforms { }
+unsafe impl Zeroable for UnlitUniforms {}
+unsafe impl Pod for UnlitUniforms {}
 
 impl SimplePipeline for UnlitPipeline {
-    fn prepare(&mut self) -> PrepareResult { 
+    fn prepare(&mut self) -> PrepareResult {
         PrepareResult::Reuse
     }
 
-    fn render(&mut self, frame_view: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, asset_manager: Option<&mut AssetManager>, mut world: Option<&mut specs::World>, depth: Option<&wgpu::TextureView>) -> wgpu::CommandBuffer {
+    fn render(
+        &mut self,
+        frame_view: Option<&wgpu::TextureView>,
+        device: &wgpu::Device,
+        pipeline: &Pipeline,
+        asset_manager: Option<&mut AssetManager>,
+        mut world: Option<&mut specs::World>,
+        depth: Option<&wgpu::TextureView>,
+    ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
-        let mut encoder = device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: None },
-        );
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
             let mut render_mesh = RenderMesh {
                 device,
@@ -62,7 +70,6 @@ impl SimplePipeline for UnlitPipeline {
             RunNow::setup(&mut render_mesh, world.as_mut().unwrap());
             render_mesh.run_now(world.as_mut().unwrap());
         }
-    
 
         encoder.finish()
     }
@@ -73,66 +80,82 @@ pub struct UnlitPipelineDesc;
 
 impl SimplePipelineDesc for UnlitPipelineDesc {
     type Pipeline = UnlitPipeline;
-    
-    fn load_shader<'a>(&self, asset_manager: &'a crate::AssetManager) -> &'a crate::graphics::material::Shader {
+
+    fn load_shader<'a>(
+        &self,
+        asset_manager: &'a crate::AssetManager,
+    ) -> &'a crate::graphics::material::Shader {
         asset_manager.get_shader("unlit.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
+    fn create_layout(
+        &self,
+        device: &mut wgpu::Device,
+    ) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
         // We can create whatever layout we want here.
-        let global_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[
-                wgpu::BindGroupLayoutEntry {
+        let global_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-            ],
-            label: None,
-        });
+                }],
+                label: None,
+            });
 
-        let local_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[
-                wgpu::BindGroupLayoutEntry {
+        let local_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-            ],
-            label: None,
-        });
+                }],
+                label: None,
+            });
 
-        let material_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
-                        multisampled: false,
-                        component_type: wgpu::TextureComponentType::Float,
-                        dimension: wgpu::TextureViewDimension::D2,
+        let material_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
-                },
-            ],
-            label: None,
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                ],
+                label: None,
+            });
 
         // Once we create the layout we don't need the bind group layout.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[&global_bind_group_layout, &local_bind_group_layout, &material_bind_group_layout],
+            bind_group_layouts: &[
+                &global_bind_group_layout,
+                &local_bind_group_layout,
+                &material_bind_group_layout,
+            ],
         });
 
-        (vec![global_bind_group_layout, local_bind_group_layout, material_bind_group_layout], layout)
+        (
+            vec![
+                global_bind_group_layout,
+                local_bind_group_layout,
+                material_bind_group_layout,
+            ],
+            layout,
+        )
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
@@ -146,7 +169,10 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology {
         wgpu::PrimitiveTopology::TriangleList
     }
-    fn color_states_desc(&self, sc_desc: &wgpu::SwapChainDescriptor) -> Vec<wgpu::ColorStateDescriptor> {
+    fn color_states_desc(
+        &self,
+        sc_desc: &wgpu::SwapChainDescriptor,
+    ) -> Vec<wgpu::ColorStateDescriptor> {
         vec![wgpu::ColorStateDescriptor {
             format: sc_desc.format,
             color_blend: wgpu::BlendDescriptor::REPLACE,
@@ -168,11 +194,11 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         None
     }
 
-    fn vertex_state_desc(&self) -> VertexStateBuilder { 
+    fn vertex_state_desc(&self) -> VertexStateBuilder {
         let vertex_size = mem::size_of::<MeshVertexData>();
 
         let mut vertex_state_builder = VertexStateBuilder::new();
-        
+
         vertex_state_builder
             .set_index_format(wgpu::IndexFormat::Uint32)
             .new_buffer_descriptor(
@@ -205,22 +231,26 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         vertex_state_builder
     }
 
-    fn build(self, device: &wgpu::Device, bind_group_layouts: &Vec<wgpu::BindGroupLayout>) -> UnlitPipeline {
+    fn build(
+        self,
+        device: &wgpu::Device,
+        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+    ) -> UnlitPipeline {
         // This data needs to be saved and passed onto the pipeline.
-        let constants_buffer = device
-            .create_buffer_with_data(bytemuck::bytes_of(&UnlitUniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
+        let constants_buffer = device.create_buffer_with_data(
+            bytemuck::bytes_of(&UnlitUniforms::default()),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
 
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layouts[0],
-            bindings: &[
-                wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &constants_buffer,
-                        range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
-                    },
+            bindings: &[wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &constants_buffer,
+                    range: 0..std::mem::size_of::<UnlitUniforms>() as u64,
                 },
-            ],
+            }],
             label: None,
         });
 

@@ -31,10 +31,7 @@ impl Rectangle<f32> {
     /// Computes the intersection with the given [`Rectangle`].
     ///
     /// [`Rectangle`]: struct.Rectangle.html
-    pub fn intersection(
-        &self,
-        other: &Rectangle<f32>,
-    ) -> Option<Rectangle<f32>> {
+    pub fn intersection(&self, other: &Rectangle<f32>) -> Option<Rectangle<f32>> {
         let x = self.x.max(other.x);
         let y = self.y.max(other.y);
 

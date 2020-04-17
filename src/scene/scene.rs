@@ -1,7 +1,7 @@
-use specs::world::WorldExt;
-use specs::{ Dispatcher, DispatcherBuilder, World };
 use super::components;
 use super::resources;
+use specs::world::WorldExt;
+use specs::{Dispatcher, DispatcherBuilder, World};
 
 pub struct Scene<'a> {
     pub world: World,
@@ -21,13 +21,10 @@ impl<'a> Scene<'a> {
 
         // Add our systems here..
         let dispatch_buider = dispatch_buider.unwrap_or(DispatcherBuilder::new());
-        
+
         let dispatcher = dispatch_buider.build();
 
-        Scene {
-            world,
-            dispatcher,
-        }
+        Scene { world, dispatcher }
     }
 
     pub(crate) fn update(&mut self, delta_time: f32) {

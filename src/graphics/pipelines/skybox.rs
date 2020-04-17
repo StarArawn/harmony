@@ -1,16 +1,17 @@
+use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Mat4;
 use specs::RunNow;
-use bytemuck::{ Pod, Zeroable };
 
 use crate::{
-    AssetManager,
     graphics::{
+        pipeline::{PrepareResult, VertexStateBuilder},
+        // renderer::DEPTH_FORMAT,
         Pipeline,
-        pipeline::{ VertexStateBuilder, PrepareResult },
         SimplePipeline,
-        SimplePipelineDesc, renderer::DEPTH_FORMAT,
+        SimplePipelineDesc,
     },
-    scene::systems::RenderSkybox
+    scene::systems::RenderSkybox,
+    AssetManager,
 };
 
 #[derive(Debug)]
@@ -35,19 +36,26 @@ impl Default for SkyboxUniforms {
     }
 }
 
-unsafe impl Zeroable for SkyboxUniforms { }
-unsafe impl Pod for SkyboxUniforms { }
+unsafe impl Zeroable for SkyboxUniforms {}
+unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
-    fn prepare(&mut self) -> PrepareResult { 
+    fn prepare(&mut self) -> PrepareResult {
         PrepareResult::Reuse
     }
 
-    fn render(&mut self, frame_view: Option<&wgpu::TextureView>, device: &wgpu::Device, pipeline: &Pipeline, asset_manager: Option<&mut AssetManager>, mut world: Option<&mut specs::World>, depth: Option<&wgpu::TextureView>) -> wgpu::CommandBuffer {
+    fn render(
+        &mut self,
+        frame_view: Option<&wgpu::TextureView>,
+        device: &wgpu::Device,
+        pipeline: &Pipeline,
+        asset_manager: Option<&mut AssetManager>,
+        mut world: Option<&mut specs::World>,
+        depth: Option<&wgpu::TextureView>,
+    ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
-        let mut encoder = device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: None },
-        );
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
             let mut render_skybox = RenderSkybox {
                 device,
@@ -62,7 +70,6 @@ impl SimplePipeline for SkyboxPipeline {
             RunNow::setup(&mut render_skybox, world.as_mut().unwrap());
             render_skybox.run_now(world.as_mut().unwrap());
         }
-    
 
         encoder.finish()
     }
@@ -73,50 +80,59 @@ pub struct SkyboxPipelineDesc;
 
 impl SimplePipelineDesc for SkyboxPipelineDesc {
     type Pipeline = SkyboxPipeline;
-    
-    fn load_shader<'a>(&self, asset_manager: &'a crate::AssetManager) -> &'a crate::graphics::material::Shader {
+
+    fn load_shader<'a>(
+        &self,
+        asset_manager: &'a crate::AssetManager,
+    ) -> &'a crate::graphics::material::Shader {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
+    fn create_layout(
+        &self,
+        device: &mut wgpu::Device,
+    ) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
         // We can create whatever layout we want here.
-        let global_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[
-                wgpu::BindGroupLayoutEntry {
+        let global_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
                     ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                },
-            ],
-            label: None,
-        });
+                }],
+                label: None,
+            });
 
-        let material_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings:  &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
-                        component_type: wgpu::TextureComponentType::Float,
-                        multisampled: false,
-                        dimension: wgpu::TextureViewDimension::D2,
+        let material_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            component_type: wgpu::TextureComponentType::Float,
+                            multisampled: false,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
                     },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
-                },
-            ],
-            label: None,
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                ],
+                label: None,
+            });
 
         // Once we create the layout we don't need the bind group layout.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             bind_group_layouts: &[&global_bind_group_layout, &material_bind_group_layout],
         });
 
-        (vec![global_bind_group_layout, material_bind_group_layout], layout)
+        (
+            vec![global_bind_group_layout, material_bind_group_layout],
+            layout,
+        )
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
@@ -130,7 +146,10 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology {
         wgpu::PrimitiveTopology::TriangleList
     }
-    fn color_states_desc(&self, sc_desc: &wgpu::SwapChainDescriptor) -> Vec<wgpu::ColorStateDescriptor> {
+    fn color_states_desc(
+        &self,
+        sc_desc: &wgpu::SwapChainDescriptor,
+    ) -> Vec<wgpu::ColorStateDescriptor> {
         vec![wgpu::ColorStateDescriptor {
             format: sc_desc.format,
             color_blend: wgpu::BlendDescriptor::REPLACE,
@@ -152,30 +171,33 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         None
     }
 
-    fn vertex_state_desc(&self) -> VertexStateBuilder { 
+    fn vertex_state_desc(&self) -> VertexStateBuilder {
         let mut vertex_state_builder = VertexStateBuilder::new();
-        vertex_state_builder
-            .set_index_format(wgpu::IndexFormat::Uint16);
+        vertex_state_builder.set_index_format(wgpu::IndexFormat::Uint16);
 
         vertex_state_builder
     }
 
-    fn build(self, device: &wgpu::Device, bind_group_layouts: &Vec<wgpu::BindGroupLayout>) -> SkyboxPipeline {
+    fn build(
+        self,
+        device: &wgpu::Device,
+        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+    ) -> SkyboxPipeline {
         // This data needs to be saved and passed onto the pipeline.
-        let constants_buffer = device
-            .create_buffer_with_data(bytemuck::bytes_of(&SkyboxUniforms::default()), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
+        let constants_buffer = device.create_buffer_with_data(
+            bytemuck::bytes_of(&SkyboxUniforms::default()),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
 
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layouts[0],
-            bindings: &[
-                wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &constants_buffer,
-                        range: 0..std::mem::size_of::<SkyboxUniforms>() as u64,
-                    },
+            bindings: &[wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &constants_buffer,
+                    range: 0..std::mem::size_of::<SkyboxUniforms>() as u64,
                 },
-            ],
+            }],
             label: None,
         });
 

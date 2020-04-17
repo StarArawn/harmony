@@ -1,2 +1,2 @@
 mod console;
-pub use console::{ Console, ModuleType};
+pub use console::{Console, ModuleType};

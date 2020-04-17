@@ -1,12 +1,9 @@
-use specs::{ReadStorage, System};
 use crate::AssetManager;
 use crate::{
-    graphics::{
-        pipelines::SkyboxUniforms,
-        Pipeline,
-    },
-    scene::components::{ CameraData, SkyboxData }
+    graphics::{pipelines::SkyboxUniforms, Pipeline},
+    scene::components::{CameraData, SkyboxData},
 };
+use specs::{ReadStorage, System};
 
 pub struct RenderSkybox<'a> {
     pub(crate) device: &'a wgpu::Device,
@@ -20,15 +17,15 @@ pub struct RenderSkybox<'a> {
 }
 
 impl<'a> System<'a> for RenderSkybox<'a> {
-    type SystemData = (
-        ReadStorage<'a, CameraData>,
-        ReadStorage<'a, SkyboxData>,
-    );
+    type SystemData = (ReadStorage<'a, CameraData>, ReadStorage<'a, SkyboxData>);
 
     fn run(&mut self, (camera_data, skyboxes): Self::SystemData) {
         use specs::Join;
-        let filtered_camera_data: Vec<&CameraData> = camera_data.join().filter(|data: &&CameraData| data.active).collect();
-        let camera_data= filtered_camera_data.first();
+        let filtered_camera_data: Vec<&CameraData> = camera_data
+            .join()
+            .filter(|data: &&CameraData| data.active)
+            .collect();
+        let camera_data = filtered_camera_data.first();
 
         if camera_data.is_none() {
             return;
@@ -41,8 +38,10 @@ impl<'a> System<'a> for RenderSkybox<'a> {
             view: camera_data.view,
         };
 
-        let constants_buffer = self.device.create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
-        
+        let constants_buffer = self
+            .device
+            .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
+
         self.encoder.copy_buffer_to_buffer(
             &constants_buffer,
             0,
@@ -52,20 +51,18 @@ impl<'a> System<'a> for RenderSkybox<'a> {
         );
 
         let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[
-                wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: self.frame_view,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    },
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: self.frame_view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 1.0,
                 },
-            ],
+            }],
             depth_stencil_attachment: None,
             // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
             //     attachment: self.depth,
@@ -83,8 +80,7 @@ impl<'a> System<'a> for RenderSkybox<'a> {
         for skybox in skyboxes.join() {
             let hdr_image = self.asset_manager.get_hdr_image(&skybox.name);
             render_pass.set_bind_group(1, hdr_image.cubemap_bind_group.as_ref().unwrap(), &[]);
-            render_pass.draw(0 .. 3 as u32, 0 .. 1);
+            render_pass.draw(0..3 as u32, 0..1);
         }
-
     }
 }

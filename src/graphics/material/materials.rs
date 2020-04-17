@@ -1,8 +1,8 @@
-use nalgebra_glm::{ Vec4 };
-use std::{collections::HashMap, mem};
-use bytemuck::{Pod, Zeroable};
-use crate::{graphics::{pipeline::BindGroupWithData}};
 use super::Image;
+use crate::graphics::pipeline::BindGroupWithData;
+use bytemuck::{Pod, Zeroable};
+use nalgebra_glm::Vec4;
+use std::{collections::HashMap, mem};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -10,8 +10,8 @@ pub struct UnlitUniform {
     pub color: Vec4,
 }
 
-unsafe impl Zeroable for UnlitUniform { }
-unsafe impl Pod for UnlitUniform { }
+unsafe impl Zeroable for UnlitUniform {}
+unsafe impl Pod for UnlitUniform {}
 
 #[derive(Debug)]
 pub struct UnlitMaterial {
@@ -22,7 +22,10 @@ pub struct UnlitMaterial {
 }
 
 impl UnlitMaterial {
-    pub fn new<T>(main_texture: T, color: Vec4, material_index: i32) -> Self where T: Into<String> {
+    pub fn new<T>(main_texture: T, color: Vec4, material_index: i32) -> Self
+    where
+        T: Into<String>,
+    {
         let main_texture = main_texture.into();
         Self {
             index: material_index,
@@ -34,7 +37,12 @@ impl UnlitMaterial {
 
     // Note: local_bind_group_layout needs to be passed in from the pipeline.
     // Be careful here to make sure the layout of the pipeline matches our layout here.
-    pub(crate) fn create_bind_group(&mut self, images: &HashMap<String, Image>, device: &wgpu::Device, local_bind_group_layout: &wgpu::BindGroupLayout) {
+    pub(crate) fn create_bind_group(
+        &mut self,
+        images: &HashMap<String, Image>,
+        device: &wgpu::Device,
+        local_bind_group_layout: &wgpu::BindGroupLayout,
+    ) {
         let material_uniform_size = mem::size_of::<UnlitUniform>() as wgpu::BufferAddress;
         let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
             size: material_uniform_size,
@@ -68,7 +76,7 @@ impl UnlitMaterial {
                 wgpu::Binding {
                     binding: 2,
                     resource: wgpu::BindingResource::Sampler(&image.sampler),
-                }
+                },
             ],
             label: None,
         });

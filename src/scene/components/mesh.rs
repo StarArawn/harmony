@@ -1,4 +1,4 @@
-use specs::{ Component, DenseVecStorage };
+use specs::{Component, DenseVecStorage};
 
 #[derive(Default)]
 pub struct Mesh {
@@ -6,7 +6,10 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new<T>(name: T) -> Self where T: Into<String> {
+    pub fn new<T>(name: T) -> Self
+    where
+        T: Into<String>,
+    {
         Self {
             mesh_name: name.into(),
         }

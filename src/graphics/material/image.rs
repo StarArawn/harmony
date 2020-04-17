@@ -7,9 +7,19 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new<T>(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, path: T, file_name: T) -> Self where T: Into<String> {
+    pub fn new<T>(
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        path: T,
+        file_name: T,
+    ) -> Self
+    where
+        T: Into<String>,
+    {
         let path = path.into();
-        let img = image::open(&path).unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path)).to_rgba();
+        let img = image::open(&path)
+            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
+            .to_rgba();
         let (width, height) = img.dimensions();
         let texture_extent = wgpu::Extent3d {
             width,
