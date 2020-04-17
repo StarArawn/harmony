@@ -15,7 +15,6 @@ pub struct MeshVertexData {
 }
 
 // We implement these traits so our vertex struct can be converted into bytes.
-// TODO: Go across the entire project and replace zerocopy with bytemuck.
 unsafe impl Zeroable for MeshVertexData {}
 unsafe impl Pod for MeshVertexData {}
 
@@ -165,7 +164,6 @@ impl Mesh {
             );
             materials.push(Material::Unlit(material));
 
-            // TODO: Calculate these if they don't exist.
             // mesh.calculate_tangents();
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());

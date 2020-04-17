@@ -98,10 +98,6 @@ impl Component for Animation {
     }
 
     fn draw(&self, _bounds: Rectangle) -> Renderable {
-        // Compute layout
-        // TODO: Move this out of here.
-        //stretch.compute_layout(node, Size::undefined()).unwrap();
-
         let bounds = Rectangle {
             x: self.position.x,
             y: self.position.y,
