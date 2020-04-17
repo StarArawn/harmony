@@ -1,4 +1,4 @@
-use ultraviolet::vec::Vec2;
+use nalgebra_glm::Vec2;
 use std::any::Any;
 
 use crate::gui::components::Component;

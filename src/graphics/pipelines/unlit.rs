@@ -1,4 +1,4 @@
-use ultraviolet::Mat4;
+use nalgebra_glm::Mat4;
 use specs::RunNow;
 use bytemuck::{ Pod, Zeroable };
 use std::mem;
@@ -21,10 +21,19 @@ pub struct UnlitPipeline {
 }
 
 #[repr(C)]
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct UnlitUniforms {
     pub view_projection: Mat4,
 }
+
+impl Default for UnlitUniforms {
+    fn default() -> Self {
+        Self {
+            view_projection: Mat4::identity(),
+        }
+    }
+}
+
 
 unsafe impl Zeroable for UnlitUniforms { }
 unsafe impl Pod for UnlitUniforms { }
@@ -147,15 +156,16 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Less,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder { 

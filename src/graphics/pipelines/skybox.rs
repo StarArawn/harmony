@@ -1,4 +1,4 @@
-use ultraviolet::Mat4;
+use nalgebra_glm::Mat4;
 use specs::RunNow;
 use bytemuck::{ Pod, Zeroable };
 
@@ -20,10 +20,19 @@ pub struct SkyboxPipeline {
 }
 
 #[repr(C)]
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SkyboxUniforms {
     pub proj: Mat4,
     pub view: Mat4,
+}
+
+impl Default for SkyboxUniforms {
+    fn default() -> Self {
+        Self {
+            proj: Mat4::identity(),
+            view: Mat4::identity(),
+        }
+    }
 }
 
 unsafe impl Zeroable for SkyboxUniforms { }
@@ -131,15 +140,16 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Less,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder { 

@@ -1,5 +1,5 @@
 use wgpu_glyph::{ GlyphBrush, GlyphBrushBuilder };
-use ultraviolet::mat::Mat4;
+use nalgebra_glm::Mat4;
 use std::convert::TryInto;
 
 pub struct TextRenderer {
@@ -56,7 +56,6 @@ impl TextRenderer {
                         renderable.bounds.width as f32 * scale_factor,
                         renderable.bounds.height as f32 * scale_factor
                     ),
-                    // bounds: (1024.0 * 2.0, 768.0 * 2.0),
                     z: -1.0,
                     ..wgpu_glyph::Section::default()
                 };

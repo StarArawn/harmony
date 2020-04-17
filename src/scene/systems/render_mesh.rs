@@ -115,19 +115,20 @@ impl<'a> System<'a> for RenderMesh<'a> {
                         r: 0.0,
                         g: 0.0,
                         b: 0.0,
-                        a: 1.0,
+                        a: 0.0,
                     },
                 },
             ],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: self.depth,
-                depth_load_op: wgpu::LoadOp::Load,
-                depth_store_op: wgpu::StoreOp::Store,
-                stencil_load_op: wgpu::LoadOp::Load,
-                stencil_store_op: wgpu::StoreOp::Store,
-                clear_depth: 1.0,
-                clear_stencil: 0,
-            }),
+            depth_stencil_attachment: None,
+            // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+            //     attachment: self.depth,
+            //     depth_load_op: wgpu::LoadOp::Load,
+            //     depth_store_op: wgpu::StoreOp::Store,
+            //     stencil_load_op: wgpu::LoadOp::Load,
+            //     stencil_store_op: wgpu::StoreOp::Store,
+            //     clear_depth: 1.0,
+            //     clear_stencil: 0,
+            // }),
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
         render_pass.set_bind_group(0, self.global_bind_group, &[]);

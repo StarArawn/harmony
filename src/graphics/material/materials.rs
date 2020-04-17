@@ -1,11 +1,11 @@
-use ultraviolet::{ Vec4 };
+use nalgebra_glm::{ Vec4 };
 use std::{collections::HashMap, mem};
 use bytemuck::{Pod, Zeroable};
 use crate::{graphics::{pipeline::BindGroupWithData}};
 use super::Image;
 
 #[repr(C)]
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct UnlitUniform {
     pub color: Vec4,
 }

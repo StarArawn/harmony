@@ -1,21 +1,29 @@
-use ultraviolet::{ Vec3, Vec4, Mat4 };
+use nalgebra_glm::{ Vec3, Vec4, Mat4, Quat };
 use specs::{ Component, DenseVecStorage };
 use bytemuck::{Pod, Zeroable};
 use crate::Application;
 
 #[repr(C)]
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct LocalUniform {
     pub world: Mat4,
 }
 unsafe impl Zeroable for LocalUniform { }
 unsafe impl Pod for LocalUniform { }
 
+impl Default for LocalUniform {
+    fn default() -> Self {
+        Self {
+            world: Mat4::identity(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Transform {
     pub position: Vec3,
     pub scale: Vec3,
-    pub rotation: Vec3,
+    pub rotation: Quat,
     pub matrix: Mat4,
 
     pub(crate) local_buffer: wgpu::Buffer,
@@ -29,17 +37,26 @@ impl Transform {
         Self {
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
-            rotation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Quat::identity(),
             matrix: Mat4::identity(),
             local_buffer,
             bind_group,
         }
     }
 
+    pub fn update_euler(&mut self, rotation: Vec3) {
+        self.rotation = *nalgebra::UnitQuaternion::from_euler_angles(rotation.x, rotation.y, rotation.z).quaternion();
+    }
+
+    pub fn get_euler(&mut self) -> Vec3 {
+        let weird_rotation = nalgebra_glm::quat_euler_angles(&self.rotation);
+        Vec3::new(weird_rotation.z,  weird_rotation.x, weird_rotation.y)
+    }
+
     pub fn update(&mut self) {
-        let scale =  Mat4::from_nonuniform_scale(Vec4::new(self.scale.x, self.scale.y, self.scale.z, 1.0));
-        let rotation = Mat4::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
-        let translation = Mat4::from_translation(self.position);
+        let scale =  nalgebra_glm::scaling(&self.scale);
+        let rotation = nalgebra_glm::quat_to_mat4(&self.rotation);
+        let translation = nalgebra_glm::translation(&self.position);
         self.matrix = translation * rotation * scale;
     }
 

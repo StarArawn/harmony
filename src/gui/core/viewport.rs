@@ -1,27 +1,37 @@
-use ultraviolet::mat::Mat4;
+use nalgebra_glm::Mat4;
 
 /// A viewing region for displaying computer graphics.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Viewport {
     width: u32,
     height: u32,
     transformation: Mat4,
 }
 
+impl Default for Viewport {
+    fn default() -> Self {
+        Self {
+            width: Default::default(),
+            height: Default::default(),
+            transformation: Mat4::identity(),
+        }
+    }
+}
+
 impl Viewport {
     /// Creates a new [`Viewport`] with the given dimensions.
     pub fn new(width: u32, height: u32) -> Viewport {
-        let opengl_to_wgpu_matrix: Mat4 = [
+        let opengl_to_wgpu_matrix: Mat4 = Mat4::new(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
             0.0, 0.0, 0.5, 0.0,
             0.0, 0.0, 0.5, 1.0,
-        ].into();
+        );
 
         Viewport {
             width,
             height,
-            transformation: ultraviolet::projection::orthographic_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0) * opengl_to_wgpu_matrix,
+            transformation: nalgebra_glm::ortho_lh(0.0, width as f32, height as f32, 0.0, -1.0, 1.0) * opengl_to_wgpu_matrix,
         }
     }
 

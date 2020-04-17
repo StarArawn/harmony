@@ -1,4 +1,4 @@
-use ultraviolet::Vec4;
+use nalgebra_glm::Vec4;
 use crate::gui::components::Component;
 use crate::gui::core::Rectangle;
 use crate::gui::renderables::Renderable;

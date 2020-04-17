@@ -1,4 +1,4 @@
-use ultraviolet::{ Vec2, Vec3, Vec4 };
+use nalgebra_glm::{ Vec2, Vec3, Vec4 };
 use bytemuck::{ Pod, Zeroable};
 use std::path::Path;
 use std::ffi::OsStr;
@@ -6,7 +6,7 @@ use crate::{graphics::material::Material};
 use super::material::UnlitMaterial;
 
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct MeshVertexData {
     pub position: Vec3,
     pub normal: Vec3,
@@ -18,6 +18,17 @@ pub struct MeshVertexData {
 // TODO: Go across the entire project and replace zerocopy with bytemuck.
 unsafe impl Zeroable for MeshVertexData { }
 unsafe impl Pod for MeshVertexData { }
+
+impl Default for MeshVertexData {
+    fn default() -> Self {
+        Self {
+            position: Vec3::zeros(),
+            normal: Vec3::zeros(),
+            uv: Vec2::zeros(),
+            tangent: Vec4::zeros(), 
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct SubMesh {

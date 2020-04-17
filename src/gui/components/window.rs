@@ -1,4 +1,4 @@
-use ultraviolet::vec::{ Vec2, Vec4 };
+use nalgebra_glm::{ Vec2, Vec4 };
 use std::any::Any;
 
 use crate::gui::components::Component;
@@ -83,13 +83,13 @@ impl WindowBuilder {
     pub fn build(self) -> Window {
         let title = self.title.unwrap_or(Default::default());
         let background = self.background.unwrap_or(Default::default());
-        let position = self.position.unwrap_or(Default::default());
-        let size = self.size.unwrap_or(Default::default());
+        let position = self.position.unwrap_or(Vec2::zeros());
+        let size = self.size.unwrap_or(Vec2::zeros());
         let border_color = self.border_color.unwrap_or(Default::default());
         let border_radius = self.border_radius.unwrap_or(Default::default());
         let border_width = self.border_width.unwrap_or(Default::default());
-        let padding = self.padding.unwrap_or(Default::default());
-        let margin = self.margin.unwrap_or(Default::default());
+        let padding = self.padding.unwrap_or(Vec4::zeros());
+        let margin = self.margin.unwrap_or(Vec4::zeros());
         let content = self.content;
         Window {
             title,
@@ -105,8 +105,6 @@ impl WindowBuilder {
         }
     }
 }
-
-#[derive(Default)]
 pub struct Window {
     title: String,
     position: Vec2,
@@ -119,6 +117,24 @@ pub struct Window {
     margin: Vec4,
     content: Option<Box<dyn Component>>,
 }
+
+impl Default for Window {
+    fn default() -> Self {
+        Self {
+            title: Default::default(),
+            position: Vec2::zeros(),
+            size: Vec2::zeros(),
+            background: Default::default(),
+            border_radius: Default::default(),
+            border_width: Default::default(),
+            border_color: Default::default(),
+            padding: Vec4::zeros(),
+            margin: Vec4::zeros(),
+            content: Default::default(),
+        }
+    }
+}
+
 
 impl Component for Window {
     fn update(&mut self, _delta_time: f32) {

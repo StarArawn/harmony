@@ -1,4 +1,4 @@
-use ultraviolet::vec::Vec2;
+use nalgebra_glm::Vec2;
 use std::collections::HashSet;
 use winit::event::VirtualKeyCode;
 
@@ -44,8 +44,8 @@ impl Input {
             mouse_buttons_down: HashSet::new(),
             mouse_buttons_pressed: HashSet::new(),
             mouse_buttons_released: HashSet::new(),
-            mouse_position: Vec2::zero(),
-            mouse_wheel_movement: Vec2::zero(),
+            mouse_position: Vec2::zeros(),
+            mouse_wheel_movement: Vec2::zeros(),
 
             // current_text_input: None,
 
@@ -88,6 +88,6 @@ impl Input {
         self.keys_released.clear();
         self.mouse_buttons_pressed.clear();
         self.mouse_buttons_released.clear();
-        self.mouse_wheel_movement = Vec2::zero();
+        self.mouse_wheel_movement = Vec2::zeros();
     }
 }

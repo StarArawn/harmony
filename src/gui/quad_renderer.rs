@@ -1,5 +1,5 @@
 // This file uses wgpu to render our different renderable objects. Note they should be collected first.
-use ultraviolet::mat::Mat4;
+use nalgebra_glm::Mat4;
 use std::mem;
 use std::convert::TryInto;
 use zerocopy::{AsBytes};

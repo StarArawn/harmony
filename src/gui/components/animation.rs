@@ -1,6 +1,5 @@
-use ultraviolet::{
-    lerp::Lerp,
-    vec::Vec2
+use nalgebra_glm::{
+    Vec2
 };
 use crate::gui::components::Component;
 use crate::gui::core::{ Rectangle };
@@ -86,7 +85,7 @@ impl Component for Animation {
         if time > 1.0 { time = 1.0; }
 
         time = self.easing_function.as_ref()(time);
-        let new_position = self.position.lerp(self.destination, time);
+        let new_position = self.position.lerp(&self.destination, time);
         self.position = new_position;
     }
 

@@ -68,5 +68,6 @@ void main() {
     vert.y /= 6.0;
     vert.y -= (5.0 / 6.0);
     vert.y += float(face_index) * (1.0 / 3.0);
+    vert.y = -1 * vert.y;
     gl_Position = vec4(vert, 0.0, 1.0);
 }

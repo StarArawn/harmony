@@ -33,7 +33,6 @@ impl SimplePipeline for CubeProjectionPipeline {
                     height: ENV_CUBEMAP_RES * 6,
                     depth: 1,
                 },
-                array_layer_count: 1,
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -86,9 +85,8 @@ impl SimplePipeline for CubeProjectionPipeline {
                 size: wgpu::Extent3d {
                     width: ENV_CUBEMAP_RES,
                     height: ENV_CUBEMAP_RES,
-                    depth: 1,
+                    depth: 6,
                 },
-                array_layer_count: 6,
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,

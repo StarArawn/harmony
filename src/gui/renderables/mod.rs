@@ -1,4 +1,4 @@
-use ultraviolet::vec::Vec2;
+use nalgebra_glm::Vec2;
 use crate::gui::core::{ Background, Color, Rectangle };
 
 mod quad;
