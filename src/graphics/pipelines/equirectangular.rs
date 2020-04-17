@@ -116,7 +116,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                     wgpu::Extent3d {
                         width: ENV_CUBEMAP_RES,
                         height: ENV_CUBEMAP_RES,
-                        depth: 0,
+                        depth: 1,
                     }
                 );
             }
