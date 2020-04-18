@@ -4,7 +4,7 @@ use specs::RunNow;
 
 use crate::{
     graphics::{
-        pipeline::{PrepareResult, VertexStateBuilder},
+        pipeline::{VertexStateBuilder},
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
@@ -40,18 +40,18 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
-    fn prepare(&mut self) -> PrepareResult {
-        PrepareResult::Reuse
+    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
+        
     }
 
     fn render(
         &mut self,
         frame_view: Option<&wgpu::TextureView>,
+        depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
         mut world: Option<&mut specs::World>,
-        depth: Option<&wgpu::TextureView>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =

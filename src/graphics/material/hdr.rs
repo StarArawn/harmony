@@ -138,10 +138,10 @@ impl HDRImage {
 
         let command_buffer = final_pipeline.render(
             None,
+            None,
             &app.renderer.device,
             &pipeline,
             Some(&mut app.asset_manager),
-            None,
             None,
         );
 

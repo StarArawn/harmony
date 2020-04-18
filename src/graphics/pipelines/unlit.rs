@@ -6,7 +6,7 @@ use std::mem;
 use crate::{
     graphics::{
         mesh::MeshVertexData,
-        pipeline::{PrepareResult, VertexStateBuilder},
+        pipeline::{VertexStateBuilder},
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
@@ -39,19 +39,20 @@ impl Default for UnlitUniforms {
 unsafe impl Zeroable for UnlitUniforms {}
 unsafe impl Pod for UnlitUniforms {}
 
-impl SimplePipeline for UnlitPipeline {
-    fn prepare(&mut self) -> PrepareResult {
-        PrepareResult::Reuse
+impl SimplePipeline for UnlitPipeline 
+{
+    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
+        
     }
 
     fn render(
         &mut self,
         frame_view: Option<&wgpu::TextureView>,
+        depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
         mut world: Option<&mut specs::World>,
-        depth: Option<&wgpu::TextureView>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =

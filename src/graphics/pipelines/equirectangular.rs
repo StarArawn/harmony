@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        pipeline::{PrepareResult, VertexStateBuilder},
+        pipeline::{VertexStateBuilder},
         Pipeline, SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
@@ -12,18 +12,18 @@ pub struct CubeProjectionPipeline {}
 pub const ENV_CUBEMAP_RES: u32 = 512;
 
 impl SimplePipeline for CubeProjectionPipeline {
-    fn prepare(&mut self) -> PrepareResult {
-        PrepareResult::Reuse
+    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
+        
     }
 
     fn render(
         &mut self,
         _frame: Option<&wgpu::TextureView>,
+        _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
         mut asset_manager: Option<&mut AssetManager>,
         _world: Option<&mut specs::World>,
-        _depth: Option<&wgpu::TextureView>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =

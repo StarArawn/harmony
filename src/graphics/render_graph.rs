@@ -1,5 +1,4 @@
 use super::{
-    pipeline::PrepareResult,
     pipelines::{SkyboxPipelineDesc, UnlitPipelineDesc},
     Pipeline, Renderer, SimplePipeline, SimplePipelineDesc,
 };
@@ -10,8 +9,6 @@ use std::collections::HashMap;
 pub struct RenderGraphNode {
     pub(crate) pipeline: Pipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
-    pub(crate) command_buffer: Option<wgpu::CommandBuffer>,
-    pub(crate) dirty: bool,
 }
 
 pub struct RenderGraph {
@@ -20,7 +17,7 @@ pub struct RenderGraph {
 }
 
 impl RenderGraph {
-    pub fn new(app: &mut Application) -> Self {
+    pub(crate) fn new(app: &mut Application) -> Self {
         let mut nodes = HashMap::new();
 
         // Unlit pipeline
@@ -33,9 +30,7 @@ impl RenderGraph {
             RenderGraphNode {
                 pipeline,
                 simple_pipeline: unlit_pipeline,
-                command_buffer: None,
-                dirty: true, // Nodes always dirty at first.
-            },
+            }
         );
 
         // Skybox pipeline
@@ -73,9 +68,7 @@ impl RenderGraph {
             "skybox".to_string(),
             RenderGraphNode {
                 pipeline,
-                simple_pipeline: skybox_pipeline,
-                command_buffer: None,
-                dirty: true, // Nodes always dirty at first.
+                simple_pipeline: skybox_pipeline, // Nodes always dirty at first.
             },
         );
 
@@ -95,19 +88,28 @@ impl RenderGraph {
             .unwrap_or_else(|| panic!(format!("Couldn't find render graph node called: {}", key)))
     }
 
-    pub fn add<T: SimplePipeline + Sized + 'static>(&mut self, _pipeline: T) {
-        // TODO: fix this code up to support custom pipelines..
+    pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(&mut self, app: &mut Application, name: T2, mut pipeline_desc: T) {
+        let name = name.into();
+        let pipeline = pipeline_desc.pipeline(app);
+        let built_pipeline: Box<dyn SimplePipeline> =
+            Box::new(pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+        self.nodes.insert(name.clone(), RenderGraphNode {
+            pipeline,
+            simple_pipeline: built_pipeline
+        });
+        self.order.push(name.clone());
     }
 
-    pub fn remove(&mut self, _index: usize) {
+    pub(crate) fn remove(&mut self, _index: usize) {
         // self.pipeline.remove(index);
+        unimplemented!();
     }
 
     pub fn length(&self) -> usize {
         self.nodes.len()
     }
 
-    pub fn render(
+    pub(crate) fn render(
         &mut self,
         renderer: &mut Renderer,
         asset_manager: &mut AssetManager,
@@ -117,18 +119,15 @@ impl RenderGraph {
         let mut command_buffers = Vec::new();
         for node_name in self.order.iter() {
             let node: &mut RenderGraphNode = self.nodes.get_mut(node_name).unwrap();
-            if node.simple_pipeline.prepare() == PrepareResult::Record || node.dirty {
-                let command_buffer = node.simple_pipeline.render(
-                    Some(&frame.view),
-                    &renderer.device,
-                    &node.pipeline,
-                    Some(asset_manager),
-                    Some(world),
-                    Some(&renderer.forward_depth),
-                );
-                command_buffers.push(command_buffer);
-                //node.dirty = false;
-            }
+            let command_buffer = node.simple_pipeline.render(
+                Some(&frame.view),
+                Some(&renderer.forward_depth),
+                &renderer.device,
+                &node.pipeline,
+                Some(asset_manager),
+                Some(world),
+            );
+            command_buffers.push(command_buffer);
         }
 
         command_buffers

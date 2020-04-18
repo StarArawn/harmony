@@ -41,7 +41,7 @@ pub struct Application {
     pub(crate) console: crate::gui::components::default::Console,
     pub input: Input,
     pub current_scene: Option<Scene<'static>>,
-    pub(crate) render_graph: Option<RenderGraph>,
+    pub render_graph: Option<RenderGraph>,
 }
 
 impl Application {

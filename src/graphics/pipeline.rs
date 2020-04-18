@@ -7,12 +7,6 @@ pub struct Pipeline {
     pub(crate) bind_group_layouts: Vec<wgpu::BindGroupLayout>,
 }
 
-#[derive(PartialEq)]
-pub enum PrepareResult {
-    Record,
-    Reuse,
-}
-
 #[derive(Debug)]
 pub struct BindGroupWithData {
     pub(crate) uniform_buf: wgpu::Buffer,
@@ -20,16 +14,18 @@ pub struct BindGroupWithData {
 }
 
 pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
-    fn prepare(&mut self) -> PrepareResult;
+
+    
+    fn prepare(&mut self, device: &mut wgpu::Device, pipeline: &Pipeline, encoder: &mut wgpu::CommandEncoder);
 
     fn render(
         &mut self,
         frame: Option<&wgpu::TextureView>,
+        depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
-        world: Option<&mut specs::World>,
-        depth: Option<&wgpu::TextureView>,
+        data: Option<&mut specs::World>,
     ) -> wgpu::CommandBuffer;
 }
 
@@ -99,7 +95,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         }
     }
 
-    // TODO: Support other types of shaders like geometry.
+    // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
     fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
     fn create_layout(
