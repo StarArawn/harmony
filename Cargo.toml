@@ -24,7 +24,7 @@ specs = "0.16.1"
 stretch = "0.3.2"
 walkdir = "2"
 wgpu = { git="https://github.com/StarArawn/wgpu-rs", rev="5234df523d621ae9745aca0ae9f7c10b69f66546" }
-wgpu_glyph = { git="https://github.com/StarArawn/wgpu_glyph", branch="master" }
+wgpu_glyph = { git="https://github.com/StarArawn/wgpu_glyph", rev="cb60cc3c7775ff060e1576ca31a7ceb5c85cae5f" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
