@@ -16,7 +16,7 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Skybox rendering from an .hdr texture.
 
 ## Future Features (Prioritized)
-1. [ ] Custom render pipelines
+1. [x] Custom render pipelines
 2. [ ] More useful scene features
 3. [ ] Frame Profile graph
 4. [ ] Lighting (Directional, Point)
