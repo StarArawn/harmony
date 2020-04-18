@@ -40,3 +40,7 @@ To run on vulkan:
 `cargo run --example hello-cube`
 
 Validation should be turned on already you only need to make sure to have the latest vulkan sdk installed. https://vulkan.lunarg.com/
+
+Acknowledgements:
+- Termhn: https://github.com/termhn/rendy-pbr
+- Iced GUI: https://github.com/hecrj/iced
