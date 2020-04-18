@@ -2,16 +2,16 @@
 A modern 3D/2D game engine that uses wgpu that is designed to work out of the box with minimal effort. It uses specs for handling game/rendering data.
 
 ## Features
-- A custom asset manager that handles loading data for you.
-- Loads GLTF meshes
-- (png, jpg, hdr) image support.
-- Per-material type forward rendering.
-- Unlit materials.
-- Scene's managed by specs world.
-- Entity Transforms
-- Perspective Camera
-- Render Graph
-- Skybox rendering from an .hdr texture.
+- [x] A custom asset manager that handles loading data for you.
+- [x] Loads GLTF meshes
+- [x] (png, jpg, hdr) image support.
+- [x] Per-material type forward rendering.
+- [x] Unlit materials.
+- [x] Scene's managed by specs world.
+- [x] Entity Transforms
+- [x] Perspective Camera
+- [x] Render Graph
+- [x] Skybox rendering from an .hdr texture.
 
 ## Future Features (Prioritized)
 1. [ ] Custom render pipelines
