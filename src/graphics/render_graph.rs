@@ -22,7 +22,7 @@ impl RenderGraph {
 
         // Unlit pipeline
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
-        let pipeline = unlit_pipeline_desc.pipeline(app);
+        let pipeline = unlit_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer);
         let unlit_pipeline: Box<dyn SimplePipeline> =
             Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
         nodes.insert(
@@ -35,7 +35,7 @@ impl RenderGraph {
 
         // Skybox pipeline
         let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        let pipeline = skybox_pipeline_desc.pipeline(app);
+        let pipeline = skybox_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer);
         let material_layout = &pipeline.bind_group_layouts[1];
         for cubemap_image in app.asset_manager.hdr_images.values_mut() {
             let bind_group = app
@@ -88,11 +88,11 @@ impl RenderGraph {
             .unwrap_or_else(|| panic!(format!("Couldn't find render graph node called: {}", key)))
     }
 
-    pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(&mut self, app: &mut Application, name: T2, mut pipeline_desc: T) {
+    pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(&mut self, asset_manager: &AssetManager, renderer: &mut Renderer, name: T2, mut pipeline_desc: T) {
         let name = name.into();
-        let pipeline = pipeline_desc.pipeline(app);
+        let pipeline = pipeline_desc.pipeline(asset_manager, renderer);
         let built_pipeline: Box<dyn SimplePipeline> =
-            Box::new(pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+            Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
         self.nodes.insert(name.clone(), RenderGraphNode {
             pipeline,
             simple_pipeline: built_pipeline

@@ -2,18 +2,18 @@ pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth3
 
 pub struct Renderer {
     surface: wgpu::Surface,
-    pub size: winit::dpi::PhysicalSize<u32>,
+    pub(crate) size: winit::dpi::PhysicalSize<u32>,
     adapter: wgpu::Adapter,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub swap_chain: wgpu::SwapChain,
-    pub window: winit::window::Window,
-    pub sc_desc: wgpu::SwapChainDescriptor,
-    pub forward_depth: wgpu::TextureView,
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
+    pub(crate) swap_chain: wgpu::SwapChain,
+    pub(crate) window: winit::window::Window,
+    pub(crate) sc_desc: wgpu::SwapChainDescriptor,
+    pub(crate) forward_depth: wgpu::TextureView,
 }
 
 impl Renderer {
-    pub async fn new(
+    pub(crate) async fn new(
         window: winit::window::Window,
         size: winit::dpi::PhysicalSize<u32>,
         surface: wgpu::Surface,
@@ -73,7 +73,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) -> wgpu::SwapChainOutput {
+    pub(crate) fn render(&mut self) -> wgpu::SwapChainOutput {
         let output = self.swap_chain.get_next_texture().unwrap();
 
         output

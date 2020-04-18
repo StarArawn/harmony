@@ -29,7 +29,7 @@ pub trait AppState {
 }
 
 pub struct Application {
-    pub(crate) renderer: Renderer,
+    pub renderer: Renderer,
     gui_renderer: Option<crate::gui::Renderer>,
     gui_renderables: Vec<crate::gui::renderables::Renderable>,
     pub asset_manager: AssetManager,

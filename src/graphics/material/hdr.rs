@@ -131,7 +131,7 @@ impl HDRImage {
         // First we need a custom pipeline that will run in here to do the conversion.
         let mut cube_projection_pipeline_desc =
             crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::default();
-        let pipeline = cube_projection_pipeline_desc.pipeline(app);
+        let pipeline = cube_projection_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer);
 
         let mut final_pipeline =
             cube_projection_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts);

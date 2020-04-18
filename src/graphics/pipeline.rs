@@ -1,10 +1,10 @@
 use super::material::Shader;
-use crate::{Application, AssetManager};
+use crate::AssetManager;
 
 #[derive(Debug)]
 pub struct Pipeline {
-    pub(crate) pipeline: wgpu::RenderPipeline,
-    pub(crate) bind_group_layouts: Vec<wgpu::BindGroupLayout>,
+    pub pipeline: wgpu::RenderPipeline,
+    pub bind_group_layouts: Vec<wgpu::BindGroupLayout>,
 }
 
 #[derive(Debug)]
@@ -39,9 +39,9 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         self
     }
 
-    fn pipeline(&mut self, app: &mut Application) -> Pipeline {
-        let mut_device = &mut app.renderer.device;
-        let shader = self.load_shader(&mut app.asset_manager);
+    fn pipeline(&mut self, asset_manager: &AssetManager, renderer: &mut crate::graphics::Renderer) -> Pipeline {
+        let mut_device = &mut renderer.device;
+        let shader = self.load_shader(asset_manager);
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
             entry_point: "main",
@@ -54,7 +54,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         let (bind_group_layouts, layout) = self.create_layout(mut_device);
         let rasterization_state = self.rasterization_state_desc();
         let primitive_topology = self.primitive_topology();
-        let color_states = self.color_states_desc(&app.renderer.sc_desc);
+        let color_states = self.color_states_desc(&renderer.sc_desc);
         let depth_stencil_state = self.depth_stencil_state_desc();
         let vertex_state_builder = self.vertex_state_desc();
         let sample_count = self.create_samplers(mut_device);
