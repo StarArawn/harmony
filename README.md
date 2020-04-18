@@ -31,6 +31,8 @@ Note: Currently this library is very early in development. Things are very likel
 - [ ] Investigate using a hybrid rendering pipeline setup similar to halcyon, but without ray tracing(for now..). 
 - [ ] Raytracing support?
 
+## Running
+
 To run on metal with validation:
 
 `METAL_DEVICE_WRAPPER_TYPE=1 cargo run --example hello-cube`
@@ -41,6 +43,15 @@ To run on vulkan:
 
 Validation should be turned on already you only need to make sure to have the latest vulkan sdk installed. https://vulkan.lunarg.com/
 
-Acknowledgements:
+## Examples
+
+- `hello-world` a simple example showcasing the ability to draw text to the screen.
+- `hello-cube` a example of how to load gltf files and display them on the screen.
+- `benchmark` a benchmark that renders 2500 cubes to test performance.
+
+## Screenshots
+![Hello Cube](/screenshots/screen1.png?raw=true "Hello cube!")
+
+## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
 - Iced GUI: https://github.com/hecrj/iced
