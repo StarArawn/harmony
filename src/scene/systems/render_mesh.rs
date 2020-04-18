@@ -60,7 +60,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
 
         {
             let size = std::mem::size_of::<LocalUniform>();
-            let temp_buf_data = self.device.create_buffer_mapped(&wgpu::BufferDescriptor {
+            let mut temp_buf_data = self.device.create_buffer_mapped(&wgpu::BufferDescriptor {
                 size: (transforms.count() * size) as u64,
                 usage: wgpu::BufferUsage::COPY_SRC,
                 label: None,
@@ -69,7 +69,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
             // FIXME: Align and use `LayoutVerified`
             for (transform, slot) in (&mut transforms)
                 .join()
-                .zip(temp_buf_data.data.chunks_exact_mut(size))
+                .zip(temp_buf_data.data().chunks_exact_mut(size))
             {
                 transform.update();
                 slot.copy_from_slice(bytemuck::bytes_of(&LocalUniform {
