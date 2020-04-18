@@ -23,14 +23,14 @@ shaderc = "0.6"
 specs = "0.16.1"
 stretch = "0.3.2"
 walkdir = "2"
-wgpu = { path = "../wgpu-rs" }
+wgpu = { git="https://github.com/StarArawn/wgpu-rs" }
 # wgpu-native = { git="https://github.com/kvark/wgpu/", branch="swapchain-op"}
 # wgpu-types = { git="https://github.com/kvark/wgpu/", branch="swapchain-op"}
 # wgpu-core = { git="https://github.com/kvark/wgpu/", branch="swapchain-op"} #{ version = "0.5.2" }
-wgpu_glyph = { git="https://github.com/hecrj/wgpu_glyph", branch="update-wgpu" }
+wgpu_glyph = { git="https://github.com/StarArawn/wgpu_glyph", branch="master" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
 
 [patch.crates-io]
-wgpu = { path = "../wgpu-rs" }
+wgpu = { git="https://github.com/StarArawn/wgpu-rs" }
