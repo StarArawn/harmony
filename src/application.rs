@@ -193,12 +193,10 @@ impl Application {
         };
         match event {
             Event::MainEventsCleared => {
-                let mut dt = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
-                while dt >= self.fixed_timestep {
-                    dt -= self.fixed_timestep;
-                    self.delta_time = dt;
-                    self.elapsed_time += self.fixed_timestep;
-
+                let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
+                while frame_time > 0.0 {
+                    self.delta_time = f32::min(frame_time, self.fixed_timestep);
+                    
                     app_state.update(self);
                     let gui_scene = app_state.draw_gui(self);
                     if gui_scene.is_some() {
@@ -212,10 +210,12 @@ impl Application {
                     self.console.update(&self.input, self.delta_time);
 
                     if self.current_scene.is_some() {
-                        self.current_scene.as_mut().unwrap().update(dt);
+                        self.current_scene.as_mut().unwrap().update(self.delta_time);
                     }
 
                     self.input.clear();
+                    frame_time -= self.delta_time;
+                    self.elapsed_time += self.delta_time;
                 }
 
                 self.renderer.window.request_redraw();

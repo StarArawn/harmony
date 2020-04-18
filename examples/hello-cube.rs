@@ -47,7 +47,7 @@ impl<'a> System<'a> for RotateSystem {
             // In this case it's our cube.
             // rotate_on_y rotates the cube along the Y axis. It is a helper function to make it
             // easier to modify quaternions without remember how to.
-            transform.rotate_on_y(-5.0 * delta_time.0);
+            transform.rotate_on_y(-2.0 * delta_time.0);
         }
     }
 }
