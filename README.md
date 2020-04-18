@@ -1,6 +1,8 @@
 # Harmony
 A modern 3D/2D game engine that uses wgpu that is designed to work out of the box with minimal effort. It uses specs for handling game/rendering data.
 
+Note: Currently this library is very early in development. Things are very likely going to change. 
+
 ## Features
 - [x] A custom asset manager that handles loading data for you.
 - [x] Loads GLTF meshes
