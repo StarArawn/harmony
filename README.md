@@ -17,15 +17,15 @@ Note: Currently this library is very early in development. Things are very likel
 
 ## Future Features (Prioritized)
 1. [x] Custom render pipelines
-2. [ ] More useful scene features
-3. [ ] Frame Profile graph
-4. [ ] Lighting (Directional, Point)
-5. [ ] PBR shading model
-6. [ ] HDR/Tonemap rendering
-7. [ ] Temporal SMAA
-8. [ ] SSAO
-9. [ ] Shadow Mapping
-10. [ ] Asset Bundling and custom assets types.
+2. [ ] Frame Profile graph
+3. [ ] Lighting (Directional, Point)
+4. [ ] PBR shading model
+5. [ ] HDR/Tonemap rendering
+6. [ ] Temporal SMAA
+7. [ ] SSAO
+8. [ ] Shadow Mapping
+9. [ ] Asset Bundling and custom assets types.
+10. [ ] More useful scene features
 
 ## Long Term
 - [ ] Investigate using a hybrid rendering pipeline setup similar to halcyon, but without ray tracing(for now..). 
