@@ -28,6 +28,7 @@ pub struct Input {
     mouse_buttons_released: HashSet<MouseButton>,
     mouse_position: Vec2,
     mouse_wheel_movement: Vec2,
+
     // current_text_input: Option<String>,
 
     // pads: Vec<Option<GamepadState>>,
@@ -45,6 +46,7 @@ impl Input {
             mouse_buttons_released: HashSet::new(),
             mouse_position: Vec2::zeros(),
             mouse_wheel_movement: Vec2::zeros(),
+
             // current_text_input: None,
 
             // pads: Vec::new(),
@@ -65,16 +67,22 @@ impl Input {
 
     pub(crate) fn update_events(&mut self, event: &winit::event::Event<'_, ()>) {
         match event {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::KeyboardInput { input, .. } => {
-                    if input.state == winit::event::ElementState::Pressed {
-                        self.keys_pressed.insert(input.virtual_keycode.unwrap());
-                    } else if input.state == winit::event::ElementState::Released {
-                        self.keys_released.insert(input.virtual_keycode.unwrap());
-                    }
+            winit::event::Event::WindowEvent { event, .. } => {
+                match event {
+                    winit::event::WindowEvent::KeyboardInput { input, .. } => {
+                        if input.state == winit::event::ElementState::Pressed {
+                            if input.virtual_keycode.is_some() {
+                                self.keys_pressed.insert(input.virtual_keycode.unwrap());
+                            }
+                        } else if input.state == winit::event::ElementState::Released {
+                            if input.virtual_keycode.is_some() {
+                                self.keys_released.insert(input.virtual_keycode.unwrap());
+                            }
+                        }
+                    },
+                    _ => (),
                 }
-                _ => (),
-            },
+            }
             _ => (),
         }
     }

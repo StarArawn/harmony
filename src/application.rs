@@ -188,8 +188,8 @@ impl Application {
         let bounds = crate::gui::core::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: self.renderer.size.width as f32 / 2.0, // TODO: Use window scale NOT 2.0.
-            height: self.renderer.size.height as f32 / 2.0, 
+            width: self.renderer.size.width as f32 / self.renderer.window.scale_factor() as f32, // TODO: Use window scale NOT 2.0.
+            height: self.renderer.size.height as f32 / self.renderer.window.scale_factor() as f32, 
         };
         match event {
             Event::MainEventsCleared => {
@@ -262,10 +262,10 @@ impl Application {
                     &mut self.asset_manager,
                 ));
 
+                app_state.draw(self);
+
                 // Then we submit the work
                 self.renderer.queue.submit(&command_buffers);
-
-                app_state.draw(self);
 
                 std::thread::yield_now();
 
