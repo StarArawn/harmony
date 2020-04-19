@@ -29,115 +29,114 @@ impl SimplePipeline for CubeProjectionPipeline {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        for hdr_image in asset_manager.as_mut().unwrap().hdr_images.values_mut() {
-            println!("Calculating cubemap for: {}", hdr_image.name);
-            let render_texture = device.create_texture(&wgpu::TextureDescriptor {
-                size: wgpu::Extent3d {
-                    width: ENV_CUBEMAP_RES,
-                    height: ENV_CUBEMAP_RES * 6,
-                    depth: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba32Float,
-                usage: wgpu::TextureUsage::SAMPLED
-                    | wgpu::TextureUsage::COPY_SRC
-                    | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-                label: None,
-            });
+        // for hdr_image in asset_manager.as_mut().unwrap().hdr_images.values_mut() {
+        //     println!("Calculating cubemap for: {}", hdr_image.name);
+        //     let render_texture = device.create_texture(&wgpu::TextureDescriptor {
+        //         size: wgpu::Extent3d {
+        //             width: ENV_CUBEMAP_RES,
+        //             height: ENV_CUBEMAP_RES * 6,
+        //             depth: 1,
+        //         },
+        //         mip_level_count: 1,
+        //         sample_count: 1,
+        //         dimension: wgpu::TextureDimension::D2,
+        //         format: wgpu::TextureFormat::Rgba32Float,
+        //         usage: wgpu::TextureUsage::SAMPLED
+        //             | wgpu::TextureUsage::COPY_SRC
+        //             | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        //         label: None,
+        //     });
 
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &pipeline.bind_group_layouts[0],
-                bindings: &[
-                    wgpu::Binding {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&hdr_image.view),
-                    },
-                    wgpu::Binding {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&hdr_image.sampler),
-                    },
-                ],
-                label: None,
-            });
+        //     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //         layout: &pipeline.bind_group_layouts[0],
+        //         bindings: &[
+        //             wgpu::Binding {
+        //                 binding: 0,
+        //                 resource: wgpu::BindingResource::TextureView(&hdr_image.view),
+        //             },
+        //             wgpu::Binding {
+        //                 binding: 1,
+        //                 resource: wgpu::BindingResource::Sampler(&hdr_image.sampler),
+        //             },
+        //         ],
+        //         label: None,
+        //     });
 
-            let render_texture_view = render_texture.create_default_view();
+        //     let render_texture_view = render_texture.create_default_view();
 
-            {
-                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &render_texture_view,
-                        resolve_target: None,
-                        load_op: wgpu::LoadOp::Clear,
-                        store_op: wgpu::StoreOp::Store,
-                        clear_color: wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        },
-                    }],
-                    depth_stencil_attachment: None,
-                });
-                render_pass.set_pipeline(&pipeline.pipeline);
-                render_pass.set_bind_group(0, &bind_group, &[]);
-                render_pass.draw(0..6, 0..6);
-            }
+        //     {
+        //         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        //             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+        //                 attachment: &render_texture_view,
+        //                 resolve_target: None,
+        //                 load_op: wgpu::LoadOp::Clear,
+        //                 store_op: wgpu::StoreOp::Store,
+        //                 clear_color: wgpu::Color {
+        //                     r: 0.0,
+        //                     g: 0.0,
+        //                     b: 0.0,
+        //                     a: 1.0,
+        //                 },
+        //             }],
+        //             depth_stencil_attachment: None,
+        //         });
+        //         render_pass.set_pipeline(&pipeline.pipeline);
+        //         render_pass.set_bind_group(0, &bind_group, &[]);
+        //         render_pass.draw(0..6, 0..6);
+        //     }
 
-            let cubemap_texture = device.create_texture(&wgpu::TextureDescriptor {
-                size: wgpu::Extent3d {
-                    width: ENV_CUBEMAP_RES,
-                    height: ENV_CUBEMAP_RES,
-                    depth: 6,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba32Float,
-                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-                label: None,
-            });
+        //     let cubemap_texture = device.create_texture(&wgpu::TextureDescriptor {
+        //         size: wgpu::Extent3d {
+        //             width: ENV_CUBEMAP_RES,
+        //             height: ENV_CUBEMAP_RES,
+        //             depth: 6,
+        //         },
+        //         mip_level_count: 1,
+        //         sample_count: 1,
+        //         dimension: wgpu::TextureDimension::D2,
+        //         format: wgpu::TextureFormat::Rgba32Float,
+        //         usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+        //         label: None,
+        //     });
 
-            for i in 0..6 {
-                encoder.copy_texture_to_texture(
-                    wgpu::TextureCopyView {
-                        texture: &render_texture,
-                        mip_level: 0,
-                        array_layer: 0,
-                        origin: wgpu::Origin3d {
-                            x: 0,
-                            y: ENV_CUBEMAP_RES * i,
-                            z: 0,
-                        },
-                    },
-                    wgpu::TextureCopyView {
-                        texture: &cubemap_texture,
-                        mip_level: 0,
-                        array_layer: i,
-                        origin: wgpu::Origin3d::ZERO,
-                    },
-                    wgpu::Extent3d {
-                        width: ENV_CUBEMAP_RES,
-                        height: ENV_CUBEMAP_RES,
-                        depth: 1,
-                    },
-                );
-            }
+        //     for i in 0..6 {
+        //         encoder.copy_texture_to_texture(
+        //             wgpu::TextureCopyView {
+        //                 texture: &render_texture,
+        //                 mip_level: 0,
+        //                 array_layer: 0,
+        //                 origin: wgpu::Origin3d {
+        //                     x: 0,
+        //                     y: ENV_CUBEMAP_RES * i,
+        //                     z: 0,
+        //                 },
+        //             },
+        //             wgpu::TextureCopyView {
+        //                 texture: &cubemap_texture,
+        //                 mip_level: 0,
+        //                 array_layer: i,
+        //                 origin: wgpu::Origin3d::ZERO,
+        //             },
+        //             wgpu::Extent3d {
+        //                 width: ENV_CUBEMAP_RES,
+        //                 height: ENV_CUBEMAP_RES,
+        //                 depth: 1,
+        //             },
+        //         );
+        //     }
 
-            hdr_image.cubemap_view =
-                Some(cubemap_texture.create_view(&wgpu::TextureViewDescriptor {
-                    format: wgpu::TextureFormat::Rgba32Float,
-                    dimension: wgpu::TextureViewDimension::Cube,
-                    aspect: wgpu::TextureAspect::default(),
-                    base_mip_level: 0,
-                    level_count: 1,
-                    base_array_layer: 0,
-                    array_layer_count: 6,
-                }));
-            hdr_image.cubemap_texture = Some(cubemap_texture);
-            hdr_image.render_texture = Some(render_texture);
-        }
+        //     hdr_image.cubemap_view =
+        //         Some(cubemap_texture.create_view(&wgpu::TextureViewDescriptor {
+        //             format: wgpu::TextureFormat::Rgba32Float,
+        //             dimension: wgpu::TextureViewDimension::Cube,
+        //             aspect: wgpu::TextureAspect::default(),
+        //             base_mip_level: 0,
+        //             level_count: 1,
+        //             base_array_layer: 0,
+        //             array_layer_count: 6,
+        //         }));
+        //     hdr_image.cubemap_texture = Some(cubemap_texture);
+        // }
 
         encoder.finish()
     }

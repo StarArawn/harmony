@@ -77,10 +77,10 @@ impl<'a> System<'a> for RenderSkybox<'a> {
         render_pass.set_pipeline(&self.pipeline.pipeline);
         render_pass.set_bind_group(0, self.global_bind_group, &[]);
 
-        for skybox in skyboxes.join() {
-            let hdr_image = self.asset_manager.get_hdr_image(&skybox.name);
-            render_pass.set_bind_group(1, hdr_image.cubemap_bind_group.as_ref().unwrap(), &[]);
-            render_pass.draw(0..3 as u32, 0..1);
-        }
+        // for skybox in skyboxes.join() {
+        //     let hdr_image = self.asset_manager.get_hdr_image(&skybox.name);
+        //     render_pass.set_bind_group(1, hdr_image.cubemap_bind_group.as_ref().unwrap(), &[]);
+        //     render_pass.draw(0..3 as u32, 0..1);
+        // }
     }
 }

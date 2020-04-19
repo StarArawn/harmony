@@ -123,7 +123,7 @@ impl Application {
         );
         self.console.load(&self.asset_manager);
 
-        super::graphics::material::HDRImage::create_cube_map(self);
+        //super::graphics::material::HDRImage::create_cube_map(self);
 
         self.render_graph = Some(RenderGraph::new(self));
 
