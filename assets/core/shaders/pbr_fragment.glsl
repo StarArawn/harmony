@@ -18,7 +18,7 @@ void main() {
     vec3 ambient = vec3(0.05, 0.05, 0.05);
     // accumulate color
     vec3 color = ambient;
-    for (int i=0; i < TOTAL_DIRECTIONAL_LIGHTS && i < MAX_LIGHTS; ++i) {
+    for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
         DirectionalLight light = get_directional_light(i);
         float dot_product =  max(0.0, dot(normalize(light.direction), normalize(i_normal)));
         color += dot_product * light.color;

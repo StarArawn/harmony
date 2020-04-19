@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use nalgebra_glm::{Vec3, Mat4};
+use nalgebra_glm::{Vec3, Mat4, Vec4};
 
 mod unlit;
 pub(crate) use unlit::{UnlitPipelineDesc};
@@ -53,14 +53,14 @@ impl Default for DirectionalLight {
 #[derive(Debug, Clone, Copy)]
 pub struct PointLight {
     pub position: Vec3,
-    pub attenuation: f32,
     pub color: Vec3,
+    pub attenuation: Vec3,
 }
 
 impl Default for PointLight {
     fn default() -> Self {
         Self {
-            attenuation: 0.0,
+            attenuation: Vec3::zeros(),
             position: Vec3::zeros(),
             color: Vec3::zeros(),
         }
@@ -71,8 +71,7 @@ impl Default for PointLight {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct LightingUniform {
-    pub TOTAL_DIRECTIONAL_LIGHTS: u32,
-    pub TOTAL_POINT_LIGHTS: u32,
+    pub light_num: Vec4,
     pub directional_lights: [DirectionalLight; MAX_LIGHTS / 2],
     pub point_lights: [PointLight; MAX_LIGHTS / 2],
 }
@@ -80,8 +79,7 @@ pub struct LightingUniform {
 impl Default for LightingUniform {
     fn default() -> Self {
         Self {
-            TOTAL_DIRECTIONAL_LIGHTS: 0,
-            TOTAL_POINT_LIGHTS: 0,
+            light_num: Vec4::zeros(),
             directional_lights: [DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default()],
             point_lights: [PointLight::default(), PointLight::default(), PointLight::default(), PointLight::default(), PointLight::default()],
         }

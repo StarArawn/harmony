@@ -5,6 +5,7 @@ use crate::{
 };
 use specs::{ReadStorage, System, WriteStorage};
 use std::convert::TryInto;
+use nalgebra_glm::{Vec4, Vec3};
 
 pub struct RenderPBR<'a> {
     pub(crate) device: &'a wgpu::Device,
@@ -69,7 +70,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
         }).collect();
 
         let mut point_light_data_vec: Vec<PointLight> = (&point_lights, &transforms).join().map(|(data, transform)| PointLight {
-            attenuation: data.attenuation,
+            attenuation: Vec3::new(data.attenuation, 0.0, 0.0),
             color: data.color,
             position: transform.position,
         }).collect();
@@ -82,8 +83,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
         directional_light_data_vec.resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
 
         let light_uniform = LightingUniform {
-            TOTAL_DIRECTIONAL_LIGHTS: total_dir_lights,
-            TOTAL_POINT_LIGHTS: total_point_lights,
+            light_num: Vec4::new(total_dir_lights as f32, total_point_lights as f32, 0.0, 0.0),
             directional_lights: directional_light_data_vec.as_slice().try_into().unwrap(),
             point_lights: point_light_data_vec.as_slice().try_into().unwrap(),
         };
@@ -92,7 +92,6 @@ impl<'a> System<'a> for RenderPBR<'a> {
             .device
             .create_buffer_with_data(bytemuck::bytes_of(&light_uniform), wgpu::BufferUsage::COPY_SRC);
 
-        dbg!(std::mem::size_of::<LightingUniform>());
         self.encoder.copy_buffer_to_buffer(
             &lighting_buffer,
             0,
@@ -101,6 +100,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
             std::mem::size_of::<LightingUniform>() as u64,
         );
 
+        // Update transform buffers.
         {
             let size = std::mem::size_of::<LocalUniform>();
             let mut temp_buf_data = self.device.create_buffer_mapped(&wgpu::BufferDescriptor {

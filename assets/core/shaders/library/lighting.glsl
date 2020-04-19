@@ -3,20 +3,19 @@
 
 const int MAX_LIGHTS = 10;
 
-layout(std140) struct DirectionalLight {
+struct DirectionalLight {
     vec3 direction;
     vec3 color;
 };
 
-layout(std140) struct PointLight {
+struct PointLight {
     vec3 position;
-    float attenuation;
     vec3 color;
+    vec3 attenuation;
 };
 
-layout (std140, set = 1, binding = 1) uniform LightingData {
-    int TOTAL_DIRECTIONAL_LIGHTS;
-    int TOTAL_POINT_LIGHTS;
+layout (set = 1, binding = 1) uniform LightingData {
+    vec4 light_num;
     DirectionalLight directional_lights[MAX_LIGHTS / 2];
     PointLight point_lights[MAX_LIGHTS / 2];
 };
