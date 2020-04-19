@@ -55,3 +55,8 @@ Validation should be turned on already you only need to make sure to have the la
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
 - Iced GUI: https://github.com/hecrj/iced
+
+### Help?
+You can find me on the rust game development discord server here:
+https://discord.gg/rHxrAPW
+I'm more than happy to help out if I am around!
