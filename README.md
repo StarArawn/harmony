@@ -17,8 +17,8 @@ Note: Currently this library is very early in development. Things are very likel
 
 ## Future Features (Prioritized)
 1. [x] Custom render pipelines
-2. [ ] ~~Frame Profile graph~~ Some experimental work done in a separate branch.
-3. [ ] Lighting (Directional, Point)
+2. [x] ~~Frame Profile graph~~ Some experimental work done in a separate branch.
+3. [x] Lighting (Directional, Point)
 4. [ ] PBR shading model
 5. [ ] HDR/Tonemap rendering
 6. [ ] Temporal SMAA
