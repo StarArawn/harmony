@@ -65,14 +65,14 @@ impl<'a> System<'a> for RenderPBR<'a> {
 
         // Get lighting data.
         let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights.join().map(|data| DirectionalLight {
-            direction: data.direction,
-            color: data.color,
+            direction: Vec4::new(data.direction.x, data.direction.y, data.direction.z, 0.0),
+            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
         }).collect();
 
         let mut point_light_data_vec: Vec<PointLight> = (&point_lights, &transforms).join().map(|(data, transform)| PointLight {
-            attenuation: Vec3::new(data.attenuation, 0.0, 0.0),
-            color: data.color,
-            position: transform.position,
+            attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
+            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+            position: Vec4::new(transform.position.x, transform.position.y, transform.position.z, 0.0),
         }).collect();
 
         let total_dir_lights = directional_light_data_vec.len() as u32;

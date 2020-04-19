@@ -88,7 +88,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                     },
                     wgpu::BindGroupLayoutEntry { // LIGHTING DATA
                         binding: 1,
-                        visibility: wgpu::ShaderStage::VERTEX,
+                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     }
                 ],

@@ -4,14 +4,14 @@
 const int MAX_LIGHTS = 10;
 
 struct DirectionalLight {
-    vec3 direction;
-    vec3 color;
+    vec4 direction;
+    vec4 color;
 };
 
 struct PointLight {
-    vec3 position;
-    vec3 color;
-    vec3 attenuation;
+    vec4 position;
+    vec4 color;
+    vec4 attenuation;
 };
 
 layout (set = 1, binding = 1) uniform LightingData {

@@ -20,9 +20,8 @@ void main() {
     vec3 color = ambient;
     for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
         DirectionalLight light = get_directional_light(i);
-        float dot_product =  max(0.0, dot(normalize(light.direction), normalize(i_normal)));
-        color += dot_product * light.color;
+        float dot_product =  dot(normalize(i_normal), light.direction.xyz);
+        color += dot_product * light.color.xyz;
     }
-    DirectionalLight light = get_directional_light(0);
-    outColor = vec4(light.color, 1.0); //vec4(color * tex.xyz, tex.w);
+    outColor = vec4(color * tex.xyz, tex.w);
 }

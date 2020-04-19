@@ -36,15 +36,15 @@ pub const MAX_LIGHTS: usize = 10;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct DirectionalLight {
-    pub direction: Vec3,
-    pub color: Vec3,
+    pub direction: Vec4,
+    pub color: Vec4,
 }
 
 impl Default for DirectionalLight {
     fn default() -> Self {
         Self {
-            direction: Vec3::zeros(),
-            color: Vec3::zeros(),
+            direction: Vec4::zeros(),
+            color: Vec4::zeros(),
         }
     }
 }
@@ -52,17 +52,17 @@ impl Default for DirectionalLight {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct PointLight {
-    pub position: Vec3,
-    pub color: Vec3,
-    pub attenuation: Vec3,
+    pub position: Vec4,
+    pub color: Vec4,
+    pub attenuation: Vec4,
 }
 
 impl Default for PointLight {
     fn default() -> Self {
         Self {
-            attenuation: Vec3::zeros(),
-            position: Vec3::zeros(),
-            color: Vec3::zeros(),
+            attenuation: Vec4::zeros(),
+            position: Vec4::zeros(),
+            color: Vec4::zeros(),
         }
     }
 }
