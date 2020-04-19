@@ -18,6 +18,8 @@ impl<'a> Scene<'a> {
         world.register::<components::CameraData>();
         world.register::<components::Transform>();
         world.register::<components::SkyboxData>();
+        world.register::<components::DirectionalLightData>();
+        world.register::<components::PointLightData>();
 
         // Add our systems here..
         let dispatch_buider = dispatch_buider.unwrap_or(DispatcherBuilder::new());

@@ -67,17 +67,13 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
     fn create_layout(
         &self,
         device: &mut wgpu::Device,
-    ) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
+    ) -> Vec<wgpu::BindGroupLayout> {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
             label: None,
         });
 
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[&bind_group_layout],
-        });
-
-        (vec![bind_group_layout], layout)
+        vec![bind_group_layout]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {

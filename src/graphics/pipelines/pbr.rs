@@ -10,18 +10,19 @@ use crate::{
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::RenderUnlit,
+    scene::systems::RenderPBR,
     AssetManager,
 };
-use super::GlobalUniforms;
+use super::{LightingUniform, GlobalUniforms};
 
 #[derive(Debug)]
-pub struct UnlitPipeline {
+pub struct PBRPipeline {
     constants_buffer: wgpu::Buffer,
+    lighting_buffer: wgpu::Buffer,
     global_bind_group: wgpu::BindGroup,
 }
 
-impl SimplePipeline for UnlitPipeline 
+impl SimplePipeline for PBRPipeline 
 {
     fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
         
@@ -40,18 +41,19 @@ impl SimplePipeline for UnlitPipeline
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
-            let mut render_unlit = RenderUnlit {
+            let mut render_pbr = RenderPBR {
                 device,
                 asset_manager: asset_manager.as_ref().unwrap(),
                 encoder: &mut encoder,
                 frame_view: frame_view.as_ref().unwrap(),
                 pipeline,
                 constants_buffer: &self.constants_buffer,
+                lighting_buffer: &self.lighting_buffer,
                 global_bind_group: &self.global_bind_group,
                 depth: depth.as_ref().unwrap(),
             };
-            RunNow::setup(&mut render_unlit, world.as_mut().unwrap());
-            render_unlit.run_now(world.as_mut().unwrap());
+            RunNow::setup(&mut render_pbr, world.as_mut().unwrap());
+            render_pbr.run_now(world.as_mut().unwrap());
         }
 
         encoder.finish()
@@ -59,16 +61,16 @@ impl SimplePipeline for UnlitPipeline
 }
 
 #[derive(Debug, Default)]
-pub struct UnlitPipelineDesc;
+pub struct PBRPipelineDesc;
 
-impl SimplePipelineDesc for UnlitPipelineDesc {
-    type Pipeline = UnlitPipeline;
+impl SimplePipelineDesc for PBRPipelineDesc {
+    type Pipeline = PBRPipeline;
 
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
     ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("unlit.shader")
+        asset_manager.get_shader("pbr.shader")
     }
 
     fn create_layout(
@@ -78,11 +80,18 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                }],
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry { // CAMERA TRANSFORM
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                    },
+                    wgpu::BindGroupLayoutEntry { // LIGHTING DATA
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                    }
+                ],
                 label: None,
             });
 
@@ -111,6 +120,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
                 ],
                 label: None,
             });
+
         vec![
             global_bind_group_layout,
             material_bind_group_layout,
@@ -194,27 +204,42 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-    ) -> UnlitPipeline {
+    ) -> PBRPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&GlobalUniforms::default()),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
+        let lighting_buffer = device.create_buffer_with_data(
+            bytemuck::bytes_of(&LightingUniform::default()),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layouts[0],
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &constants_buffer,
-                    range: 0..std::mem::size_of::<GlobalUniforms>() as u64,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &constants_buffer,
+                        range: 0..std::mem::size_of::<GlobalUniforms>() as u64,
+                    },
                 },
-            }],
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &lighting_buffer,
+                        range: 0..std::mem::size_of::<LightingUniform>() as u64,
+                    },
+                }
+            ],
             label: None,
         });
 
-        UnlitPipeline {
+        PBRPipeline {
             constants_buffer,
+            lighting_buffer,
             global_bind_group,
         }
     }

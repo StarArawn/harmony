@@ -8,7 +8,7 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform};
+use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform, LightType, DirectionalLightData};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -78,6 +78,12 @@ impl harmony::AppState for AppState {
             .create_entity()
             .with(SkyboxData::new("venice_sunrise_4k.hdr"))
             .build();
+
+        // Add directional light to our scene.
+        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
+            direction: Vec3::new(0.0, 1.0, 0.0),
+            color: Vec3::new(1.0, 1.0, 1.0),
+        }));
 
         let actual_window_size = app.get_window_actual_size();
 

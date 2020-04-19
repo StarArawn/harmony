@@ -1,11 +1,11 @@
 use crate::AssetManager;
 use crate::{
-    graphics::{material::Material, pipelines::UnlitUniforms, Pipeline},
+    graphics::{material::Material, pipelines::GlobalUniforms, Pipeline},
     scene::components::{transform::LocalUniform, CameraData, Mesh, Transform},
 };
 use specs::{ReadStorage, System, WriteStorage};
 
-pub struct RenderMesh<'a> {
+pub struct RenderUnlit<'a> {
     pub(crate) device: &'a wgpu::Device,
     pub(crate) asset_manager: &'a AssetManager,
     pub(crate) encoder: &'a mut wgpu::CommandEncoder,
@@ -16,7 +16,7 @@ pub struct RenderMesh<'a> {
     pub(crate) depth: &'a wgpu::TextureView,
 }
 
-impl<'a> System<'a> for RenderMesh<'a> {
+impl<'a> System<'a> for RenderUnlit<'a> {
     type SystemData = (
         ReadStorage<'a, CameraData>,
         ReadStorage<'a, Mesh>,
@@ -42,7 +42,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
         let camera_data = camera_data.unwrap();
         let camera_matrix = camera_data.get_matrix();
 
-        let uniforms = UnlitUniforms {
+        let uniforms = GlobalUniforms {
             view_projection: camera_matrix,
         };
 
@@ -55,7 +55,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
             0,
             &self.constants_buffer,
             0,
-            std::mem::size_of::<UnlitUniforms>() as u64,
+            std::mem::size_of::<GlobalUniforms>() as u64,
         );
 
         {
@@ -92,20 +92,6 @@ impl<'a> System<'a> for RenderMesh<'a> {
             }
         }
 
-        // for (material, mesh, transform) in (&materials, &meshes, &mut transforms).join() {
-        //     let mesh: &Mesh = mesh;
-        //     let transform: &mut Transform = transform;
-        //     transform.update();
-
-        //     let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
-        //     for sub_mesh in asset_mesh.sub_meshes.iter() {
-        //         let local_uniform = UnlitUniform {
-        //             world: transform.matrix,
-        //             color: unlit_material.color,
-        //         };
-        //     }
-        // }
-
         let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: self.frame_view,
@@ -131,9 +117,13 @@ impl<'a> System<'a> for RenderMesh<'a> {
             // }),
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
-        render_pass.set_bind_group(0, self.global_bind_group, &[]);
+        render_pass.set_bind_group(1, self.global_bind_group, &[]);
 
         let asset_materials = self.asset_manager.get_materials();
+        /* 
+            TODO: It's not very efficient to loop through each entity that has a material. Fix that.
+            Look into using: https://docs.rs/specs/0.16.1/specs/struct.FlaggedStorage.html
+        */
         for asset_material in asset_materials {
             let joined_data = (&meshes, &materials, &transforms).join();
             match asset_material {
@@ -146,7 +136,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
                     for (mesh, _, transform) in joined_data
                         .filter(|(_, material, _)| material.index == unlit_material.index)
                     {
-                        render_pass.set_bind_group(1, &transform.bind_group, &[]);
+                        render_pass.set_bind_group(0, &transform.bind_group, &[]);
                         let mesh: &Mesh = mesh;
                         let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
                         for sub_mesh in asset_mesh.sub_meshes.iter() {
@@ -156,7 +146,8 @@ impl<'a> System<'a> for RenderMesh<'a> {
                             render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                         }
                     }
-                }
+                },
+                _ => (),
             }
         }
     }
