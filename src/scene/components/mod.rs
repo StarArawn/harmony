@@ -12,3 +12,6 @@ pub use material::Material;
 
 pub(crate) mod skybox;
 pub use skybox::SkyboxData;
+
+pub(crate) mod light_data;
+pub use light_data::*;

@@ -1,5 +1,5 @@
 use super::{
-    pipelines::{SkyboxPipelineDesc, UnlitPipelineDesc},
+    pipelines::{SkyboxPipelineDesc, UnlitPipelineDesc, PBRPipelineDesc},
     Pipeline, Renderer, SimplePipeline, SimplePipelineDesc,
 };
 use crate::{Application, AssetManager};
@@ -14,15 +14,26 @@ pub struct RenderGraphNode {
 pub struct RenderGraph {
     nodes: HashMap<String, RenderGraphNode>,
     order: Vec<String>,
+    pub(crate) local_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl RenderGraph {
     pub(crate) fn new(app: &mut Application) -> Self {
         let mut nodes = HashMap::new();
 
+        let local_bind_group_layout =
+            app.renderer.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                }],
+                label: None,
+            });
+
         // Unlit pipeline
         let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
-        let pipeline = unlit_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer);
+        let pipeline = unlit_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, Some(&local_bind_group_layout));
         let unlit_pipeline: Box<dyn SimplePipeline> =
             Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
         nodes.insert(
@@ -33,9 +44,22 @@ impl RenderGraph {
             }
         );
 
+        // PBR pipeline
+        let mut pbr_pipeline_desc = PBRPipelineDesc::default();
+        let pipeline = pbr_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, Some(&local_bind_group_layout));
+        let pbr_pipeline: Box<dyn SimplePipeline> =
+            Box::new(pbr_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
+        nodes.insert(
+            "pbr".to_string(),
+            RenderGraphNode {
+                pipeline,
+                simple_pipeline: pbr_pipeline,
+            }
+        );
+
         // Skybox pipeline
         let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        let pipeline = skybox_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer);
+        let pipeline = skybox_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, None);
         let material_layout = &pipeline.bind_group_layouts[1];
         for cubemap_image in app.asset_manager.hdr_images.values_mut() {
             let bind_group = app
@@ -74,7 +98,8 @@ impl RenderGraph {
 
         RenderGraph {
             nodes,
-            order: vec!["skybox".to_string(), "unlit".to_string()],
+            order: vec!["skybox".to_string(), "unlit".to_string(), "pbr".to_string()],
+            local_bind_group_layout,
         }
     }
 
@@ -90,7 +115,7 @@ impl RenderGraph {
 
     pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(&mut self, asset_manager: &AssetManager, renderer: &mut Renderer, name: T2, mut pipeline_desc: T) {
         let name = name.into();
-        let pipeline = pipeline_desc.pipeline(asset_manager, renderer);
+        let pipeline = pipeline_desc.pipeline(asset_manager, renderer, Some(&self.local_bind_group_layout));
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
         self.nodes.insert(name.clone(), RenderGraphNode {

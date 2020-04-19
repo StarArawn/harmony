@@ -159,7 +159,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn create_layout(
         &self,
         device: &mut wgpu::Device,
-    ) -> (Vec<wgpu::BindGroupLayout>, wgpu::PipelineLayout) {
+    ) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -182,12 +182,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                 label: None,
             });
 
-        // Once we create the layout we don't need the bind group layout.
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &[&global_bind_group_layout],
-        });
-
-        (vec![global_bind_group_layout], layout)
+        vec![global_bind_group_layout]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {

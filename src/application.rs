@@ -134,20 +134,34 @@ impl Application {
             self.asset_manager.materials.values_mut().collect();
         {
             let images = &self.asset_manager.images;
+            let unlit_bind_group_layout = &self
+                .render_graph
+                .as_ref()
+                .unwrap()
+                .get("unlit")
+                .pipeline
+                .bind_group_layouts[1];
+            let pbr_bind_group_layout = &self
+                .render_graph
+                .as_ref()
+                .unwrap()
+                .get("pbr")
+                .pipeline
+                .bind_group_layouts[1];
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
-                        let local_bind_group_layout = &self
-                            .render_graph
-                            .as_ref()
-                            .unwrap()
-                            .get("unlit")
-                            .pipeline
-                            .bind_group_layouts[2];
                         unlit_material.create_bind_group(
                             images,
                             &self.renderer.device,
-                            local_bind_group_layout,
+                            unlit_bind_group_layout,
+                        );
+                    },
+                    super::graphics::material::Material::PBR(pbr_material) => {
+                        pbr_material.create_bind_group(
+                            images,
+                            &self.renderer.device,
+                            pbr_bind_group_layout,
                         );
                     }
                 }

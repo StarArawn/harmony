@@ -8,7 +8,7 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform};
+use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform, LightType, DirectionalLightData};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -79,6 +79,18 @@ impl harmony::AppState for AppState {
             .with(SkyboxData::new("venice_sunrise_4k.hdr"))
             .build();
 
+        // Add directional light to our scene.
+        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
+            direction: Vec3::new(0.5, 1.0, -0.5),
+            color: Vec3::new(0.0, 0.0, 1.0),
+        }));
+
+        // Add directional light to our scene.
+        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
+            direction: Vec3::new(-0.5, 1.0, -0.5),
+            color: Vec3::new(1.0, 0.0, 0.0),
+        }));
+
         let actual_window_size = app.get_window_actual_size();
 
         // TODO: Add other camera types other than perspective.
@@ -92,7 +104,7 @@ impl harmony::AppState for AppState {
             10.0,
         );
         camera_data.update_view(
-            Vec3::new(0.0, 0.0, -5.0), // This is our camera's "position".
+            Vec3::new(0.0, 3.0, -5.0), // This is our camera's "position".
             Vec3::new(0.0, 0.0, 0.0),  // Where the camera is looking at.
             Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
         );

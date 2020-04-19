@@ -16,6 +16,17 @@ impl Shader {
         let mut compiler = shaderc::Compiler::new().unwrap();
         let mut options = shaderc::CompileOptions::new().unwrap();
         options.add_macro_definition("EP", Some("main"));
+        options.set_include_callback(|file_path, _include_type, _, _| {
+            let shader_path = format!("{}{}", path, file_path);
+            let mut file = File::open(&shader_path).expect("Shader: Unable to open the file");
+            let mut contents = String::new();
+            file.read_to_string(&mut contents)
+                .unwrap_or_else(|_| panic!("Unable to read the file: {}", shader_path));
+            Result::Ok(shaderc::ResolvedInclude {
+                resolved_name: file_path.to_string(),
+                content: contents,
+            })
+        });
 
         let shader_path = format!("{}{}", path, file_name);
         let file = File::open(&shader_path).expect("Shader: Unable to open the file");

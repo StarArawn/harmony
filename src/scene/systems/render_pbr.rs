@@ -1,30 +1,35 @@
 use crate::AssetManager;
 use crate::{
-    graphics::{material::Material, pipelines::UnlitUniforms, Pipeline},
-    scene::components::{transform::LocalUniform, CameraData, Mesh, Transform},
+    graphics::{material::Material, pipelines::{DirectionalLight, GlobalUniforms, PointLight, LightingUniform, MAX_LIGHTS}, Pipeline},
+    scene::components::{transform::LocalUniform, CameraData, Mesh, Transform, DirectionalLightData, PointLightData},
 };
 use specs::{ReadStorage, System, WriteStorage};
+use std::convert::TryInto;
+use nalgebra_glm::{Vec4, Vec3};
 
-pub struct RenderMesh<'a> {
+pub struct RenderPBR<'a> {
     pub(crate) device: &'a wgpu::Device,
     pub(crate) asset_manager: &'a AssetManager,
     pub(crate) encoder: &'a mut wgpu::CommandEncoder,
     pub(crate) frame_view: &'a wgpu::TextureView,
     pub(crate) pipeline: &'a Pipeline,
     pub(crate) constants_buffer: &'a wgpu::Buffer,
+    pub(crate) lighting_buffer: &'a wgpu::Buffer,
     pub(crate) global_bind_group: &'a wgpu::BindGroup,
     pub(crate) depth: &'a wgpu::TextureView,
 }
 
-impl<'a> System<'a> for RenderMesh<'a> {
+impl<'a> System<'a> for RenderPBR<'a> {
     type SystemData = (
         ReadStorage<'a, CameraData>,
         ReadStorage<'a, Mesh>,
         ReadStorage<'a, crate::scene::components::Material>,
+        ReadStorage<'a, DirectionalLightData>,
+        ReadStorage<'a, PointLightData>,
         WriteStorage<'a, Transform>,
     );
 
-    fn run(&mut self, (camera_data, meshes, materials, mut transforms): Self::SystemData) {
+    fn run(&mut self, (camera_data, meshes, materials, directional_lights, point_lights, mut transforms): Self::SystemData) {
         use specs::Join;
         if transforms.count() == 0 {
             return;
@@ -42,7 +47,7 @@ impl<'a> System<'a> for RenderMesh<'a> {
         let camera_data = camera_data.unwrap();
         let camera_matrix = camera_data.get_matrix();
 
-        let uniforms = UnlitUniforms {
+        let uniforms = GlobalUniforms {
             view_projection: camera_matrix,
         };
 
@@ -55,9 +60,47 @@ impl<'a> System<'a> for RenderMesh<'a> {
             0,
             &self.constants_buffer,
             0,
-            std::mem::size_of::<UnlitUniforms>() as u64,
+            std::mem::size_of::<GlobalUniforms>() as u64,
         );
 
+        // Get lighting data.
+        let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights.join().map(|data| DirectionalLight {
+            direction: Vec4::new(data.direction.x, data.direction.y, data.direction.z, 0.0),
+            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+        }).collect();
+
+        let mut point_light_data_vec: Vec<PointLight> = (&point_lights, &transforms).join().map(|(data, transform)| PointLight {
+            attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
+            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+            position: Vec4::new(transform.position.x, transform.position.y, transform.position.z, 0.0),
+        }).collect();
+
+        let total_dir_lights = directional_light_data_vec.len() as u32;
+        let total_point_lights = point_light_data_vec.len() as u32; 
+
+        // Fill in missing data if we don't have it.
+        point_light_data_vec.resize_with(MAX_LIGHTS / 2, || PointLight::default());
+        directional_light_data_vec.resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
+
+        let light_uniform = LightingUniform {
+            light_num: Vec4::new(total_dir_lights as f32, total_point_lights as f32, 0.0, 0.0),
+            directional_lights: directional_light_data_vec.as_slice().try_into().unwrap(),
+            point_lights: point_light_data_vec.as_slice().try_into().unwrap(),
+        };
+
+        let lighting_buffer = self
+            .device
+            .create_buffer_with_data(bytemuck::bytes_of(&light_uniform), wgpu::BufferUsage::COPY_SRC);
+
+        self.encoder.copy_buffer_to_buffer(
+            &lighting_buffer,
+            0,
+            &self.lighting_buffer,
+            0,
+            std::mem::size_of::<LightingUniform>() as u64,
+        );
+
+        // Update transform buffers.
         {
             let size = std::mem::size_of::<LocalUniform>();
             let mut temp_buf_data = self.device.create_buffer_mapped(&wgpu::BufferDescriptor {
@@ -92,20 +135,6 @@ impl<'a> System<'a> for RenderMesh<'a> {
             }
         }
 
-        // for (material, mesh, transform) in (&materials, &meshes, &mut transforms).join() {
-        //     let mesh: &Mesh = mesh;
-        //     let transform: &mut Transform = transform;
-        //     transform.update();
-
-        //     let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
-        //     for sub_mesh in asset_mesh.sub_meshes.iter() {
-        //         let local_uniform = UnlitUniform {
-        //             world: transform.matrix,
-        //             color: unlit_material.color,
-        //         };
-        //     }
-        // }
-
         let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: self.frame_view,
@@ -131,22 +160,26 @@ impl<'a> System<'a> for RenderMesh<'a> {
             // }),
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
-        render_pass.set_bind_group(0, self.global_bind_group, &[]);
+        render_pass.set_bind_group(1, self.global_bind_group, &[]);
 
         let asset_materials = self.asset_manager.get_materials();
+        /* 
+            TODO: It's not very efficient to loop through each entity that has a material. Fix that.
+            Look into using: https://docs.rs/specs/0.16.1/specs/struct.FlaggedStorage.html
+        */
         for asset_material in asset_materials {
             let joined_data = (&meshes, &materials, &transforms).join();
             match asset_material {
-                Material::Unlit(unlit_material) => {
+                Material::PBR(pbr_material) => {
                     render_pass.set_bind_group(
                         2,
-                        &unlit_material.bind_group_data.as_ref().unwrap().bind_group,
+                        &pbr_material.bind_group_data.as_ref().unwrap().bind_group,
                         &[],
                     );
                     for (mesh, _, transform) in joined_data
-                        .filter(|(_, material, _)| material.index == unlit_material.index)
+                        .filter(|(_, material, _)| material.index == pbr_material.index)
                     {
-                        render_pass.set_bind_group(1, &transform.bind_group, &[]);
+                        render_pass.set_bind_group(0, &transform.bind_group, &[]);
                         let mesh: &Mesh = mesh;
                         let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
                         for sub_mesh in asset_mesh.sub_meshes.iter() {
@@ -156,7 +189,8 @@ impl<'a> System<'a> for RenderMesh<'a> {
                             render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                         }
                     }
-                }
+                },
+                _ => (),
             }
         }
     }
