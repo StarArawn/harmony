@@ -104,8 +104,6 @@ impl RenderGraph {
             }
         }
 
-        dbg!(&self.order);
-
         let mut command_buffers = Vec::new();
         for node_name in self.order.iter() {
             let node: &mut RenderGraphNode = self.nodes.get_mut(node_name).unwrap();
