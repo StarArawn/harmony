@@ -1,14 +1,15 @@
 use super::{
-    pipelines::{SkyboxPipelineDesc, UnlitPipelineDesc, PBRPipelineDesc},
-    Pipeline, Renderer, SimplePipeline, SimplePipelineDesc,
+    Pipeline, Renderer, SimplePipeline, SimplePipelineDesc, RenderTarget,
 };
-use crate::{Application, AssetManager};
+use crate::{AssetManager};
 use std::collections::HashMap;
 
 // TODO: handle node dependencies somehow.
 pub struct RenderGraphNode {
     pub(crate) pipeline: Pipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
+    pub(crate) depedency: Option<String>,
+    pub frame: Option<RenderTarget>,
 }
 
 pub struct RenderGraph {
@@ -18,11 +19,11 @@ pub struct RenderGraph {
 }
 
 impl RenderGraph {
-    pub(crate) fn new(app: &mut Application) -> Self {
-        let mut nodes = HashMap::new();
+    pub(crate) fn new(device: &wgpu::Device) -> Self {
+        let nodes = HashMap::new();
 
         let local_bind_group_layout =
-            app.renderer.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
@@ -31,49 +32,9 @@ impl RenderGraph {
                 label: None,
             });
 
-        // Unlit pipeline
-        let mut unlit_pipeline_desc = UnlitPipelineDesc::default();
-        let pipeline = unlit_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, Some(&local_bind_group_layout));
-        let unlit_pipeline: Box<dyn SimplePipeline> =
-            Box::new(unlit_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
-        nodes.insert(
-            "unlit".to_string(),
-            RenderGraphNode {
-                pipeline,
-                simple_pipeline: unlit_pipeline,
-            }
-        );
-
-        // PBR pipeline
-        let mut pbr_pipeline_desc = PBRPipelineDesc::default();
-        let pipeline = pbr_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, Some(&local_bind_group_layout));
-        let pbr_pipeline: Box<dyn SimplePipeline> =
-            Box::new(pbr_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts));
-        nodes.insert(
-            "pbr".to_string(),
-            RenderGraphNode {
-                pipeline,
-                simple_pipeline: pbr_pipeline,
-            }
-        );
-
-        // Skybox pipeline
-        let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        let pipeline = skybox_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, None);
-        let skybox_pipeline: Box<dyn SimplePipeline> = Box::new(
-            skybox_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts),
-        );
-        nodes.insert(
-            "skybox".to_string(),
-            RenderGraphNode {
-                pipeline,
-                simple_pipeline: skybox_pipeline, // Nodes always dirty at first.
-            },
-        );
-
         RenderGraph {
             nodes,
-            order: vec!["skybox".to_string(), "unlit".to_string(), "pbr".to_string()],
+            order: Vec::new(),
             local_bind_group_layout,
         }
     }
@@ -88,16 +49,27 @@ impl RenderGraph {
             .unwrap_or_else(|| panic!(format!("Couldn't find render graph node called: {}", key)))
     }
 
-    pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(&mut self, asset_manager: &AssetManager, renderer: &mut Renderer, name: T2, mut pipeline_desc: T) {
+    pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(
+        &mut self,
+        asset_manager: &AssetManager,
+        renderer: &mut Renderer,
+        name: T2,
+        mut pipeline_desc: T,
+        depedency: T2,
+        include_local_bindings: bool,
+        frame: Option<RenderTarget> // Optional view to render to.
+    ) {
         let name = name.into();
-        let pipeline = pipeline_desc.pipeline(asset_manager, renderer, Some(&self.local_bind_group_layout));
+        let depedency = depedency.into();
+        let pipeline = pipeline_desc.pipeline(asset_manager, renderer, if include_local_bindings { Some(&self.local_bind_group_layout) } else { None });
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
         self.nodes.insert(name.clone(), RenderGraphNode {
             pipeline,
-            simple_pipeline: built_pipeline
+            simple_pipeline: built_pipeline,
+            depedency: if !depedency.contains("") { Some(depedency) } else { None },
+            frame,
         });
-        self.order.push(name.clone());
     }
 
     pub(crate) fn remove(&mut self, _index: usize) {
@@ -109,13 +81,28 @@ impl RenderGraph {
         self.nodes.len()
     }
 
+    pub fn build_target<T: Into<String>>(&mut self, name: T) -> RenderTarget {
+        let node = self.nodes.get_mut(&name.into()).unwrap();
+        node.frame.take().unwrap()
+    }
+
     pub(crate) fn render(
         &mut self,
         renderer: &mut Renderer,
         asset_manager: &mut AssetManager,
-        world: &mut specs::World,
+        mut world: Option<&mut specs::World>,
         frame: &wgpu::SwapChainOutput,
     ) -> Vec<wgpu::CommandBuffer> {
+        // Calculate graph order.
+        for (node_name, node) in self.nodes.iter() {
+            if node.depedency.is_some() && !self.order.contains(&node.depedency.as_ref().unwrap()) {
+                self.order.push(node.depedency.as_ref().unwrap().clone());
+            }
+            if !self.order.contains(node_name) {
+                self.order.push(node_name.clone());
+            }
+        }
+
         let mut command_buffers = Vec::new();
         for node_name in self.order.iter() {
             let node: &mut RenderGraphNode = self.nodes.get_mut(node_name).unwrap();
@@ -125,7 +112,8 @@ impl RenderGraph {
                 &renderer.device,
                 &node.pipeline,
                 Some(asset_manager),
-                Some(world),
+                &mut world,
+                &node.frame,
             );
             command_buffers.push(command_buffer);
         }

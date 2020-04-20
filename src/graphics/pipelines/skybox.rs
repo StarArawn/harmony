@@ -8,7 +8,7 @@ use crate::{
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
-        SimplePipelineDesc,
+        SimplePipelineDesc, RenderTarget,
     },
     scene::{components::CameraData},
     AssetManager,
@@ -51,13 +51,14 @@ impl SimplePipeline for SkyboxPipeline {
         device: &wgpu::Device,
         pipeline: &Pipeline,
         _asset_manager: Option<&mut AssetManager>,
-        world: Option<&mut specs::World>,
+        world: &mut Option<&mut specs::World>,
+        _render_texture: &Option<RenderTarget>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        let world = world.unwrap();
+        let world = world.as_mut().unwrap();
         let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
         if skybox.is_none() {
             return encoder.finish();

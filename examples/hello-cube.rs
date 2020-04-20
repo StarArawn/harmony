@@ -8,7 +8,7 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData, PointLightData};
+use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
