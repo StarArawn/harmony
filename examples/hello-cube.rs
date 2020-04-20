@@ -107,16 +107,14 @@ impl harmony::AppState for AppState {
         app.current_scene = Some(scene);
     }
 
-    // TODO: Perhaps using iced is better than using our own custom implementation?
-    // As seen in the hello world example we can use this method to render our gui.
-    // The API is similar to iced in some regards, but much more basic for now..
-    // And in the future maybe replaced by iced all together.
-    fn draw_gui(&mut self, _app: &mut harmony::Application) -> Option<&dyn harmony::gui::Scene> {
-        None
+    fn resize(&mut self, app: &mut harmony::Application) {
+        let world = &mut app.current_scene.as_mut().unwrap().world;
+        // This is kinda of a hacky soultion. It might be better to have this be handled internally for each camera.
+        let mut cameras = world.write_component::<harmony::scene::components::CameraData>();
+        for camera in (&mut cameras).join() {
+            camera.resize(app.renderer.size.width as f32, app.renderer.size.height as f32);
+        }
     }
-    // TODO: REFACTOR api to remove these functions.
-    fn update(&mut self, _app: &mut harmony::Application) {}
-    fn draw(&mut self, _app: &mut harmony::Application) {}
 }
 
 fn main() {

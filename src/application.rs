@@ -15,17 +15,18 @@ use crate::{
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
-    fn load(&mut self, _app: &mut Application);
+    fn load(&mut self, _app: &mut Application) { }
     /// Called to update app state.
-    fn update(&mut self, _app: &mut Application);
+    fn update(&mut self, _app: &mut Application) { }
+
+    /// Called when the window resizes
+    fn resize(&mut self, _app: &mut Application) {
+
+    }
+
     /// Draw's the gui.
     /// Return your current gui scene here or none if you don't have any.
-    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene>;
-    /// TODO: we might remove this so investigate what use this really has?
-    /// Called when we draw stuff to the screen
-    /// essentially this lets you draw more stuff to the screen then you might normally
-    /// within the engine.
-    fn draw(&mut self, _app: &mut Application);
+    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene> { None }
 }
 
 pub struct Application {
@@ -286,8 +287,6 @@ impl Application {
                     &mut self.asset_manager,
                 ));
 
-                app_state.draw(self);
-
                 // Then we submit the work
                 self.renderer.queue.submit(&command_buffers);
 
@@ -295,6 +294,13 @@ impl Application {
 
                 self.frame_time =
                     Instant::now().duration_since(start).subsec_millis() as f32 / 1000.0;
+            },
+            Event::WindowEvent { event: winit::event::WindowEvent::Resized(size), .. } => {
+                self.renderer.sc_desc.width = size.width;
+                self.renderer.sc_desc.height = size.height;
+                self.renderer.size = *size;
+                self.renderer.swap_chain = self.renderer.device.create_swap_chain(&self.renderer.surface, &self.renderer.sc_desc);
+                app_state.resize(self);
             }
             _ => (),
         }

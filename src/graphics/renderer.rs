@@ -1,8 +1,8 @@
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 pub struct Renderer {
-    surface: wgpu::Surface,
-    pub(crate) size: winit::dpi::PhysicalSize<u32>,
+    pub(crate) surface: wgpu::Surface,
+    pub size: winit::dpi::PhysicalSize<u32>,
     adapter: wgpu::Adapter,
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,

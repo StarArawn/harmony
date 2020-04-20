@@ -44,12 +44,6 @@ impl harmony::AppState for AppState {
         // You can access the scene here once we store it.
         app.current_scene = Some(scene);
     }
-    fn draw_gui(&mut self, _app: &mut harmony::Application) -> Option<&dyn harmony::gui::Scene> {
-        None
-    }
-    // TODO: REFACTOR api to remove these functions.
-    fn update(&mut self, _app: &mut harmony::Application) {}
-    fn draw(&mut self, _app: &mut harmony::Application) {}
 }
 
 fn main() {

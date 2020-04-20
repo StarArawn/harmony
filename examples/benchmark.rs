@@ -109,17 +109,6 @@ impl harmony::AppState for AppState {
         // You can access the scene here once we store it.
         app.current_scene = Some(scene);
     }
-
-    // TODO: Perhaps using iced is better than using our own custom implementation?
-    // As seen in the hello world example we can use this method to render our gui.
-    // The API is similar to iced in some regards, but much more basic for now..
-    // And in the future maybe replaced by iced all together.
-    fn draw_gui(&mut self, _app: &mut harmony::Application) -> Option<&dyn harmony::gui::Scene> {
-        None
-    }
-    // TODO: REFACTOR api to remove these functions.
-    fn update(&mut self, _app: &mut harmony::Application) {}
-    fn draw(&mut self, _app: &mut harmony::Application) {}
 }
 
 fn main() {
