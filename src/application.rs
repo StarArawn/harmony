@@ -123,8 +123,6 @@ impl Application {
         );
         self.console.load(&self.asset_manager);
 
-        super::graphics::material::HDRImage::create_cube_map(self);
-
         self.render_graph = Some(RenderGraph::new(self));
 
         app_state.load(self);
@@ -167,6 +165,18 @@ impl Application {
                 }
             }
         }
+
+        if self.current_scene.is_some() {
+            let world = &mut self.current_scene.as_mut().unwrap().world;
+            let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
+            let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
+            let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
+            if skybox.is_some() {
+                let mut skybox = skybox.unwrap();
+                skybox.create_bind_group(&self.renderer.device, material_layout);
+            }
+        }
+
 
         let size = self.renderer.window.inner_size();
 

@@ -50,7 +50,7 @@ Validation should be turned on already you only need to make sure to have the la
 - `benchmark` a benchmark that renders 2500 cubes to test performance.
 
 ## Screenshots
-![Hello Cube](/screenshots/screen1.png?raw=true "Hello cube!")
+![Hello Cube](/screenshots/screen2.png?raw=true "Hello cube!")
 
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr

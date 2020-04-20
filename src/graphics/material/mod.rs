@@ -4,8 +4,8 @@ pub use shader::Shader;
 mod image;
 pub use self::image::Image;
 
-mod hdr;
-pub use self::hdr::HDRImage;
+mod skybox;
+pub use self::skybox::Skybox;
 
 mod unlit_material;
 pub use self::unlit_material::*;

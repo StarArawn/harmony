@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use nalgebra_glm::{Vec3, Mat4, Vec4};
+use nalgebra_glm::{Mat4, Vec4};
 
 mod unlit;
 pub(crate) use unlit::{UnlitPipelineDesc};
@@ -9,8 +9,7 @@ pub(crate) use pbr::{PBRPipelineDesc};
 
 
 mod skybox;
-pub(crate) use skybox::{SkyboxPipelineDesc, SkyboxUniforms};
-use std::convert::TryInto;
+pub(crate) use skybox::{SkyboxPipelineDesc};
 
 pub(crate) mod equirectangular;
 

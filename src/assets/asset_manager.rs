@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use walkdir::WalkDir;
 
 use crate::graphics::{
-    material::{HDRImage, Image, Material, Shader},
+    material::{Image, Material, Shader},
     mesh::Mesh,
 };
 use crate::gui::core::Font;
@@ -13,7 +13,6 @@ pub struct AssetManager {
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
     pub(crate) images: HashMap<String, Image>,
-    pub(crate) hdr_images: HashMap<String, HDRImage>,
     pub(crate) materials: HashMap<i32, Material>,
 }
 
@@ -25,7 +24,6 @@ impl AssetManager {
             fonts: HashMap::new(),
             meshes: HashMap::new(),
             images: HashMap::new(),
-            hdr_images: HashMap::new(),
             materials: HashMap::new(),
         }
     }
@@ -90,7 +88,7 @@ impl AssetManager {
                     format!("Loaded mesh: {}", file_name),
                 );
             }
-            if file_name.ends_with(".png") || file_name.ends_with(".jpg") {
+            if file_name.ends_with(".png") || file_name.ends_with(".jpg") || file_name.ends_with(".hdr") {
                 let image = Image::new(
                     device,
                     &mut init_encoder,
@@ -101,19 +99,6 @@ impl AssetManager {
                 console.info(
                     crate::gui::components::default::ModuleType::Asset,
                     format!("Loaded image: {}", file_name),
-                );
-            }
-            if file_name.ends_with(".hdr") {
-                let image = HDRImage::new(
-                    device,
-                    &mut init_encoder,
-                    format!("{}{}", full_file_path, file_name),
-                    file_name.to_string(),
-                );
-                self.hdr_images.insert(file_name.to_string(), image);
-                console.info(
-                    crate::gui::components::default::ModuleType::Asset,
-                    format!("Loaded hdr image: {}", file_name),
                 );
             }
         }
@@ -185,17 +170,6 @@ impl AssetManager {
 
     pub fn get_images(&self) -> Vec<&Image> {
         self.images.values().collect()
-    }
-
-    pub fn get_hdr_image<T>(&self, key: T) -> &HDRImage
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.hdr_images.get(&key).expect(&format!(
-            "Asset Error: Could not find {} hdr image asset!",
-            &key
-        ))
     }
 
     pub fn get_font<T>(&self, key: T) -> &Font

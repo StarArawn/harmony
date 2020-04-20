@@ -14,8 +14,6 @@ pub struct BindGroupWithData {
 }
 
 pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
-
-    
     fn prepare(&mut self, device: &mut wgpu::Device, pipeline: &Pipeline, encoder: &mut wgpu::CommandEncoder);
 
     fn render(
@@ -31,13 +29,6 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
 
 pub trait SimplePipelineDesc: std::fmt::Debug {
     type Pipeline: SimplePipeline;
-
-    fn builder(self) -> Self
-    where
-        Self: Sized + Default,
-    {
-        self
-    }
 
     fn pipeline<'a>(&mut self, asset_manager: &'a AssetManager, renderer: &'a mut crate::graphics::Renderer, local_bind_group_layout: Option<&'a wgpu::BindGroupLayout>) -> Pipeline {
         let mut_device = &mut renderer.device;
