@@ -60,33 +60,6 @@ impl RenderGraph {
         // Skybox pipeline
         let mut skybox_pipeline_desc = SkyboxPipelineDesc::default();
         let pipeline = skybox_pipeline_desc.pipeline(&app.asset_manager, &mut app.renderer, None);
-        let material_layout = &pipeline.bind_group_layouts[1];
-
-        // TODO: Switch this to iterate over the skyboxes.
-        // for cubemap_image in app.asset_manager.hdr_images.values_mut() {
-        //     let bind_group = app
-        //         .renderer
-        //         .device
-        //         .create_bind_group(&wgpu::BindGroupDescriptor {
-        //             layout: &material_layout,
-        //             bindings: &[
-        //                 wgpu::Binding {
-        //                     binding: 0,
-        //                     resource: wgpu::BindingResource::TextureView(
-        //                         cubemap_image.cubemap_view.as_ref().unwrap(),
-        //                     ),
-        //                 },
-        //                 wgpu::Binding {
-        //                     binding: 1,
-        //                     resource: wgpu::BindingResource::Sampler(
-        //                         &cubemap_image.cubemap_sampler,
-        //                     ),
-        //                 },
-        //             ],
-        //             label: None,
-        //         });
-        //     cubemap_image.cubemap_bind_group = Some(bind_group);
-        // }
         let skybox_pipeline: Box<dyn SimplePipeline> = Box::new(
             skybox_pipeline_desc.build(&app.renderer.device, &pipeline.bind_group_layouts),
         );

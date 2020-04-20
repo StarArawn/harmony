@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Mat4;
-use specs::RunNow;
+use specs::WorldExt;
 
 use crate::{
     graphics::{
@@ -10,7 +10,7 @@ use crate::{
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::RenderSkybox,
+    scene::{components::CameraData},
     AssetManager,
 };
 
@@ -47,28 +47,83 @@ impl SimplePipeline for SkyboxPipeline {
     fn render(
         &mut self,
         frame_view: Option<&wgpu::TextureView>,
-        depth: Option<&wgpu::TextureView>,
+        _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
-        mut world: Option<&mut specs::World>,
+        _asset_manager: Option<&mut AssetManager>,
+        world: Option<&mut specs::World>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let world = world.unwrap();
+        let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
+        if skybox.is_none() {
+            return encoder.finish();
+        }
+        let skybox = skybox.unwrap();
+        let camera_data = world.read_component::<CameraData>();
+
+        use specs::Join;
+        let filtered_camera_data: Vec<&CameraData> = camera_data
+            .join()
+            .filter(|data: &&CameraData| data.active)
+            .collect();
+        let camera_data = filtered_camera_data.first();
+
+        if camera_data.is_none() {
+            return encoder.finish();
+        }
+
+        let camera_data = camera_data.unwrap();
+
+        let uniforms = SkyboxUniforms {
+            proj: camera_data.projection,
+            view: camera_data.view,
+        };
+
+        let constants_buffer = device
+            .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
+
+        encoder.copy_buffer_to_buffer(
+            &constants_buffer,
+            0,
+            &self.constants_buffer,
+            0,
+            std::mem::size_of::<SkyboxUniforms>() as u64,
+        );
+
         {
-            let mut render_skybox = RenderSkybox {
-                device,
-                asset_manager: asset_manager.as_ref().unwrap(),
-                encoder: &mut encoder,
-                frame_view: frame_view.as_ref().unwrap(),
-                pipeline,
-                constants_buffer: &self.constants_buffer,
-                global_bind_group: &self.global_bind_group,
-                depth: depth.as_ref().unwrap(),
-            };
-            RunNow::setup(&mut render_skybox, world.as_mut().unwrap());
-            render_skybox.run_now(world.as_mut().unwrap());
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: frame_view.as_ref().unwrap(),
+                    resolve_target: None,
+                    load_op: wgpu::LoadOp::Clear,
+                    store_op: wgpu::StoreOp::Store,
+                    clear_color: wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    },
+                }],
+                depth_stencil_attachment: None,
+                // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                //     attachment: self.depth,
+                //     depth_load_op: wgpu::LoadOp::Clear,
+                //     depth_store_op: wgpu::StoreOp::Store,
+                //     stencil_load_op: wgpu::LoadOp::Clear,
+                //     stencil_store_op: wgpu::StoreOp::Store,
+                //     clear_depth: 1.0,
+                //     clear_stencil: 0,
+                // }),
+            });
+            render_pass.set_pipeline(&pipeline.pipeline);
+            render_pass.set_bind_group(0, &self.global_bind_group, &[]);
+
+            render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
+            render_pass.draw(0..3 as u32, 0..1);
         }
 
         encoder.finish()

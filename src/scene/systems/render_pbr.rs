@@ -5,7 +5,7 @@ use crate::{
 };
 use specs::{ReadStorage, System, WriteStorage};
 use std::convert::TryInto;
-use nalgebra_glm::{Vec4, Vec3};
+use nalgebra_glm::{Vec4};
 
 pub struct RenderPBR<'a> {
     pub(crate) device: &'a wgpu::Device,

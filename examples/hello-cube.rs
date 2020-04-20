@@ -8,7 +8,7 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform, LightType, DirectionalLightData};
+use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -73,22 +73,15 @@ impl harmony::AppState for AppState {
             .build();
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
-        scene
-            .world
-            .create_entity()
-            .with(SkyboxData::new("venice_sunrise_4k.hdr"))
-            .build();
+        // create skybox first for now this *has* to be done in load.
+        let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
+        // Skybox needs to be added as a resource in specs. (we only should have one).
+        scene.world.insert(skybox);
 
         // Add directional light to our scene.
         harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
-            direction: Vec3::new(0.5, 1.0, -0.5),
-            color: Vec3::new(0.0, 0.0, 1.0),
-        }));
-
-        // Add directional light to our scene.
-        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
-            direction: Vec3::new(-0.5, 1.0, -0.5),
-            color: Vec3::new(1.0, 0.0, 0.0),
+            direction: Vec3::new(0.0, 1.0, -0.5),
+            color: Vec3::new(1.0, 1.0, 1.0),
         }));
 
         let actual_window_size = app.get_window_actual_size();
@@ -104,7 +97,7 @@ impl harmony::AppState for AppState {
             10.0,
         );
         camera_data.update_view(
-            Vec3::new(0.0, 3.0, -5.0), // This is our camera's "position".
+            Vec3::new(0.0, 0.0, -5.0), // This is our camera's "position".
             Vec3::new(0.0, 0.0, 0.0),  // Where the camera is looking at.
             Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
         );
