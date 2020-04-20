@@ -24,4 +24,8 @@ DirectionalLight get_directional_light(int index) {
     return directional_lights[index];
 }
 
+PointLight get_point_light(int index) {
+    return point_lights[index];
+}
+
 #endif
