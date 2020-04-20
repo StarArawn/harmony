@@ -15,13 +15,14 @@ layout(set = 2, binding = 2) uniform sampler s_Color;
 #include "library/lighting.glsl"
 
 void main() {
-    vec4 tex = texture(sampler2D(t_Color, s_Color), v_TexCoord);
+    vec4 main_color = texture(sampler2D(t_Color, s_Color), v_TexCoord);
     vec3 ambient = vec3(0.05, 0.05, 0.05);
+    vec3 normal = normalize(i_normal);
     // accumulate color
     vec3 color = ambient;
     for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
         DirectionalLight light = get_directional_light(i);
-        float dot_product =  dot(normalize(i_normal), light.direction.xyz);
+        float dot_product =  max(0.0, dot(normal, light.direction.xyz));
         color += dot_product * light.color.xyz;
     }
 
@@ -29,9 +30,9 @@ void main() {
     for (int i=0; i < int(light_num.y) && i < MAX_LIGHTS; ++i) {
         PointLight light = get_point_light(i);
         vec3 light_dir = normalize(light.position.xyz - i_position.xyz);
-        float dot_product =  dot(normalize(i_normal), light_dir);
+        float dot_product =  max(0.0, dot(normal, light_dir));
         color += dot_product * light.color.xyz;
     }
 
-    outColor = vec4(color * tex.xyz, tex.w);
+    outColor = vec4(color * main_color.xyz, main_color.w);
 }

@@ -8,7 +8,7 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData};
+use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData, PointLightData};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -82,7 +82,20 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
             direction: Vec3::new(0.0, 1.0, -0.5),
             color: Vec3::new(1.0, 1.0, 1.0),
-        }));
+        }), Transform::new(app));
+
+        // Add red point light to our scene.
+        // Uncomment this code to see point light.
+        // let mut transform = Transform::new(app);
+        // transform.position = Vec3::new(-5.0, 0.0, 0.0);
+        // harmony::scene::entities::light::create(
+        //     &mut scene.world,
+        //     LightType::Point(PointLightData {
+        //         color: Vec3::new(1.0, 0.0, 0.0),
+        //         attenuation: 10.0,
+        //     }),
+        //     transform,
+        // );
 
         let actual_window_size = app.get_window_actual_size();
 

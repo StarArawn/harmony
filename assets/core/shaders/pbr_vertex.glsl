@@ -18,7 +18,7 @@ layout(set = 0, binding = 0) uniform Locals {
 
 void main() {
     v_TexCoord = i_uv;
-    o_normal = normalize((world * vec4(i_normal.xyz, 0.0)).xyz);
+    o_normal = mat3(world) * i_normal.xyz;
     o_position = world * vec4(i_Pos, 1.0);
     gl_Position = view_projection * o_position;
 }
