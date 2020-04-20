@@ -4,6 +4,7 @@ use harmony::{
         Pipeline,
         SimplePipeline,
         SimplePipelineDesc,
+        RenderTarget,
     },
     AssetManager,
 };
@@ -25,7 +26,8 @@ impl SimplePipeline for TrianglePipeline {
         device: &wgpu::Device,
         pipeline: &Pipeline,
         mut _asset_manager: Option<&mut AssetManager>,
-        _world: Option<&mut specs::World>,
+        _world: &mut Option<&mut specs::World>,
+        _render_texture: &Option<RenderTarget>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =

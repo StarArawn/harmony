@@ -7,7 +7,7 @@ use winit::{
 
 use crate::{
     core::input::Input,
-    graphics::{RenderGraph, Renderer},
+    graphics::{RenderGraph, Renderer, pipelines::{UnlitPipelineDesc, SkyboxPipelineDesc, PBRPipelineDesc}},
     gui::Scene as GuiScene,
     scene::Scene,
     AssetManager,
@@ -124,7 +124,16 @@ impl Application {
         );
         self.console.load(&self.asset_manager);
 
-        self.render_graph = Some(RenderGraph::new(self));
+        self.render_graph = Some(RenderGraph::new(&self.renderer.device));
+        // Skybox pipeline
+        let skybox_pipeline_desc = SkyboxPipelineDesc::default();
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "skybox", skybox_pipeline_desc, "", false, None);
+        // Unlit pipeline
+        let unlit_pipeline_desc = UnlitPipelineDesc::default();
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "unlit", unlit_pipeline_desc, "skybox", true, None);
+        // PBR pipeline
+        let pbr_pipeline_desc = PBRPipelineDesc::default();
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "pbr", pbr_pipeline_desc, "skybox", true, None);
 
         app_state.load(self);
 
@@ -173,6 +182,7 @@ impl Application {
             let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
             let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
             if skybox.is_some() {
+                // TODO: Process skybox here with custom render graph.
                 let mut skybox = skybox.unwrap();
                 skybox.create_bind_group(&self.renderer.device, material_layout);
             }
@@ -189,6 +199,7 @@ impl Application {
             LogicalSize::new(size.width, size.height),
         );
         self.gui_renderer = Some(gui_renderer);
+
     }
 
     /// Run's the application which means two things.
@@ -257,7 +268,7 @@ impl Application {
                         command_buffers.extend(render_graph.render(
                             &mut self.renderer,
                             &mut self.asset_manager,
-                            &mut self.current_scene.as_mut().unwrap().world,
+                            Some(&mut self.current_scene.as_mut().unwrap().world),
                             &output,
                         ));
                     }

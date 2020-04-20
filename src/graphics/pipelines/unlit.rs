@@ -8,7 +8,7 @@ use crate::{
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
-        SimplePipelineDesc,
+        SimplePipelineDesc, RenderTarget,
     },
     scene::systems::RenderUnlit,
     AssetManager,
@@ -34,7 +34,8 @@ impl SimplePipeline for UnlitPipeline
         device: &wgpu::Device,
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
-        mut world: Option<&mut specs::World>,
+        world: &mut Option<&mut specs::World>,
+        _render_texture: &Option<RenderTarget>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =

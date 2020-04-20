@@ -12,3 +12,6 @@ mod pipeline;
 pub use pipeline::{BindGroupWithData, Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder};
 
 pub mod pipelines;
+
+pub mod render_target;
+pub use render_target::RenderTarget;

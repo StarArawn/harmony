@@ -1,4 +1,4 @@
-use super::material::Shader;
+use super::{RenderTarget, material::Shader};
 use crate::AssetManager;
 
 #[derive(Debug)]
@@ -23,7 +23,8 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         device: &wgpu::Device,
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
-        data: Option<&mut specs::World>,
+        world: &mut Option<&mut specs::World>,
+        render_texture: &Option<RenderTarget>,
     ) -> wgpu::CommandBuffer;
 }
 
