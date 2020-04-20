@@ -36,14 +36,12 @@ impl AppState {
 }
 
 impl harmony::AppState for AppState {
-    fn load(&mut self, _app: &mut harmony::Application) {}
     fn update(&mut self, app: &mut harmony::Application) {
         self.gui_scene.update(app.delta_time);
     }
     fn draw_gui(&mut self, _app: &mut harmony::Application) -> Option<&dyn harmony::gui::Scene> {
         Some(&self.gui_scene)
     }
-    fn draw(&mut self, _app: &mut harmony::Application) {}
 }
 
 struct GuiScene {
