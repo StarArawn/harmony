@@ -5,6 +5,7 @@ use crate::{AssetManager};
 use std::collections::HashMap;
 
 // TODO: handle node dependencies somehow.
+#[derive(Debug)]
 pub struct RenderGraphNode {
     pub(crate) pipeline: Pipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
@@ -67,7 +68,7 @@ impl RenderGraph {
         self.nodes.insert(name.clone(), RenderGraphNode {
             pipeline,
             simple_pipeline: built_pipeline,
-            depedency: if !depedency.contains("") { Some(depedency) } else { None },
+            depedency: if !depedency.is_empty() { Some(depedency) } else { None },
             frame,
         });
     }

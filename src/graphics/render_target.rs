@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct RenderTarget {
     pub texture: wgpu::Texture,
     pub texture_view: wgpu::TextureView,
