@@ -10,8 +10,6 @@ use crate::{
 pub struct CubeProjectionPipeline {
     texture: String,
     size: f32,
-    pub(crate) cubemap_view: Option<wgpu::TextureView>,
-    pub(crate) cubemap_texture: Option<wgpu::Texture>,
 }
 
 impl SimplePipeline for CubeProjectionPipeline {
@@ -27,7 +25,8 @@ impl SimplePipeline for CubeProjectionPipeline {
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
-        render_texture: &Option<RenderTarget>,
+        _input: Option<&RenderTarget>,
+        output: Option<&RenderTarget>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =
@@ -53,7 +52,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &render_texture.as_ref().unwrap().texture_view,
+                    attachment: &output.as_ref().unwrap().texture_view,
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
@@ -169,8 +168,6 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         CubeProjectionPipeline {
             texture: self.texture,
             size: self.size,
-            cubemap_view: None,
-            cubemap_texture: None,
         }
     }
 }

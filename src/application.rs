@@ -127,13 +127,13 @@ impl Application {
         self.render_graph = Some(RenderGraph::new(&self.renderer.device));
         // Skybox pipeline
         let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "skybox", skybox_pipeline_desc, "", false, None);
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "skybox", skybox_pipeline_desc, vec![], false, None, false);
         // Unlit pipeline
         let unlit_pipeline_desc = UnlitPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "unlit", unlit_pipeline_desc, "skybox", true, None);
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "unlit", unlit_pipeline_desc, vec!["skybox"], true, None, false);
         // PBR pipeline
         let pbr_pipeline_desc = PBRPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "pbr", pbr_pipeline_desc, "skybox", true, None);
+        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "pbr", pbr_pipeline_desc, vec!["skybox"], true, None, false);
 
         app_state.load(self);
 
