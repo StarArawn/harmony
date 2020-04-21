@@ -40,8 +40,8 @@ impl Skybox {
         // We need to convert our regular texture map to a cube texture map with 6 faces.
         // Should be straight forward enough if we use equirectangular projection.
         // First we need a custom pipeline that will run in here to do the conversion.
-        let output = app.renderer.swap_chain.get_next_texture().unwrap();
-        let command_buffers = graph.render(&mut app.renderer, &mut app.asset_manager, None, &output);
+        //let output = app.renderer.swap_chain.get_next_texture().unwrap();
+        let mut command_buffers = graph.render(&mut app.renderer, &mut app.asset_manager, None, None);
 
         let cube_map = RenderTarget::new(
             &app.renderer.device,
@@ -85,6 +85,8 @@ impl Skybox {
                 );
             }
         }
+
+        command_buffers.push(encoder.finish());
 
         // Add copy texture copy command buffer and push to all command buffers to the queue
         app.renderer.queue.submit(&command_buffers);

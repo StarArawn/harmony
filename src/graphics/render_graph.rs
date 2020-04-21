@@ -90,7 +90,7 @@ impl RenderGraph {
         renderer: &mut Renderer,
         asset_manager: &mut AssetManager,
         mut world: Option<&mut specs::World>,
-        frame: &wgpu::SwapChainOutput,
+        frame: Option<&wgpu::SwapChainOutput>,
     ) -> Vec<wgpu::CommandBuffer> {
         let mut command_buffers = Vec::new();
         
@@ -124,7 +124,7 @@ impl RenderGraph {
             let output = self.outputs.get(&name).unwrap().as_ref();
 
             let (command_buffer, output) = node.simple_pipeline.render(
-                Some(&frame.view),
+                frame,
                 Some(&renderer.forward_depth),
                 &renderer.device,
                 &node.pipeline,

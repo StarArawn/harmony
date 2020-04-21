@@ -46,7 +46,7 @@ impl SimplePipeline for SkyboxPipeline {
 
     fn render(
         &mut self,
-        frame_view: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
@@ -99,7 +99,7 @@ impl SimplePipeline for SkyboxPipeline {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: frame_view.as_ref().unwrap(),
+                    attachment: &frame.as_ref().unwrap().view,
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,

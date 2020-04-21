@@ -40,7 +40,7 @@ impl SimplePipeline for SpecularPipeline {
 
     fn render(
         &mut self,
-        _frame: Option<&wgpu::TextureView>,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,

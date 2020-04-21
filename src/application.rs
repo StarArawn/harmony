@@ -269,7 +269,7 @@ impl Application {
                             &mut self.renderer,
                             &mut self.asset_manager,
                             Some(&mut self.current_scene.as_mut().unwrap().world),
-                            &output,
+                            Some(&output),
                         ));
                     }
                 }

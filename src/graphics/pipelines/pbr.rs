@@ -30,7 +30,7 @@ impl SimplePipeline for PBRPipeline
 
     fn render(
         &mut self,
-        frame_view: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
@@ -47,7 +47,7 @@ impl SimplePipeline for PBRPipeline
                 device,
                 asset_manager: asset_manager.as_ref().unwrap(),
                 encoder: &mut encoder,
-                frame_view: frame_view.as_ref().unwrap(),
+                frame_view: &frame.as_ref().unwrap().view,
                 pipeline,
                 constants_buffer: &self.constants_buffer,
                 lighting_buffer: &self.lighting_buffer,

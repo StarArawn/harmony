@@ -29,7 +29,7 @@ impl SimplePipeline for UnlitPipeline
 
     fn render(
         &mut self,
-        frame_view: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
@@ -46,7 +46,7 @@ impl SimplePipeline for UnlitPipeline
                 device,
                 asset_manager: asset_manager.as_ref().unwrap(),
                 encoder: &mut encoder,
-                frame_view: frame_view.as_ref().unwrap(),
+                frame_view: &frame.as_ref().unwrap().view,
                 pipeline,
                 constants_buffer: &self.constants_buffer,
                 global_bind_group: &self.global_bind_group,
