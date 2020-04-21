@@ -29,7 +29,7 @@ impl SimplePipeline for TrianglePipeline {
         _world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer {
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -50,7 +50,7 @@ impl SimplePipeline for TrianglePipeline {
             rpass.draw(0..3, 0..1);
         }
 
-        encoder.finish()
+        (encoder.finish(), None)
     }
 }
 

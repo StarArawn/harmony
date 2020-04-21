@@ -111,12 +111,12 @@ impl RenderGraph {
         for name in order {
             let node = self.nodes.get_mut(&name).unwrap();
             let mut input = None;
-            if node.use_output_from_previous_node {
+            if node.use_output_from_previous_node && !last_node.is_empty() {
                 input = self.outputs.get(&last_node).unwrap().as_ref();
             }
             let output = self.outputs.get(&name).unwrap().as_ref();
 
-            command_buffers.push(node.simple_pipeline.render(
+            let (command_buffer, output) = node.simple_pipeline.render(
                 Some(&frame.view),
                 Some(&renderer.forward_depth),
                 &renderer.device,
@@ -125,7 +125,11 @@ impl RenderGraph {
                 &mut world,
                 input,
                 output,
-            ));
+            );
+            command_buffers.push(command_buffer);
+            if output.is_some() {
+                self.outputs.insert(name.clone(), output);
+            }
             last_node = name.clone();
         }
 

@@ -7,12 +7,11 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct CubeProjectionPipeline {
-    texture: String,
+pub struct IrradiancePipeline {
     size: f32,
 }
 
-impl SimplePipeline for CubeProjectionPipeline {
+impl SimplePipeline for IrradiancePipeline {
     fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
         
     }
@@ -25,25 +24,23 @@ impl SimplePipeline for CubeProjectionPipeline {
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
-        _input: Option<&RenderTarget>,
+        input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
     ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        let image = asset_manager.as_ref().unwrap().get_image(self.texture.clone());
-
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&image.view),
+                    resource: wgpu::BindingResource::TextureView(&input.as_ref().unwrap().texture_view),
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&image.sampler),
+                    resource: wgpu::BindingResource::Sampler(&input.as_ref().unwrap().sampler),
                 },
             ],
             label: None,
@@ -70,61 +67,31 @@ impl SimplePipeline for CubeProjectionPipeline {
             render_pass.draw(0..6, 0..6);
         }
 
-        let cube_map = RenderTarget::new(device, self.size, self.size, 6, wgpu::TextureFormat::Rgba32Float);
-
-        for i in 0..6 {
-            encoder.copy_texture_to_texture(
-                wgpu::TextureCopyView {
-                    texture: &output.as_ref().unwrap().texture,
-                    mip_level: 0,
-                    array_layer: 0,
-                    origin: wgpu::Origin3d {
-                        x: 0,
-                        y: self.size as u32 * i,
-                        z: 0,
-                    },
-                },
-                wgpu::TextureCopyView {
-                    texture: &cube_map.texture,
-                    mip_level: 0,
-                    array_layer: i,
-                    origin: wgpu::Origin3d::ZERO,
-                },
-                wgpu::Extent3d {
-                    width: self.size as u32,
-                    height: self.size as u32,
-                    depth: 1,
-                },
-            );
-        }
-
-        (encoder.finish(), Some(cube_map))
+        (encoder.finish(), None)
     }
 }
 
 #[derive(Debug, Default)]
-pub struct CubeProjectionPipelineDesc {
-    texture: String,
+pub struct IrradiancePipelineDesc {
     size: f32,
 }
 
-impl CubeProjectionPipelineDesc {
-    pub fn new(texture: String, size: f32) -> Self {
+impl IrradiancePipelineDesc {
+    pub fn new(size: f32) -> Self {
         Self {
-            texture,
             size,
         }
     }
 }
 
-impl SimplePipelineDesc for CubeProjectionPipelineDesc {
-    type Pipeline = CubeProjectionPipeline;
+impl SimplePipelineDesc for IrradiancePipelineDesc {
+    type Pipeline = IrradiancePipeline;
 
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
     ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("hdr_to_cubemap.shader")
+        asset_manager.get_shader("irradiance.shader")
     }
 
     fn create_layout(
@@ -192,9 +159,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         self,
         _device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-    ) -> CubeProjectionPipeline {
-        CubeProjectionPipeline {
-            texture: self.texture,
+    ) -> IrradiancePipeline {
+        IrradiancePipeline {
             size: self.size,
         }
     }

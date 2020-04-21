@@ -54,7 +54,7 @@ impl SimplePipeline for SkyboxPipeline {
         world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer {
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -62,7 +62,7 @@ impl SimplePipeline for SkyboxPipeline {
         let world = world.as_mut().unwrap();
         let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
         if skybox.is_none() {
-            return encoder.finish();
+            return (encoder.finish(), None);
         }
         let skybox = skybox.unwrap();
         let camera_data = world.read_component::<CameraData>();
@@ -75,7 +75,7 @@ impl SimplePipeline for SkyboxPipeline {
         let camera_data = filtered_camera_data.first();
 
         if camera_data.is_none() {
-            return encoder.finish();
+            return (encoder.finish(), None);
         }
 
         let camera_data = camera_data.unwrap();
@@ -128,7 +128,7 @@ impl SimplePipeline for SkyboxPipeline {
             render_pass.draw(0..3 as u32, 0..1);
         }
 
-        encoder.finish()
+        (encoder.finish(), None)
     }
 }
 

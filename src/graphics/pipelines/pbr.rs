@@ -38,7 +38,7 @@ impl SimplePipeline for PBRPipeline
         world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer {
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -58,7 +58,7 @@ impl SimplePipeline for PBRPipeline
             render_pbr.run_now(world.as_mut().unwrap());
         }
 
-        encoder.finish()
+        (encoder.finish(), None)
     }
 }
 
