@@ -14,14 +14,15 @@ impl Skybox {
         // Create a new render graph for this process..
         let mut graph = RenderGraph::new(&app.renderer.device);
         
-        let cube_map_target = RenderTarget::new(&app.renderer.device, size, size * 6.0, 1, wgpu::TextureFormat::Rgba32Float);
+        let cube_map_target = RenderTarget::new(&app.renderer.device, size, size * 6.0, 1, wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
 
         let cube_projection_pipeline_desc =
             crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::new(texture.into(), size);
         graph.add(&app.asset_manager, &mut app.renderer, "cube_projection", cube_projection_pipeline_desc, vec![], false, Some(cube_map_target), false);
 
-        let irradiance_target = RenderTarget::new(&app.renderer.device, size, size * 6.0, 1, wgpu::TextureFormat::Rgba32Float);
-        let irradiance_pipeline_desc = crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(size);
+        let irradiance_size = 64.0;
+        let irradiance_target = RenderTarget::new(&app.renderer.device, irradiance_size,irradiance_size * 6.0, 1, wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
+        let irradiance_pipeline_desc = crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(irradiance_size);
         graph.add(&app.asset_manager, &mut app.renderer, "irradiance", irradiance_pipeline_desc, vec!["cube_projection"], false, Some(irradiance_target), true);
 
         // We need to convert our regular texture map to a cube texture map with 6 faces.
@@ -34,6 +35,8 @@ impl Skybox {
 
         // Add copy texture copy command buffer and push to all command buffers to the queue
         app.renderer.queue.submit(&command_buffers);
+
+        app.renderer.device.poll(wgpu::Maintain::Wait);
 
         let cubemap_view = output.texture.create_view(&wgpu::TextureViewDescriptor {
             format: wgpu::TextureFormat::Rgba32Float,

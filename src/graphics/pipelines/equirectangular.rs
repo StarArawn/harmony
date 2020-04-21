@@ -48,7 +48,6 @@ impl SimplePipeline for CubeProjectionPipeline {
             ],
             label: None,
         });
-        dbg!("Got to the end!");
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -71,7 +70,14 @@ impl SimplePipeline for CubeProjectionPipeline {
             render_pass.draw(0..6, 0..6);
         }
 
-        let cube_map = RenderTarget::new(device, self.size, self.size, 6, wgpu::TextureFormat::Rgba32Float);
+        let cube_map = RenderTarget::new(
+            device,
+            self.size,
+            self.size,
+            6,
+            wgpu::TextureFormat::Rgba32Float,
+            wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+        );
 
         for i in 0..6 {
             encoder.copy_texture_to_texture(
@@ -98,7 +104,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 },
             );
         }
-        
+
         (encoder.finish(), Some(cube_map))
     }
 }
