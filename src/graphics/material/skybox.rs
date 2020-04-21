@@ -18,7 +18,7 @@ impl Skybox {
 
         let cube_projection_pipeline_desc =
             crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::new(texture.into(), size);
-        graph.add(&app.asset_manager, &mut app.renderer, "cube_projection", cube_projection_pipeline_desc, "", false, Some(cube_map_target));
+        graph.add(&app.asset_manager, &mut app.renderer, "cube_projection", cube_projection_pipeline_desc, vec![], false, Some(cube_map_target), false);
 
         // We need to convert our regular texture map to a cube texture map with 6 faces.
         // Should be straight forward enough if we use equirectangular projection.
@@ -26,7 +26,7 @@ impl Skybox {
         let output = app.renderer.swap_chain.get_next_texture().unwrap();
         let mut command_buffer = graph.render(&mut app.renderer, &mut app.asset_manager, None, &output);
 
-        let (proj_texture, _, _) = graph.build_target("cube_projection").complete();
+        let output = graph.pull_render_target("cube_projection");
 
         let cubemap_texture = app.renderer.device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
@@ -46,7 +46,7 @@ impl Skybox {
         for i in 0..6 {
             encoder.copy_texture_to_texture(
                 wgpu::TextureCopyView {
-                    texture: &proj_texture,
+                    texture: &output.texture,
                     mip_level: 0,
                     array_layer: 0,
                     origin: wgpu::Origin3d {
