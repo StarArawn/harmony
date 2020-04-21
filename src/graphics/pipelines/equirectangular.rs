@@ -48,6 +48,7 @@ impl SimplePipeline for CubeProjectionPipeline {
             ],
             label: None,
         });
+        dbg!("Got to the end!");
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -97,7 +98,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 },
             );
         }
-
+        
         (encoder.finish(), Some(cube_map))
     }
 }

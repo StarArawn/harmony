@@ -100,7 +100,7 @@ impl RenderGraph {
             if dependencies.is_ok() {
                 for node in dependencies.unwrap() {
                     match node {
-                        Ok(n) => { dbg!(n); if !order.contains(n) { order.push(n.clone()); } },
+                        Ok(n) => { if !order.contains(n) { order.push(n.clone()); } },
                         Err(e) => panic!("Solvent error detected: {:?}", e),
                     }
                 }

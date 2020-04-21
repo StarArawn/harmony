@@ -22,7 +22,7 @@ impl SimplePipeline for IrradiancePipeline {
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
+        _asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
         input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
@@ -67,7 +67,35 @@ impl SimplePipeline for IrradiancePipeline {
             render_pass.draw(0..6, 0..6);
         }
 
-        (encoder.finish(), None)
+        let cube_map = RenderTarget::new(device, self.size, self.size, 6, wgpu::TextureFormat::Rgba32Float);
+
+        for i in 0..6 {
+            encoder.copy_texture_to_texture(
+                wgpu::TextureCopyView {
+                    texture: &output.as_ref().unwrap().texture,
+                    mip_level: 0,
+                    array_layer: 0,
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: self.size as u32 * i,
+                        z: 0,
+                    },
+                },
+                wgpu::TextureCopyView {
+                    texture: &cube_map.texture,
+                    mip_level: 0,
+                    array_layer: i,
+                    origin: wgpu::Origin3d::ZERO,
+                },
+                wgpu::Extent3d {
+                    width: self.size as u32,
+                    height: self.size as u32,
+                    depth: 1,
+                },
+            );
+        }
+
+        (encoder.finish(), Some(cube_map))
     }
 }
 
@@ -108,7 +136,7 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
                         ty: wgpu::BindingType::SampledTexture {
                             multisampled: false,
                             component_type: wgpu::TextureComponentType::Float,
-                            dimension: wgpu::TextureViewDimension::D2,
+                            dimension: wgpu::TextureViewDimension::Cube,
                         },
                     },
                     wgpu::BindGroupLayoutEntry {

@@ -169,7 +169,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                         ty: wgpu::BindingType::SampledTexture {
                             component_type: wgpu::TextureComponentType::Float,
                             multisampled: false,
-                            dimension: wgpu::TextureViewDimension::D2,
+                            dimension: wgpu::TextureViewDimension::Cube,
                         },
                     },
                     wgpu::BindGroupLayoutEntry {
