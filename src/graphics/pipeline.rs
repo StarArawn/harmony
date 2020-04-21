@@ -24,7 +24,8 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         pipeline: &Pipeline,
         asset_manager: Option<&mut AssetManager>,
         world: &mut Option<&mut specs::World>,
-        render_texture: &Option<RenderTarget>,
+        input: Option<&RenderTarget>,
+        output: Option<&RenderTarget>,
     ) -> wgpu::CommandBuffer;
 }
 

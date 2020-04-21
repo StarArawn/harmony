@@ -39,7 +39,7 @@ impl harmony::AppState for AppState {
         // Setup our custom render pass.
         let render_graph = app.render_graph.as_mut().unwrap();
         let pipeline_desc = triangle_pipeline::TrianglePipelineDesc::default();
-        render_graph.add(&app.asset_manager, &mut app.renderer, "triangle", pipeline_desc, "", false, None);
+        render_graph.add(&app.asset_manager, &mut app.renderer, "triangle", pipeline_desc, vec![], false, None, false);
         
         // You can access the scene here once we store it.
         app.current_scene = Some(scene);

@@ -27,7 +27,8 @@ impl SimplePipeline for TrianglePipeline {
         pipeline: &Pipeline,
         mut _asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
-        _render_texture: &Option<RenderTarget>,
+        _input: Option<&RenderTarget>,
+        _output: Option<&RenderTarget>,
     ) -> wgpu::CommandBuffer {
         // Buffers can/are stored per mesh.
         let mut encoder =
