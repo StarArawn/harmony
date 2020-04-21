@@ -13,6 +13,7 @@ pub(crate) use skybox::{SkyboxPipelineDesc};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;
+pub(crate) mod specular;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

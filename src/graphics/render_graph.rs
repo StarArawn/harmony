@@ -10,12 +10,12 @@ use solvent::DepGraph;
 pub struct RenderGraphNode {
     pub(crate) pipeline: Pipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
-    pub use_output_from_previous_node: bool,
+    pub use_output_from_dependency: bool,
 }
 
 pub struct RenderGraph {
     nodes: HashMap<String, RenderGraphNode>,
-    outputs: HashMap<String, Option<RenderTarget>>,
+    pub(crate) outputs: HashMap<String, Option<RenderTarget>>,
     dep_graph: DepGraph<String>,
     pub(crate) local_bind_group_layout: wgpu::BindGroupLayout,
 }
@@ -53,7 +53,7 @@ impl RenderGraph {
         dependency: Vec<&str>,
         include_local_bindings: bool,
         output: Option<RenderTarget>, 
-        use_output_from_previous_node: bool,
+        use_output_from_dependency: bool,
     ) {
         let name = name.into();
         let pipeline = pipeline_desc.pipeline(asset_manager, renderer, if include_local_bindings { Some(&self.local_bind_group_layout) } else { None });
@@ -62,7 +62,7 @@ impl RenderGraph {
         let node = RenderGraphNode {
             pipeline,
             simple_pipeline: built_pipeline,
-            use_output_from_previous_node,
+            use_output_from_dependency,
         };
         self.nodes.insert(name.clone(), node);
         self.outputs.insert(name.clone(), output);
@@ -107,12 +107,19 @@ impl RenderGraph {
             }
         }
         
-        let mut last_node = "".to_string();
         for name in order {
             let node = self.nodes.get_mut(&name).unwrap();
             let mut input = None;
-            if node.use_output_from_previous_node && !last_node.is_empty() {
-                input = self.outputs.get(&last_node).unwrap().as_ref();
+            if node.use_output_from_dependency {
+                let dependencies = self.dep_graph.dependencies_of(&name);
+                if dependencies.is_ok() {
+                    let mut dependencies = dependencies.unwrap();
+                    let dependency = dependencies.next().unwrap();
+                    if dependency.is_ok() {
+                        let dependency = dependency.unwrap().to_string();
+                        input = self.outputs.get(&dependency).unwrap().as_ref();
+                    }
+                }
             }
             let output = self.outputs.get(&name).unwrap().as_ref();
 
@@ -130,7 +137,6 @@ impl RenderGraph {
             if output.is_some() {
                 self.outputs.insert(name.clone(), output);
             }
-            last_node = name.clone();
         }
 
         command_buffers

@@ -1,16 +1,16 @@
-mod shader;
+pub(crate) mod shader;
 pub use shader::Shader;
 
-mod image;
+pub(crate) mod image;
 pub use self::image::Image;
 
-mod skybox;
+pub(crate) mod skybox;
 pub use self::skybox::Skybox;
 
-mod unlit_material;
+pub(crate) mod unlit_material;
 pub use self::unlit_material::*;
 
-mod pbr_material;
+pub(crate) mod pbr_material;
 pub use self::pbr_material::*;
 
 #[derive(Debug)]

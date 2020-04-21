@@ -2,17 +2,38 @@ use crate::{
     graphics::{
         pipeline::{VertexStateBuilder},
         Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
+        material::skybox::SPEC_CUBEMAP_MIP_LEVELS,
     },
     AssetManager,
 };
+use bytemuck::{Pod, Zeroable};
 
-#[derive(Debug)]
-pub struct CubeProjectionPipeline {
-    texture: String,
-    size: f32,
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct Uniforms {
+    pub roughness: f32,
+    pub resoultion: f32,
 }
 
-impl SimplePipeline for CubeProjectionPipeline {
+impl Default for Uniforms {
+    fn default() -> Self {
+        Self {
+            roughness: 1.0,
+            resoultion: 1024.0,
+        }
+    }
+}
+
+unsafe impl Zeroable for Uniforms {}
+unsafe impl Pod for Uniforms {}
+
+#[derive(Debug)]
+pub struct SpecularPipeline {
+    constants_buffer: wgpu::Buffer,
+    resoultion: f32,
+}
+
+impl SimplePipeline for SpecularPipeline {
     fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
         
     }
@@ -23,27 +44,32 @@ impl SimplePipeline for CubeProjectionPipeline {
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
+        _asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
-        _input: Option<&RenderTarget>,
+        input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
     ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        let image = asset_manager.as_ref().unwrap().get_image(self.texture.clone());
-
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&image.view),
+                    resource: wgpu::BindingResource::Buffer {
+                        buffer: &self.constants_buffer,
+                        range: 0..std::mem::size_of::<Uniforms>() as u64,
+                    },
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&image.sampler),
+                    resource: wgpu::BindingResource::TextureView(&input.as_ref().unwrap().texture_view),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&input.as_ref().unwrap().sampler),
                 },
             ],
             label: None,
@@ -70,69 +96,33 @@ impl SimplePipeline for CubeProjectionPipeline {
             render_pass.draw(0..6, 0..6);
         }
 
-        let cube_map = RenderTarget::new(
-            device,
-            self.size,
-            self.size,
-            6,
-            1,
-            wgpu::TextureFormat::Rgba32Float,
-            wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-        );
-
-        for i in 0..6 {
-            encoder.copy_texture_to_texture(
-                wgpu::TextureCopyView {
-                    texture: &output.as_ref().unwrap().texture,
-                    mip_level: 0,
-                    array_layer: 0,
-                    origin: wgpu::Origin3d {
-                        x: 0,
-                        y: self.size as u32 * i,
-                        z: 0,
-                    },
-                },
-                wgpu::TextureCopyView {
-                    texture: &cube_map.texture,
-                    mip_level: 0,
-                    array_layer: i,
-                    origin: wgpu::Origin3d::ZERO,
-                },
-                wgpu::Extent3d {
-                    width: self.size as u32,
-                    height: self.size as u32,
-                    depth: 1,
-                },
-            );
-        }
-
-        (encoder.finish(), Some(cube_map))
+        (encoder.finish(), None)
     }
 }
 
 #[derive(Debug, Default)]
-pub struct CubeProjectionPipelineDesc {
-    texture: String,
-    size: f32,
+pub struct SpecularPipelineDesc {
+    mip_level: u32,
+    resoultion: f32,
 }
 
-impl CubeProjectionPipelineDesc {
-    pub fn new(texture: String, size: f32) -> Self {
+impl SpecularPipelineDesc {
+    pub fn new(mip_level: u32, resoultion: f32) -> Self {
         Self {
-            texture,
-            size,
+            mip_level,
+            resoultion,
         }
     }
 }
 
-impl SimplePipelineDesc for CubeProjectionPipelineDesc {
-    type Pipeline = CubeProjectionPipeline;
+impl SimplePipelineDesc for SpecularPipelineDesc {
+    type Pipeline = SpecularPipeline;
 
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
     ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("hdr_to_cubemap.shader")
+        asset_manager.get_shader("specular.shader")
     }
 
     fn create_layout(
@@ -146,6 +136,11 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::SampledTexture {
                             multisampled: false,
                             component_type: wgpu::TextureComponentType::Float,
@@ -153,7 +148,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                         },
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 1,
+                        binding: 2,
                         visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::Sampler { comparison: false },
                     },
@@ -198,12 +193,22 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
 
     fn build(
         self,
-        _device: &wgpu::Device,
+        device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-    ) -> CubeProjectionPipeline {
-        CubeProjectionPipeline {
-            texture: self.texture,
-            size: self.size,
+    ) -> SpecularPipeline {
+
+        // This data needs to be saved and passed onto the pipeline.
+        let constants_buffer = device.create_buffer_with_data(
+            bytemuck::bytes_of(&Uniforms {
+                roughness: self.mip_level as f32 / (SPEC_CUBEMAP_MIP_LEVELS - 1) as f32,
+                resoultion: self.resoultion,
+            }),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
+
+        SpecularPipeline {
+            constants_buffer,
+            resoultion: self.resoultion,
         }
     }
 }

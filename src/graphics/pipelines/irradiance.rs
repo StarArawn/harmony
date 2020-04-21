@@ -72,6 +72,7 @@ impl SimplePipeline for IrradiancePipeline {
             self.size,
             self.size,
             6,
+            1,
             wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         );
 
