@@ -56,10 +56,6 @@ void main() {
     vec3 ambient = vec3(0.05, 0.05, 0.05);
     vec3 normal = normalize(i_normal);
 
-    // vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, v_TexCoord), N).rgb;
-    // vec3 ambient_spec = textureLod(samplerCube(spec_cube_map, v_TexCoord), R, roughness * MAX_SPEC_LOD).rgb;
-    // vec2 env_brdf = texture(sampler2D(spec_brdf_map, v_TexCoord), vec2(NdotV, roughness)).rg;
-
     // accumulate color
     vec3 color = ambient;
     for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
