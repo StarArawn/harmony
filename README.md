@@ -49,6 +49,12 @@ Validation should be turned on already you only need to make sure to have the la
 - `hello-cube` a example of how to load gltf files and display them on the screen.
 - `benchmark` a benchmark that renders 2500 cubes to test performance.
 
+## shaderc-rs
+We use shaderc-rs in harmony to compile GLSL into spir-v. This process works great once we have compiled shaderc-rs unfortunetly shaderc-rs uses shaderc which is written in C++. It tends to compile very slow and require certain things to compile successfully. We have an issue to eventually replace shaderc with something written in pure rust, but currently that crate does not exist. For now anyone attempting to use harmony who encounters issues compiling shaderc should take a look at the documentation found in the readme of shaderc-rs's github page which can be found here:
+https://github.com/google/shaderc-rs
+
+If more help is needed or you feel as though the issue you encountered is directly related to shaderc's usage in harmony feel free to open an issue.
+
 ## Screenshots
 ![Hello Cube](/screenshots/screen2.png?raw=true "Hello cube!")
 
