@@ -37,7 +37,8 @@ impl CameraData {
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
-        self.projection = nalgebra_glm::perspective_fov_lh_no(self.fov, width, height, self.z_near, self.z_far);
+        self.projection =
+            nalgebra_glm::perspective_fov_lh_no(self.fov, width, height, self.z_near, self.z_far);
     }
 
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {

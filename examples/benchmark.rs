@@ -8,7 +8,9 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, SkyboxData, Transform, LightType, DirectionalLightData};
+use harmony::scene::components::{
+    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
+};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -88,10 +90,14 @@ impl harmony::AppState for AppState {
         scene.world.insert(skybox);
 
         // Add directional light to our scene.
-        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
-            direction: Vec3::new(0.0, 1.0, -0.5),
-            color: Vec3::new(1.0, 1.0, 1.0),
-        }), Transform::new(app));
+        harmony::scene::entities::light::create(
+            &mut scene.world,
+            LightType::Directional(DirectionalLightData {
+                direction: Vec3::new(0.0, 1.0, -0.5),
+                color: Vec3::new(1.0, 1.0, 1.0),
+            }),
+            Transform::new(app),
+        );
 
         let actual_window_size = app.get_window_actual_size();
 
@@ -106,9 +112,17 @@ impl harmony::AppState for AppState {
             200.0,
         );
         camera_data.update_view(
-            Vec3::new((size as f32 * scale) / 2.0, (size as f32 * scale) / 2.0, -190.0), // This is our camera's "position".
-            Vec3::new((size as f32 * scale) / 2.0, (size as f32 * scale) / 2.0, 0.0),  // Where the camera is looking at.
-            Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
+            Vec3::new(
+                (size as f32 * scale) / 2.0,
+                (size as f32 * scale) / 2.0,
+                -190.0,
+            ), // This is our camera's "position".
+            Vec3::new(
+                (size as f32 * scale) / 2.0,
+                (size as f32 * scale) / 2.0,
+                0.0,
+            ), // Where the camera is looking at.
+            Vec3::new(0.0, 1.0, 0.0), // Our camera's up vector.
         );
         harmony::scene::entities::camera::create(&mut scene.world, camera_data);
 

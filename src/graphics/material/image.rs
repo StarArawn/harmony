@@ -43,7 +43,11 @@ impl Image {
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
                 offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb { 4 * texture_extent.width } else { (4 * 4) * texture_extent.width },
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb {
+                    4 * texture_extent.width
+                } else {
+                    (4 * 4) * texture_extent.width
+                },
                 rows_per_image: 0,
             },
             wgpu::TextureCopyView {
@@ -92,7 +96,11 @@ impl Image {
 
         let image_bytes: Vec<u8> = img.into_raw();
 
-        (image_bytes, texture_extent, wgpu::TextureFormat::Rgba8UnormSrgb)
+        (
+            image_bytes,
+            texture_extent,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+        )
     }
 
     fn create_hdr_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
@@ -115,12 +123,16 @@ impl Image {
             .iter()
             .flat_map(|pixel| vec![pixel[0], pixel[1], pixel[2], 1.0])
             .collect::<Vec<_>>();
-        
+
         let image_bytes = unsafe {
             std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
         }
         .to_vec();
-        
-        (image_bytes, texture_extent, wgpu::TextureFormat::Rgba32Float)
+
+        (
+            image_bytes,
+            texture_extent,
+            wgpu::TextureFormat::Rgba32Float,
+        )
     }
 }

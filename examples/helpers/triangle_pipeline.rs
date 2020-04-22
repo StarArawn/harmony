@@ -1,10 +1,6 @@
 use harmony::{
     graphics::{
-        VertexStateBuilder,
-        Pipeline,
-        SimplePipeline,
-        SimplePipelineDesc,
-        RenderTarget,
+        resources::RenderTarget, Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
     },
     AssetManager,
 };
@@ -15,8 +11,12 @@ pub struct TrianglePipeline {
 }
 
 impl SimplePipeline for TrianglePipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -67,10 +67,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         asset_manager.get_shader("triangle.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
             label: None,
@@ -122,8 +119,6 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
             bindings: &[],
             label: None,
         });
-        TrianglePipeline {
-            bind_group,
-        }
+        TrianglePipeline { bind_group }
     }
 }

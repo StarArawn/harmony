@@ -15,7 +15,7 @@ impl Shader {
         // Compiler
         let mut compiler = shaderc::Compiler::new().unwrap();
         let mut options = shaderc::CompileOptions::new().unwrap();
-        
+
         #[cfg(not(debug_assertions))]
         {
             options.set_optimization_level(shaderc::OptimizationLevel::Performance);

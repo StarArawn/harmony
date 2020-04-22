@@ -88,7 +88,10 @@ impl AssetManager {
                     format!("Loaded mesh: {}", file_name),
                 );
             }
-            if file_name.ends_with(".png") || file_name.ends_with(".jpg") || file_name.ends_with(".hdr") {
+            if file_name.ends_with(".png")
+                || file_name.ends_with(".jpg")
+                || file_name.ends_with(".hdr")
+            {
                 let image = Image::new(
                     device,
                     &mut init_encoder,

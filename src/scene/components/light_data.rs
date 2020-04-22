@@ -1,5 +1,5 @@
-use nalgebra_glm::{ Vec3 };
-use specs::{DenseVecStorage, Component};
+use nalgebra_glm::Vec3;
+use specs::{Component, DenseVecStorage};
 
 pub enum LightType {
     Directional(DirectionalLightData),

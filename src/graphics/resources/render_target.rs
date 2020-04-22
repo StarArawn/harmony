@@ -6,7 +6,15 @@ pub struct RenderTarget {
 }
 
 impl RenderTarget {
-    pub fn new(device: &wgpu::Device, width: f32, height: f32, depth: u32, mip_count: u32, format: wgpu::TextureFormat, usage: wgpu::TextureUsage) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        width: f32,
+        height: f32,
+        depth: u32,
+        mip_count: u32,
+        format: wgpu::TextureFormat,
+        usage: wgpu::TextureUsage,
+    ) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
                 width: width as u32,

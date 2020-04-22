@@ -7,7 +7,10 @@ use winit::{
 
 use crate::{
     core::input::Input,
-    graphics::{RenderGraph, Renderer, pipelines::{UnlitPipelineDesc, SkyboxPipelineDesc, PBRPipelineDesc}},
+    graphics::{
+        pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
+        RenderGraph, Renderer,
+    },
     gui::Scene as GuiScene,
     scene::Scene,
     AssetManager,
@@ -15,18 +18,18 @@ use crate::{
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
-    fn load(&mut self, _app: &mut Application) { }
+    fn load(&mut self, _app: &mut Application) {}
     /// Called to update app state.
-    fn update(&mut self, _app: &mut Application) { }
+    fn update(&mut self, _app: &mut Application) {}
 
     /// Called when the window resizes
-    fn resize(&mut self, _app: &mut Application) {
-
-    }
+    fn resize(&mut self, _app: &mut Application) {}
 
     /// Draw's the gui.
     /// Return your current gui scene here or none if you don't have any.
-    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene> { None }
+    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene> {
+        None
+    }
 }
 
 pub struct Application {
@@ -127,13 +130,40 @@ impl Application {
         self.render_graph = Some(RenderGraph::new(&self.renderer.device));
         // Skybox pipeline
         let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "skybox", skybox_pipeline_desc, vec![], false, None, false);
+        self.render_graph.as_mut().unwrap().add(
+            &self.asset_manager,
+            &mut self.renderer,
+            "skybox",
+            skybox_pipeline_desc,
+            vec![],
+            false,
+            None,
+            false,
+        );
         // Unlit pipeline
         let unlit_pipeline_desc = UnlitPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "unlit", unlit_pipeline_desc, vec!["skybox"], true, None, false);
+        self.render_graph.as_mut().unwrap().add(
+            &self.asset_manager,
+            &mut self.renderer,
+            "unlit",
+            unlit_pipeline_desc,
+            vec!["skybox"],
+            true,
+            None,
+            false,
+        );
         // PBR pipeline
         let pbr_pipeline_desc = PBRPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(&self.asset_manager, &mut self.renderer, "pbr", pbr_pipeline_desc, vec!["skybox"], true, None, false);
+        self.render_graph.as_mut().unwrap().add(
+            &self.asset_manager,
+            &mut self.renderer,
+            "pbr",
+            pbr_pipeline_desc,
+            vec!["skybox"],
+            true,
+            None,
+            false,
+        );
 
         app_state.load(self);
 
@@ -164,7 +194,7 @@ impl Application {
                             &self.renderer.device,
                             unlit_bind_group_layout,
                         );
-                    },
+                    }
                     super::graphics::material::Material::PBR(pbr_material) => {
                         pbr_material.create_bind_group(
                             images,
@@ -206,18 +236,17 @@ impl Application {
             LogicalSize::new(size.width, size.height),
         );
         self.gui_renderer = Some(gui_renderer);
-
     }
 
     /// Run's the application which means two things.
     /// 1. Update all internal state and call app_state.update()
     /// 2. Draw all rendering data to the current screen and call app_state.update()
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `app_state` - The app state you created which should implement the AppState trait.
-    /// * `event` - The event data as a reference from winit. 
-    /// * `control_flow` - a mutable reference to winit's control flow. 
+    /// * `event` - The event data as a reference from winit.
+    /// * `control_flow` - a mutable reference to winit's control flow.
     ///
     pub fn run<T>(
         &mut self,
@@ -232,14 +261,14 @@ impl Application {
             x: 0.0,
             y: 0.0,
             width: self.renderer.size.width as f32 / self.renderer.window.scale_factor() as f32, // TODO: Use window scale NOT 2.0.
-            height: self.renderer.size.height as f32 / self.renderer.window.scale_factor() as f32, 
+            height: self.renderer.size.height as f32 / self.renderer.window.scale_factor() as f32,
         };
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
                 while frame_time > 0.0 {
                     self.delta_time = f32::min(frame_time, self.fixed_timestep);
-                    
+
                     app_state.update(self);
                     let gui_scene = app_state.draw_gui(self);
                     if gui_scene.is_some() {
@@ -312,12 +341,18 @@ impl Application {
 
                 self.frame_time =
                     Instant::now().duration_since(start).subsec_millis() as f32 / 1000.0;
-            },
-            Event::WindowEvent { event: winit::event::WindowEvent::Resized(size), .. } => {
+            }
+            Event::WindowEvent {
+                event: winit::event::WindowEvent::Resized(size),
+                ..
+            } => {
                 self.renderer.sc_desc.width = size.width;
                 self.renderer.sc_desc.height = size.height;
                 self.renderer.size = *size;
-                self.renderer.swap_chain = self.renderer.device.create_swap_chain(&self.renderer.surface, &self.renderer.sc_desc);
+                self.renderer.swap_chain = self
+                    .renderer
+                    .device
+                    .create_swap_chain(&self.renderer.surface, &self.renderer.sc_desc);
                 app_state.resize(self);
             }
             _ => (),

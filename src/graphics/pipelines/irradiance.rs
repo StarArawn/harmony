@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
-        pipeline::{VertexStateBuilder},
-        Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
+        pipeline::VertexStateBuilder, resources::RenderTarget, Pipeline, SimplePipeline,
+        SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -12,8 +12,12 @@ pub struct IrradiancePipeline {
 }
 
 impl SimplePipeline for IrradiancePipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -36,7 +40,9 @@ impl SimplePipeline for IrradiancePipeline {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&input.as_ref().unwrap().texture_view),
+                    resource: wgpu::BindingResource::TextureView(
+                        &input.as_ref().unwrap().texture_view,
+                    ),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -73,7 +79,8 @@ impl SimplePipeline for IrradiancePipeline {
             self.size,
             6,
             1,
-            wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            wgpu::TextureFormat::Rgba32Float,
+            wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         );
 
         for i in 0..6 {
@@ -113,9 +120,7 @@ pub struct IrradiancePipelineDesc {
 
 impl IrradiancePipelineDesc {
     pub fn new(size: f32) -> Self {
-        Self {
-            size,
-        }
+        Self { size }
     }
 }
 
@@ -129,10 +134,7 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
         asset_manager.get_shader("irradiance.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -195,8 +197,6 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
         _device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
     ) -> IrradiancePipeline {
-        IrradiancePipeline {
-            size: self.size,
-        }
+        IrradiancePipeline { size: self.size }
     }
 }

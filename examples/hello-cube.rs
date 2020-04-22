@@ -8,7 +8,9 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{CameraData, Material, Mesh, Transform, LightType, DirectionalLightData};
+use harmony::scene::components::{
+    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
+};
 use harmony::scene::Scene;
 use harmony::WinitState;
 
@@ -79,10 +81,14 @@ impl harmony::AppState for AppState {
         scene.world.insert(skybox);
 
         // Add directional light to our scene.
-        harmony::scene::entities::light::create(&mut scene.world, LightType::Directional(DirectionalLightData {
-            direction: Vec3::new(0.0, 1.0, -0.5),
-            color: Vec3::new(1.0, 1.0, 1.0),
-        }), Transform::new(app));
+        harmony::scene::entities::light::create(
+            &mut scene.world,
+            LightType::Directional(DirectionalLightData {
+                direction: Vec3::new(0.0, 1.0, -0.5),
+                color: Vec3::new(1.0, 1.0, 1.0),
+            }),
+            Transform::new(app),
+        );
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
@@ -125,7 +131,10 @@ impl harmony::AppState for AppState {
         // This is kinda of a hacky soultion. It might be better to have this be handled internally for each camera.
         let mut cameras = world.write_component::<harmony::scene::components::CameraData>();
         for camera in (&mut cameras).join() {
-            camera.resize(app.renderer.size.width as f32, app.renderer.size.height as f32);
+            camera.resize(
+                app.renderer.size.width as f32,
+                app.renderer.size.height as f32,
+            );
         }
     }
 }

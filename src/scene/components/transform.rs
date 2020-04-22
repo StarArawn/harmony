@@ -84,8 +84,7 @@ impl Transform {
     }
 
     pub(crate) fn create_bindings(app: &Application) -> (wgpu::Buffer, wgpu::BindGroup) {
-        let bind_group_layout = &app
-            .render_graph.as_ref().unwrap().local_bind_group_layout;
+        let bind_group_layout = &app.render_graph.as_ref().unwrap().local_bind_group_layout;
         // This data needs to be saved and passed onto the pipeline.
         let local_buffer = app.renderer.device.create_buffer_with_data(
             bytemuck::bytes_of(&LocalUniform::default()),

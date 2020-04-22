@@ -1,8 +1,7 @@
 use crate::{
     graphics::{
-        pipeline::{VertexStateBuilder},
-        Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
-        material::skybox::SPEC_CUBEMAP_MIP_LEVELS,
+        material::skybox::SPEC_CUBEMAP_MIP_LEVELS, pipeline::VertexStateBuilder,
+        resources::RenderTarget, Pipeline, SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -34,8 +33,12 @@ pub struct SpecularPipeline {
 }
 
 impl SimplePipeline for SpecularPipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -65,7 +68,9 @@ impl SimplePipeline for SpecularPipeline {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&input.as_ref().unwrap().texture_view),
+                    resource: wgpu::BindingResource::TextureView(
+                        &input.as_ref().unwrap().texture_view,
+                    ),
                 },
                 wgpu::Binding {
                     binding: 2,
@@ -125,10 +130,7 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         asset_manager.get_shader("specular.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -196,7 +198,6 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
     ) -> SpecularPipeline {
-
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&Uniforms {

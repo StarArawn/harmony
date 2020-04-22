@@ -2,13 +2,13 @@ use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Vec4};
 
 mod unlit;
-pub(crate) use unlit::{UnlitPipelineDesc};
+pub(crate) use unlit::UnlitPipelineDesc;
 
 mod pbr;
-pub(crate) use pbr::{PBRPipelineDesc};
+pub(crate) use pbr::PBRPipelineDesc;
 
 mod skybox;
-pub(crate) use skybox::{SkyboxPipelineDesc};
+pub(crate) use skybox::SkyboxPipelineDesc;
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;
@@ -68,7 +68,6 @@ impl Default for PointLight {
     }
 }
 
-
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct LightingUniform {
@@ -81,8 +80,20 @@ impl Default for LightingUniform {
     fn default() -> Self {
         Self {
             light_num: Vec4::zeros(),
-            directional_lights: [DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default(), DirectionalLight::default()],
-            point_lights: [PointLight::default(), PointLight::default(), PointLight::default(), PointLight::default(), PointLight::default()],
+            directional_lights: [
+                DirectionalLight::default(),
+                DirectionalLight::default(),
+                DirectionalLight::default(),
+                DirectionalLight::default(),
+                DirectionalLight::default(),
+            ],
+            point_lights: [
+                PointLight::default(),
+                PointLight::default(),
+                PointLight::default(),
+                PointLight::default(),
+                PointLight::default(),
+            ],
         }
     }
 }

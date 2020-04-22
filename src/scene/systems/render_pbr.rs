@@ -1,11 +1,17 @@
 use crate::AssetManager;
 use crate::{
-    graphics::{material::{Skybox, Material}, pipelines::{DirectionalLight, GlobalUniforms, PointLight, LightingUniform, MAX_LIGHTS}, Pipeline},
-    scene::components::{transform::LocalUniform, CameraData, Mesh, Transform, DirectionalLightData, PointLightData},
+    graphics::{
+        material::{Material, Skybox},
+        pipelines::{DirectionalLight, GlobalUniforms, LightingUniform, PointLight, MAX_LIGHTS},
+        Pipeline,
+    },
+    scene::components::{
+        transform::LocalUniform, CameraData, DirectionalLightData, Mesh, PointLightData, Transform,
+    },
 };
-use specs::{ReadStorage, Read, System, WriteStorage};
+use nalgebra_glm::Vec4;
+use specs::{Read, ReadStorage, System, WriteStorage};
 use std::convert::TryInto;
-use nalgebra_glm::{Vec4};
 
 pub struct RenderPBR<'a> {
     pub(crate) device: &'a wgpu::Device,
@@ -30,7 +36,10 @@ impl<'a> System<'a> for RenderPBR<'a> {
         Option<Read<'a, Skybox>>,
     );
 
-    fn run(&mut self, (camera_data, meshes, materials, directional_lights, point_lights, mut transforms, skybox): Self::SystemData) {
+    fn run(
+        &mut self,
+        (camera_data, meshes, materials, directional_lights, point_lights, mut transforms, skybox): Self::SystemData,
+    ) {
         use specs::Join;
         if transforms.count() == 0 || skybox.is_none() {
             return;
@@ -66,19 +75,30 @@ impl<'a> System<'a> for RenderPBR<'a> {
         );
 
         // Get lighting data.
-        let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights.join().map(|data| DirectionalLight {
-            direction: Vec4::new(data.direction.x, data.direction.y, data.direction.z, 0.0),
-            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
-        }).collect();
+        let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights
+            .join()
+            .map(|data| DirectionalLight {
+                direction: Vec4::new(data.direction.x, data.direction.y, data.direction.z, 0.0),
+                color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+            })
+            .collect();
 
-        let mut point_light_data_vec: Vec<PointLight> = (&point_lights, &transforms).join().map(|(data, transform)| PointLight {
-            attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
-            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
-            position: Vec4::new(transform.position.x, transform.position.y, transform.position.z, 0.0),
-        }).collect();
+        let mut point_light_data_vec: Vec<PointLight> = (&point_lights, &transforms)
+            .join()
+            .map(|(data, transform)| PointLight {
+                attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
+                color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+                position: Vec4::new(
+                    transform.position.x,
+                    transform.position.y,
+                    transform.position.z,
+                    0.0,
+                ),
+            })
+            .collect();
 
         let total_dir_lights = directional_light_data_vec.len() as u32;
-        let total_point_lights = point_light_data_vec.len() as u32; 
+        let total_point_lights = point_light_data_vec.len() as u32;
 
         // Fill in missing data if we don't have it.
         point_light_data_vec.resize_with(MAX_LIGHTS / 2, || PointLight::default());
@@ -90,9 +110,10 @@ impl<'a> System<'a> for RenderPBR<'a> {
             point_lights: point_light_data_vec.as_slice().try_into().unwrap(),
         };
 
-        let lighting_buffer = self
-            .device
-            .create_buffer_with_data(bytemuck::bytes_of(&light_uniform), wgpu::BufferUsage::COPY_SRC);
+        let lighting_buffer = self.device.create_buffer_with_data(
+            bytemuck::bytes_of(&light_uniform),
+            wgpu::BufferUsage::COPY_SRC,
+        );
 
         self.encoder.copy_buffer_to_buffer(
             &lighting_buffer,
@@ -166,7 +187,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
         render_pass.set_bind_group(3, skybox.pbr_bind_group.as_ref().unwrap(), &[]);
 
         let asset_materials = self.asset_manager.get_materials();
-        /* 
+        /*
             TODO: It's not very efficient to loop through each entity that has a material. Fix that.
             Look into using: https://docs.rs/specs/0.16.1/specs/struct.FlaggedStorage.html
         */
@@ -179,8 +200,8 @@ impl<'a> System<'a> for RenderPBR<'a> {
                         &pbr_material.bind_group_data.as_ref().unwrap().bind_group,
                         &[],
                     );
-                    for (mesh, _, transform) in joined_data
-                        .filter(|(_, material, _)| material.index == pbr_material.index)
+                    for (mesh, _, transform) in
+                        joined_data.filter(|(_, material, _)| material.index == pbr_material.index)
                     {
                         render_pass.set_bind_group(0, &transform.bind_group, &[]);
                         let mesh: &Mesh = mesh;
@@ -192,7 +213,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
                             render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }

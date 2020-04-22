@@ -1,4 +1,7 @@
-use crate::{graphics::{RenderTarget, RenderGraph}, Application, AssetManager};
+use crate::{
+    graphics::{resources::RenderTarget, RenderGraph},
+    Application,
+};
 use std::fs::File;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
@@ -20,36 +23,116 @@ pub struct Skybox {
 }
 
 impl Skybox {
-    pub fn new<T>(app: &mut Application, texture: T, size: f32) -> Self where T: Into<String> {
+    pub fn new<T>(app: &mut Application, texture: T, size: f32) -> Self
+    where
+        T: Into<String>,
+    {
         // Create a new render graph for this process..
         let mut graph = RenderGraph::new(&app.renderer.device);
-        
-        let cube_map_target = RenderTarget::new(&app.renderer.device, size, size * 6.0, 1, 1, wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
+
+        let cube_map_target = RenderTarget::new(
+            &app.renderer.device,
+            size,
+            size * 6.0,
+            1,
+            1,
+            wgpu::TextureFormat::Rgba32Float,
+            wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        );
 
         let cube_projection_pipeline_desc =
-            crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::new(texture.into(), size);
-        graph.add(&app.asset_manager, &mut app.renderer, "cube_projection", cube_projection_pipeline_desc, vec![], false, Some(cube_map_target), false);
+            crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::new(
+                texture.into(),
+                size,
+            );
+        graph.add(
+            &app.asset_manager,
+            &mut app.renderer,
+            "cube_projection",
+            cube_projection_pipeline_desc,
+            vec![],
+            false,
+            Some(cube_map_target),
+            false,
+        );
 
         let irradiance_size = 64.0;
-        let irradiance_target = RenderTarget::new(&app.renderer.device, irradiance_size, irradiance_size * 6.0, 1, 1, wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
-        let irradiance_pipeline_desc = crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(irradiance_size);
-        graph.add(&app.asset_manager, &mut app.renderer, "irradiance", irradiance_pipeline_desc, vec!["cube_projection"], false, Some(irradiance_target), true);
-
+        let irradiance_target = RenderTarget::new(
+            &app.renderer.device,
+            irradiance_size,
+            irradiance_size * 6.0,
+            1,
+            1,
+            wgpu::TextureFormat::Rgba32Float,
+            wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        );
+        let irradiance_pipeline_desc =
+            crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(irradiance_size);
+        graph.add(
+            &app.asset_manager,
+            &mut app.renderer,
+            "irradiance",
+            irradiance_pipeline_desc,
+            vec!["cube_projection"],
+            false,
+            Some(irradiance_target),
+            true,
+        );
 
         let specular_size = 64;
         // Add in a pass per mip level.
         for i in 0..SPEC_CUBEMAP_MIP_LEVELS {
             let res = (specular_size / 2u32.pow(i)) as f32;
-            let specular_target = RenderTarget::new(&app.renderer.device, res, res * 6.0, 1, 1, wgpu::TextureFormat::Rgba32Float, wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
-            let specular_pipeline_desc = crate::graphics::pipelines::specular::SpecularPipelineDesc::new(i, res);
-            graph.add(&app.asset_manager, &mut app.renderer, format!("specular_{}", i), specular_pipeline_desc, vec!["irradiance"], false, Some(specular_target), true);
+            let specular_target = RenderTarget::new(
+                &app.renderer.device,
+                res,
+                res * 6.0,
+                1,
+                1,
+                wgpu::TextureFormat::Rgba32Float,
+                wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            );
+            let specular_pipeline_desc =
+                crate::graphics::pipelines::specular::SpecularPipelineDesc::new(i, res);
+            graph.add(
+                &app.asset_manager,
+                &mut app.renderer,
+                format!("specular_{}", i),
+                specular_pipeline_desc,
+                vec!["irradiance"],
+                false,
+                Some(specular_target),
+                true,
+            );
         }
 
         // Specular BRDF
         let specular_brdf_size = 128.0;
-        let spec_brdf_texture  = RenderTarget::new(&app.renderer.device, specular_brdf_size, specular_brdf_size, 1, 1, wgpu::TextureFormat::Rgba8UnormSrgb, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
-        let spec_brdf_pipeline_desc = crate::graphics::pipelines::specular_brdf::SpecularBRDFPipelineDesc::new(specular_brdf_size);
-        graph.add(&app.asset_manager, &mut app.renderer, "spec_brdf", spec_brdf_pipeline_desc, vec![], false, Some(spec_brdf_texture), false);
+        let spec_brdf_texture = RenderTarget::new(
+            &app.renderer.device,
+            specular_brdf_size,
+            specular_brdf_size,
+            1,
+            1,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            wgpu::TextureUsage::SAMPLED
+                | wgpu::TextureUsage::COPY_SRC
+                | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        );
+        let spec_brdf_pipeline_desc =
+            crate::graphics::pipelines::specular_brdf::SpecularBRDFPipelineDesc::new(
+                specular_brdf_size,
+            );
+        graph.add(
+            &app.asset_manager,
+            &mut app.renderer,
+            "spec_brdf",
+            spec_brdf_pipeline_desc,
+            vec![],
+            false,
+            Some(spec_brdf_texture),
+            false,
+        );
 
         // let output_buffer = app.renderer.device.create_buffer(&wgpu::BufferDescriptor {
         //     size: (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64,
@@ -61,7 +144,8 @@ impl Skybox {
         // Should be straight forward enough if we use equirectangular projection.
         // First we need a custom pipeline that will run in here to do the conversion.
         //let output = app.renderer.swap_chain.get_next_texture().unwrap();
-        let mut command_buffers = graph.render(&mut app.renderer, &mut app.asset_manager, None, None);
+        let mut command_buffers =
+            graph.render(&mut app.renderer, &mut app.asset_manager, None, None);
 
         let specular = RenderTarget::new(
             &app.renderer.device,
@@ -72,8 +156,11 @@ impl Skybox {
             wgpu::TextureFormat::Rgba32Float,
             wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         );
-        
-        let mut encoder = app.renderer.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let mut encoder = app
+            .renderer
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // Pull out mipmaps for specular and combine them into 1 image.
         for mip_level in 0..SPEC_CUBEMAP_MIP_LEVELS {
@@ -134,9 +221,9 @@ impl Skybox {
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);
-        
+
         app.renderer.device.poll(wgpu::Maintain::Wait);
-        
+
         // futures::executor::block_on(Self::save(buffer_future));
 
         let color = graph.pull_render_target("cube_projection");
@@ -153,15 +240,17 @@ impl Skybox {
             array_layer_count: 6,
         });
 
-        let irradiance_view = irradiance.texture.create_view(&wgpu::TextureViewDescriptor {
-            format: wgpu::TextureFormat::Rgba32Float,
-            dimension: wgpu::TextureViewDimension::Cube,
-            aspect: wgpu::TextureAspect::default(),
-            base_mip_level: 0,
-            level_count: 1,
-            base_array_layer: 0,
-            array_layer_count: 6,
-        });
+        let irradiance_view = irradiance
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor {
+                format: wgpu::TextureFormat::Rgba32Float,
+                dimension: wgpu::TextureViewDimension::Cube,
+                aspect: wgpu::TextureAspect::default(),
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                array_layer_count: 6,
+            });
 
         let specular_view = specular.texture.create_view(&wgpu::TextureViewDescriptor {
             format: wgpu::TextureFormat::Rgba32Float,
@@ -173,17 +262,20 @@ impl Skybox {
             array_layer_count: 6,
         });
 
-        let cubemap_sampler = app.renderer.device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
-        });
+        let cubemap_sampler = app
+            .renderer
+            .device
+            .create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Linear,
+                lod_min_clamp: -100.0,
+                lod_max_clamp: 100.0,
+                compare: wgpu::CompareFunction::Undefined,
+            });
 
         Self {
             size,
@@ -201,78 +293,72 @@ impl Skybox {
         }
     }
 
-    pub(crate) fn create_bind_group(&mut self, device: &wgpu::Device, material_layout: &wgpu::BindGroupLayout) {
-        let bind_group = device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &material_layout,
-                bindings: &[
-                    wgpu::Binding {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(
-                            &self.color_view,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(
-                            &self.cubemap_sampler,
-                        ),
-                    },
-                ],
-                label: None,
-            });
+    pub(crate) fn create_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        material_layout: &wgpu::BindGroupLayout,
+    ) {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &material_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&self.color_view),
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
+                },
+            ],
+            label: None,
+        });
         self.cubemap_bind_group = Some(bind_group);
     }
 
-    pub(crate) fn create_pbr_bind_group(&mut self, device: &wgpu::Device, material_layout: &wgpu::BindGroupLayout) {
-        let bind_group = device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &material_layout,
-                bindings: &[
-                    wgpu::Binding {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(
-                            &self.irradiance_view,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(
-                            &self.cubemap_sampler,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(
-                            &self.specular_view,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 3,
-                        resource: wgpu::BindingResource::Sampler(
-                            &self.cubemap_sampler,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 4,
-                        resource: wgpu::BindingResource::TextureView(
-                            &self.brdf_view,
-                        ),
-                    },
-                    wgpu::Binding {
-                        binding: 5,
-                        resource: wgpu::BindingResource::Sampler(
-                            &self.cubemap_sampler,
-                        ),
-                    },
-                ],
-                label: None,
-            });
+    pub(crate) fn create_pbr_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        material_layout: &wgpu::BindGroupLayout,
+    ) {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &material_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&self.irradiance_view),
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&self.specular_view),
+                },
+                wgpu::Binding {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
+                },
+                wgpu::Binding {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&self.brdf_view),
+                },
+                wgpu::Binding {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
+                },
+            ],
+            label: None,
+        });
 
         self.pbr_bind_group = Some(bind_group);
     }
 
-    async fn save(buffer_future: impl futures::Future<Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>>) {
+    async fn save(
+        buffer_future: impl futures::Future<
+            Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>,
+        >,
+    ) {
         if let Ok(mapping) = buffer_future.await {
             let mut png_encoder = png::Encoder::new(File::create("save.png").unwrap(), 128, 128);
             png_encoder.set_depth(png::BitDepth::Eight);

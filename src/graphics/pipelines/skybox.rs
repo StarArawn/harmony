@@ -4,13 +4,10 @@ use specs::WorldExt;
 
 use crate::{
     graphics::{
-        pipeline::{VertexStateBuilder},
-        // renderer::DEPTH_FORMAT,
-        Pipeline,
-        SimplePipeline,
-        SimplePipelineDesc, RenderTarget, renderer::DEPTH_FORMAT,
+        pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT, resources::RenderTarget, Pipeline,
+        SimplePipeline, SimplePipelineDesc,
     },
-    scene::{components::CameraData},
+    scene::components::CameraData,
     AssetManager,
 };
 
@@ -40,8 +37,12 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -145,10 +146,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

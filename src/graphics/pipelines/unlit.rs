@@ -1,19 +1,20 @@
 use specs::RunNow;
 use std::mem;
 
+use super::GlobalUniforms;
 use crate::{
     graphics::{
         mesh::MeshVertexData,
-        pipeline::{VertexStateBuilder},
+        pipeline::VertexStateBuilder,
+        resources::RenderTarget,
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
-        SimplePipelineDesc, RenderTarget,
+        SimplePipelineDesc,
     },
     scene::systems::RenderUnlit,
     AssetManager,
 };
-use super::GlobalUniforms;
 
 #[derive(Debug)]
 pub struct UnlitPipeline {
@@ -21,10 +22,13 @@ pub struct UnlitPipeline {
     global_bind_group: wgpu::BindGroup,
 }
 
-impl SimplePipeline for UnlitPipeline 
-{
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+impl SimplePipeline for UnlitPipeline {
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -73,10 +77,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         asset_manager.get_shader("unlit.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -113,10 +114,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
                 ],
                 label: None,
             });
-        vec![
-            global_bind_group_layout,
-            material_bind_group_layout,
-        ]
+        vec![global_bind_group_layout, material_bind_group_layout]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {

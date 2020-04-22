@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
-        pipeline::{VertexStateBuilder},
-        Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
+        pipeline::VertexStateBuilder, resources::RenderTarget, Pipeline, SimplePipeline,
+        SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -12,8 +12,12 @@ pub struct SpecularBRDFPipeline {
 }
 
 impl SimplePipeline for SpecularBRDFPipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -62,9 +66,7 @@ pub struct SpecularBRDFPipelineDesc {
 
 impl SpecularBRDFPipelineDesc {
     pub fn new(size: f32) -> Self {
-        Self {
-            size,
-        }
+        Self { size }
     }
 }
 
@@ -78,10 +80,7 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
         asset_manager.get_shader("specular_brdf.shader")
     }
 
-    fn create_layout(
-        &self,
-        _device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, _device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // No bindings? No problem! Just remember that later on!
         vec![]
     }
@@ -123,8 +122,6 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
         _device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
     ) -> SpecularBRDFPipeline {
-        SpecularBRDFPipeline {
-            size: self.size,
-        }
+        SpecularBRDFPipeline { size: self.size }
     }
 }

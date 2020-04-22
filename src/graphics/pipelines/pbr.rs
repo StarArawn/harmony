@@ -1,19 +1,20 @@
 use specs::RunNow;
 use std::mem;
 
+use super::{GlobalUniforms, LightingUniform};
 use crate::{
     graphics::{
         mesh::MeshVertexData,
-        pipeline::{VertexStateBuilder},
+        pipeline::VertexStateBuilder,
+        resources::RenderTarget,
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
-        SimplePipelineDesc, RenderTarget,
+        SimplePipelineDesc,
     },
     scene::systems::RenderPBR,
     AssetManager,
 };
-use super::{LightingUniform, GlobalUniforms};
 
 #[derive(Debug)]
 pub struct PBRPipeline {
@@ -22,10 +23,13 @@ pub struct PBRPipeline {
     global_bind_group: wgpu::BindGroup,
 }
 
-impl SimplePipeline for PBRPipeline 
-{
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+impl SimplePipeline for PBRPipeline {
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -75,24 +79,23 @@ impl SimplePipelineDesc for PBRPipelineDesc {
         asset_manager.get_shader("pbr.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
-                    wgpu::BindGroupLayoutEntry { // CAMERA TRANSFORM
+                    wgpu::BindGroupLayoutEntry {
+                        // CAMERA TRANSFORM
                         binding: 0,
                         visibility: wgpu::ShaderStage::VERTEX,
                         ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     },
-                    wgpu::BindGroupLayoutEntry { // LIGHTING DATA
+                    wgpu::BindGroupLayoutEntry {
+                        // LIGHTING DATA
                         binding: 1,
                         visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                    }
+                    },
                 ],
                 label: None,
             });
@@ -284,7 +287,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                         buffer: &lighting_buffer,
                         range: 0..std::mem::size_of::<LightingUniform>() as u64,
                     },
-                }
+                },
             ],
             label: None,
         });

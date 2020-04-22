@@ -120,7 +120,7 @@ impl<'a> System<'a> for RenderUnlit<'a> {
         render_pass.set_bind_group(1, self.global_bind_group, &[]);
 
         let asset_materials = self.asset_manager.get_materials();
-        /* 
+        /*
             TODO: It's not very efficient to loop through each entity that has a material. Fix that.
             Look into using: https://docs.rs/specs/0.16.1/specs/struct.FlaggedStorage.html
         */
@@ -146,7 +146,7 @@ impl<'a> System<'a> for RenderUnlit<'a> {
                             render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                         }
                     }
-                },
+                }
                 _ => (),
             }
         }

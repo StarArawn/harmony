@@ -1,4 +1,4 @@
-use super::{RenderTarget, material::Shader};
+use super::{material::Shader, resources::RenderTarget};
 use crate::AssetManager;
 
 #[derive(Debug)]
@@ -14,7 +14,12 @@ pub struct BindGroupWithData {
 }
 
 pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
-    fn prepare(&mut self, device: &mut wgpu::Device, pipeline: &Pipeline, encoder: &mut wgpu::CommandEncoder);
+    fn prepare(
+        &mut self,
+        device: &mut wgpu::Device,
+        pipeline: &Pipeline,
+        encoder: &mut wgpu::CommandEncoder,
+    );
 
     fn render(
         &mut self,
@@ -32,7 +37,12 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
 pub trait SimplePipelineDesc: std::fmt::Debug {
     type Pipeline: SimplePipeline;
 
-    fn pipeline<'a>(&mut self, asset_manager: &'a AssetManager, renderer: &'a mut crate::graphics::Renderer, local_bind_group_layout: Option<&'a wgpu::BindGroupLayout>) -> Pipeline {
+    fn pipeline<'a>(
+        &mut self,
+        asset_manager: &'a AssetManager,
+        renderer: &'a mut crate::graphics::Renderer,
+        local_bind_group_layout: Option<&'a wgpu::BindGroupLayout>,
+    ) -> Pipeline {
         let mut_device = &mut renderer.device;
         let shader = self.load_shader(asset_manager);
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
@@ -54,7 +64,10 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         let sample_mask = self.sampler_mask();
         let alpha_to_coverage_enabled = self.alpha_to_coverage_enabled();
 
-        let mut total_bind_group_layouts = bind_group_layouts.iter().map(|bind_group_layout| bind_group_layout).collect::<Vec<&wgpu::BindGroupLayout>>();
+        let mut total_bind_group_layouts = bind_group_layouts
+            .iter()
+            .map(|bind_group_layout| bind_group_layout)
+            .collect::<Vec<&wgpu::BindGroupLayout>>();
         if local_bind_group_layout.is_some() {
             total_bind_group_layouts.insert(0, local_bind_group_layout.as_ref().unwrap());
         }
@@ -101,10 +114,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
     // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
     fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
-    fn create_layout(
-        &self,
-        _device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout>;
+    fn create_layout(&self, _device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout>;
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor;
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology;
     fn color_states_desc(

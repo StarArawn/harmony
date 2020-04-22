@@ -1,9 +1,7 @@
-use super::{
-    Pipeline, Renderer, SimplePipeline, SimplePipelineDesc, RenderTarget,
-};
-use crate::{AssetManager};
-use std::collections::HashMap;
+use super::{resources::RenderTarget, Pipeline, Renderer, SimplePipeline, SimplePipelineDesc};
+use crate::AssetManager;
 use solvent::DepGraph;
+use std::collections::HashMap;
 
 // TODO: handle node dependencies somehow.
 #[derive(Debug)]
@@ -52,11 +50,19 @@ impl RenderGraph {
         mut pipeline_desc: T,
         dependency: Vec<&str>,
         include_local_bindings: bool,
-        output: Option<RenderTarget>, 
+        output: Option<RenderTarget>,
         use_output_from_dependency: bool,
     ) {
         let name = name.into();
-        let pipeline = pipeline_desc.pipeline(asset_manager, renderer, if include_local_bindings { Some(&self.local_bind_group_layout) } else { None });
+        let pipeline = pipeline_desc.pipeline(
+            asset_manager,
+            renderer,
+            if include_local_bindings {
+                Some(&self.local_bind_group_layout)
+            } else {
+                None
+            },
+        );
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
         let node = RenderGraphNode {
@@ -68,20 +74,30 @@ impl RenderGraph {
         self.outputs.insert(name.clone(), output);
         self.dep_graph.register_node(name.clone());
         if dependency.len() > 0 {
-            let dependency =  dependency.iter().map(|name| { name.to_string() }).collect::<Vec<String>>();
-            self.dep_graph.register_dependencies(name.clone(), dependency);
+            let dependency = dependency
+                .iter()
+                .map(|name| name.to_string())
+                .collect::<Vec<String>>();
+            self.dep_graph
+                .register_dependencies(name.clone(), dependency);
         }
     }
 
     /// Allows you to take the output render target for a given node.
-    pub fn pull_render_target<T>(&mut self, name: T) -> RenderTarget where T: Into<String> {
+    pub fn pull_render_target<T>(&mut self, name: T) -> RenderTarget
+    where
+        T: Into<String>,
+    {
         let name = name.into();
         let output = self.outputs.get_mut(&name).unwrap();
         output.take().unwrap()
     }
 
     /// Allows you to take the output render target for a given node.
-    pub fn get<T>(&self, name: T) -> &RenderGraphNode where T: Into<String>  {
+    pub fn get<T>(&self, name: T) -> &RenderGraphNode
+    where
+        T: Into<String>,
+    {
         self.nodes.get(&name.into()).unwrap()
     }
 
@@ -93,20 +109,24 @@ impl RenderGraph {
         frame: Option<&wgpu::SwapChainOutput>,
     ) -> Vec<wgpu::CommandBuffer> {
         let mut command_buffers = Vec::new();
-        
+
         let mut order = Vec::new();
         for (name, _) in self.nodes.iter_mut() {
             let dependencies = self.dep_graph.dependencies_of(&name);
             if dependencies.is_ok() {
                 for node in dependencies.unwrap() {
                     match node {
-                        Ok(n) => { if !order.contains(n) { order.push(n.clone()); } },
+                        Ok(n) => {
+                            if !order.contains(n) {
+                                order.push(n.clone());
+                            }
+                        }
                         Err(e) => panic!("Solvent error detected: {:?}", e),
                     }
                 }
             }
         }
-        
+
         for name in order {
             let node = self.nodes.get_mut(&name).unwrap();
             let mut input = None;

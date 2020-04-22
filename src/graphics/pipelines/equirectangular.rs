@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
-        pipeline::{VertexStateBuilder},
-        Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
+        pipeline::VertexStateBuilder, resources::RenderTarget, Pipeline, SimplePipeline,
+        SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -13,8 +13,12 @@ pub struct CubeProjectionPipeline {
 }
 
 impl SimplePipeline for CubeProjectionPipeline {
-    fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
-        
+    fn prepare(
+        &mut self,
+        _device: &mut wgpu::Device,
+        _pipeline: &Pipeline,
+        _encoder: &mut wgpu::CommandEncoder,
+    ) {
     }
 
     fn render(
@@ -32,7 +36,10 @@ impl SimplePipeline for CubeProjectionPipeline {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        let image = asset_manager.as_ref().unwrap().get_image(self.texture.clone());
+        let image = asset_manager
+            .as_ref()
+            .unwrap()
+            .get_image(self.texture.clone());
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
@@ -118,10 +125,7 @@ pub struct CubeProjectionPipelineDesc {
 
 impl CubeProjectionPipelineDesc {
     pub fn new(texture: String, size: f32) -> Self {
-        Self {
-            texture,
-            size,
-        }
+        Self { texture, size }
     }
 }
 
@@ -135,10 +139,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         asset_manager.get_shader("hdr_to_cubemap.shader")
     }
 
-    fn create_layout(
-        &self,
-        device: &mut wgpu::Device,
-    ) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
