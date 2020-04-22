@@ -8,7 +8,7 @@ use crate::{
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
-        SimplePipelineDesc, RenderTarget,
+        SimplePipelineDesc, RenderTarget, renderer::DEPTH_FORMAT,
     },
     scene::{components::CameraData},
     AssetManager,
@@ -46,15 +46,15 @@ impl SimplePipeline for SkyboxPipeline {
 
     fn render(
         &mut self,
-        frame_view: Option<&wgpu::TextureView>,
-        _depth: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
+        depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
         _asset_manager: Option<&mut AssetManager>,
         world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer {
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -62,7 +62,7 @@ impl SimplePipeline for SkyboxPipeline {
         let world = world.as_mut().unwrap();
         let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
         if skybox.is_none() {
-            return encoder.finish();
+            return (encoder.finish(), None);
         }
         let skybox = skybox.unwrap();
         let camera_data = world.read_component::<CameraData>();
@@ -75,7 +75,7 @@ impl SimplePipeline for SkyboxPipeline {
         let camera_data = filtered_camera_data.first();
 
         if camera_data.is_none() {
-            return encoder.finish();
+            return (encoder.finish(), None);
         }
 
         let camera_data = camera_data.unwrap();
@@ -99,7 +99,7 @@ impl SimplePipeline for SkyboxPipeline {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: frame_view.as_ref().unwrap(),
+                    attachment: &frame.as_ref().unwrap().view,
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
@@ -110,16 +110,16 @@ impl SimplePipeline for SkyboxPipeline {
                         a: 1.0,
                     },
                 }],
-                depth_stencil_attachment: None,
-                // depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                //     attachment: self.depth,
-                //     depth_load_op: wgpu::LoadOp::Clear,
-                //     depth_store_op: wgpu::StoreOp::Store,
-                //     stencil_load_op: wgpu::LoadOp::Clear,
-                //     stencil_store_op: wgpu::StoreOp::Store,
-                //     clear_depth: 1.0,
-                //     clear_stencil: 0,
-                // }),
+                //depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: depth.as_ref().unwrap(),
+                    depth_load_op: wgpu::LoadOp::Clear,
+                    depth_store_op: wgpu::StoreOp::Store,
+                    stencil_load_op: wgpu::LoadOp::Clear,
+                    stencil_store_op: wgpu::StoreOp::Store,
+                    clear_depth: 1.0,
+                    clear_stencil: 0,
+                }),
             });
             render_pass.set_pipeline(&pipeline.pipeline);
             render_pass.set_bind_group(0, &self.global_bind_group, &[]);
@@ -128,7 +128,7 @@ impl SimplePipeline for SkyboxPipeline {
             render_pass.draw(0..3 as u32, 0..1);
         }
 
-        encoder.finish()
+        (encoder.finish(), None)
     }
 }
 
@@ -169,7 +169,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                         ty: wgpu::BindingType::SampledTexture {
                             component_type: wgpu::TextureComponentType::Float,
                             multisampled: false,
-                            dimension: wgpu::TextureViewDimension::D2,
+                            dimension: wgpu::TextureViewDimension::Cube,
                         },
                     },
                     wgpu::BindGroupLayoutEntry {
@@ -208,16 +208,16 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: true,
-        //     depth_compare: wgpu::CompareFunction::Less,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
+        // None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {

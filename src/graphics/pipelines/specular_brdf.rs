@@ -1,53 +1,54 @@
-use harmony::{
+use crate::{
     graphics::{
-        VertexStateBuilder,
-        Pipeline,
-        SimplePipeline,
-        SimplePipelineDesc,
-        RenderTarget,
+        pipeline::{VertexStateBuilder},
+        Pipeline, SimplePipeline, SimplePipelineDesc, RenderTarget,
     },
     AssetManager,
 };
 
 #[derive(Debug)]
-pub struct TrianglePipeline {
-    bind_group: wgpu::BindGroup,
+pub struct SpecularBRDFPipeline {
+    size: f32,
 }
 
-impl SimplePipeline for TrianglePipeline {
+impl SimplePipeline for SpecularBRDFPipeline {
     fn prepare(&mut self, _device: &mut wgpu::Device, _pipeline: &Pipeline, _encoder: &mut wgpu::CommandEncoder) {
         
     }
 
     fn render(
         &mut self,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
-        mut _asset_manager: Option<&mut AssetManager>,
+        _asset_manager: Option<&mut AssetManager>,
         _world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
-        _output: Option<&RenderTarget>,
+        output: Option<&RenderTarget>,
     ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.as_ref().unwrap().view,
+                    attachment: &output.as_ref().unwrap().texture_view,
                     resolve_target: None,
                     load_op: wgpu::LoadOp::Clear,
                     store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color::GREEN,
+                    clear_color: wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    },
                 }],
                 depth_stencil_attachment: None,
             });
-            rpass.set_pipeline(&pipeline.pipeline);
-            rpass.set_bind_group(0, &self.bind_group, &[]);
-            rpass.draw(0..3, 0..1);
+            render_pass.set_pipeline(&pipeline.pipeline);
+            render_pass.draw(0..3, 0..1);
         }
 
         (encoder.finish(), None)
@@ -55,32 +56,38 @@ impl SimplePipeline for TrianglePipeline {
 }
 
 #[derive(Debug, Default)]
-pub struct TrianglePipelineDesc {}
+pub struct SpecularBRDFPipelineDesc {
+    size: f32,
+}
 
-impl SimplePipelineDesc for TrianglePipelineDesc {
-    type Pipeline = TrianglePipeline;
+impl SpecularBRDFPipelineDesc {
+    pub fn new(size: f32) -> Self {
+        Self {
+            size,
+        }
+    }
+}
+
+impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
+    type Pipeline = SpecularBRDFPipeline;
 
     fn load_shader<'a>(
         &self,
-        asset_manager: &'a harmony::AssetManager,
-    ) -> &'a harmony::graphics::material::Shader {
-        asset_manager.get_shader("triangle.shader")
+        asset_manager: &'a crate::AssetManager,
+    ) -> &'a crate::graphics::material::Shader {
+        asset_manager.get_shader("specular_brdf.shader")
     }
 
     fn create_layout(
         &self,
-        device: &mut wgpu::Device,
+        _device: &mut wgpu::Device,
     ) -> Vec<wgpu::BindGroupLayout> {
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[],
-            label: None,
-        });
-
-        vec![bind_group_layout]
+        // No bindings? No problem! Just remember that later on!
+        vec![]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
-            front_face: wgpu::FrontFace::Ccw,
+            front_face: wgpu::FrontFace::Cw,
             cull_mode: wgpu::CullMode::None,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
@@ -95,7 +102,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         _sc_desc: &wgpu::SwapChainDescriptor,
     ) -> Vec<wgpu::ColorStateDescriptor> {
         vec![wgpu::ColorStateDescriptor {
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             color_blend: wgpu::BlendDescriptor::REPLACE,
             alpha_blend: wgpu::BlendDescriptor::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
@@ -107,23 +114,17 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
-        let mut vertex_state_builder = VertexStateBuilder::new();
-        vertex_state_builder.set_index_format(wgpu::IndexFormat::Uint16);
+        let vertex_state_builder = VertexStateBuilder::new();
         vertex_state_builder
     }
 
     fn build(
         self,
-        device: &wgpu::Device,
-        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-    ) -> TrianglePipeline {
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layouts[0],
-            bindings: &[],
-            label: None,
-        });
-        TrianglePipeline {
-            bind_group,
+        _device: &wgpu::Device,
+        _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+    ) -> SpecularBRDFPipeline {
+        SpecularBRDFPipeline {
+            size: self.size,
         }
     }
 }

@@ -6,23 +6,32 @@ pub struct RenderTarget {
 }
 
 impl RenderTarget {
-    pub fn new(device: &wgpu::Device, width: f32, height: f32, format: wgpu::TextureFormat) -> Self {
+    pub fn new(device: &wgpu::Device, width: f32, height: f32, depth: u32, mip_count: u32, format: wgpu::TextureFormat, usage: wgpu::TextureUsage) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
                 width: width as u32,
                 height: height as u32,
-                depth: 1,
+                depth,
             },
-            mip_level_count: 1,
+            mip_level_count: mip_count,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: format,
-            usage: wgpu::TextureUsage::SAMPLED
-                | wgpu::TextureUsage::COPY_SRC
-                | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: usage,
             label: None,
         });
-        let texture_view = texture.create_default_view();
+        let mut texture_view = texture.create_default_view();
+        if depth == 6 {
+            texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                format: wgpu::TextureFormat::Rgba32Float,
+                dimension: wgpu::TextureViewDimension::Cube,
+                aspect: wgpu::TextureAspect::default(),
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                array_layer_count: 6,
+            });
+        }
         Self {
             texture,
             texture_view,

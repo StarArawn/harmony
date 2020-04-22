@@ -15,6 +15,16 @@ impl Shader {
         // Compiler
         let mut compiler = shaderc::Compiler::new().unwrap();
         let mut options = shaderc::CompileOptions::new().unwrap();
+        
+        #[cfg(not(debug_assertions))]
+        {
+            options.set_optimization_level(shaderc::OptimizationLevel::Performance);
+        }
+        #[cfg(debug_assertions)]
+        {
+            options.set_optimization_level(shaderc::OptimizationLevel::Zero);
+        }
+
         options.add_macro_definition("EP", Some("main"));
         options.set_include_callback(|file_path, _include_type, _, _| {
             let shader_path = format!("{}{}", path, file_path);

@@ -7,11 +7,13 @@ pub(crate) use unlit::{UnlitPipelineDesc};
 mod pbr;
 pub(crate) use pbr::{PBRPipelineDesc};
 
-
 mod skybox;
 pub(crate) use skybox::{SkyboxPipelineDesc};
 
 pub(crate) mod equirectangular;
+pub(crate) mod irradiance;
+pub(crate) mod specular;
+pub(crate) mod specular_brdf;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

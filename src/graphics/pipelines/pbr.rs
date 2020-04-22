@@ -30,7 +30,7 @@ impl SimplePipeline for PBRPipeline
 
     fn render(
         &mut self,
-        frame_view: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
@@ -38,7 +38,7 @@ impl SimplePipeline for PBRPipeline
         world: &mut Option<&mut specs::World>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer {
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
         // Buffers can/are stored per mesh.
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -47,7 +47,7 @@ impl SimplePipeline for PBRPipeline
                 device,
                 asset_manager: asset_manager.as_ref().unwrap(),
                 encoder: &mut encoder,
-                frame_view: frame_view.as_ref().unwrap(),
+                frame_view: &frame.as_ref().unwrap().view,
                 pipeline,
                 constants_buffer: &self.constants_buffer,
                 lighting_buffer: &self.lighting_buffer,
@@ -58,7 +58,7 @@ impl SimplePipeline for PBRPipeline
             render_pbr.run_now(world.as_mut().unwrap());
         }
 
-        encoder.finish()
+        (encoder.finish(), None)
     }
 }
 
@@ -123,9 +123,59 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 label: None,
             });
 
+        let pbr_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::Cube,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::Cube,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                ],
+                label: None,
+            });
+
         vec![
             global_bind_group_layout,
             material_bind_group_layout,
+            pbr_bind_group_layout,
         ]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {

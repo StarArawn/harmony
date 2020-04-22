@@ -177,17 +177,24 @@ impl Application {
         }
 
         if self.current_scene.is_some() {
+            let pbr_bind_group_layout = &self
+                .render_graph
+                .as_ref()
+                .unwrap()
+                .get("pbr")
+                .pipeline
+                .bind_group_layouts[2];
+
             let world = &mut self.current_scene.as_mut().unwrap().world;
             let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
             let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
             let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
             if skybox.is_some() {
-                // TODO: Process skybox here with custom render graph.
                 let mut skybox = skybox.unwrap();
                 skybox.create_bind_group(&self.renderer.device, material_layout);
+                skybox.create_pbr_bind_group(&self.renderer.device, pbr_bind_group_layout);
             }
         }
-
 
         let size = self.renderer.window.inner_size();
 
@@ -269,7 +276,7 @@ impl Application {
                             &mut self.renderer,
                             &mut self.asset_manager,
                             Some(&mut self.current_scene.as_mut().unwrap().world),
-                            &output,
+                            Some(&output),
                         ));
                     }
                 }

@@ -1,9 +1,9 @@
 use crate::AssetManager;
 use crate::{
-    graphics::{material::Material, pipelines::{DirectionalLight, GlobalUniforms, PointLight, LightingUniform, MAX_LIGHTS}, Pipeline},
+    graphics::{material::{Skybox, Material}, pipelines::{DirectionalLight, GlobalUniforms, PointLight, LightingUniform, MAX_LIGHTS}, Pipeline},
     scene::components::{transform::LocalUniform, CameraData, Mesh, Transform, DirectionalLightData, PointLightData},
 };
-use specs::{ReadStorage, System, WriteStorage};
+use specs::{ReadStorage, Read, System, WriteStorage};
 use std::convert::TryInto;
 use nalgebra_glm::{Vec4};
 
@@ -27,13 +27,15 @@ impl<'a> System<'a> for RenderPBR<'a> {
         ReadStorage<'a, DirectionalLightData>,
         ReadStorage<'a, PointLightData>,
         WriteStorage<'a, Transform>,
+        Option<Read<'a, Skybox>>,
     );
 
-    fn run(&mut self, (camera_data, meshes, materials, directional_lights, point_lights, mut transforms): Self::SystemData) {
+    fn run(&mut self, (camera_data, meshes, materials, directional_lights, point_lights, mut transforms, skybox): Self::SystemData) {
         use specs::Join;
-        if transforms.count() == 0 {
+        if transforms.count() == 0 || skybox.is_none() {
             return;
         }
+        let skybox = skybox.unwrap();
         let filtered_camera_data: Vec<&CameraData> = camera_data
             .join()
             .filter(|data: &&CameraData| data.active)
@@ -161,6 +163,7 @@ impl<'a> System<'a> for RenderPBR<'a> {
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
         render_pass.set_bind_group(1, self.global_bind_group, &[]);
+        render_pass.set_bind_group(3, skybox.pbr_bind_group.as_ref().unwrap(), &[]);
 
         let asset_materials = self.asset_manager.get_materials();
         /* 

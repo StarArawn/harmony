@@ -18,7 +18,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
 
     fn render(
         &mut self,
-        frame: Option<&wgpu::TextureView>,
+        frame: Option<&wgpu::SwapChainOutput>,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         pipeline: &Pipeline,
@@ -26,7 +26,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         world: &mut Option<&mut specs::World>,
         input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-    ) -> wgpu::CommandBuffer;
+    ) -> (wgpu::CommandBuffer, Option<RenderTarget>);
 }
 
 pub trait SimplePipelineDesc: std::fmt::Debug {
