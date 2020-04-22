@@ -123,9 +123,59 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 label: None,
             });
 
+        let pbr_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::Cube,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::Cube,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                ],
+                label: None,
+            });
+
         vec![
             global_bind_group_layout,
             material_bind_group_layout,
+            pbr_bind_group_layout,
         ]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
