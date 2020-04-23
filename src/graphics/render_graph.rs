@@ -105,10 +105,14 @@ impl RenderGraph {
         &mut self,
         renderer: &mut Renderer,
         asset_manager: &mut AssetManager,
-        mut world: Option<&mut specs::World>,
+        world: &mut specs::World,
         frame: Option<&wgpu::SwapChainOutput>,
-    ) -> Vec<wgpu::CommandBuffer> {
-        let mut command_buffers = Vec::new();
+    ) -> wgpu::CommandBuffer {
+        let mut encoder = renderer
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("main"),
+            });
 
         let mut order = Vec::new();
         for (name, _) in self.nodes.iter_mut() {
@@ -143,22 +147,30 @@ impl RenderGraph {
             }
             let output = self.outputs.get(&name).unwrap().as_ref();
 
-            let (command_buffer, output) = node.simple_pipeline.render(
-                frame,
+            node.simple_pipeline.prepare(
+                asset_manager,
+                &mut renderer.device,
+                &mut encoder,
+                &node.pipeline,
+                world,
+            );
+
+            let output = node.simple_pipeline.render(
+                asset_manager,
                 Some(&renderer.forward_depth),
                 &renderer.device,
-                &node.pipeline,
-                Some(asset_manager),
-                &mut world,
+                &mut encoder,
+                frame,
                 input,
                 output,
+                &node.pipeline,
+                world,
             );
-            command_buffers.push(command_buffer);
             if output.is_some() {
                 self.outputs.insert(name.clone(), output);
             }
         }
 
-        command_buffers
+        encoder.finish()
     }
 }

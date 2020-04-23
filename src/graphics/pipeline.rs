@@ -16,22 +16,25 @@ pub struct BindGroupWithData {
 pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
     fn prepare(
         &mut self,
+        asset_manager: &mut AssetManager,
         device: &mut wgpu::Device,
-        pipeline: &Pipeline,
         encoder: &mut wgpu::CommandEncoder,
+        pipeline: &Pipeline,
+        world: &mut specs::World,
     );
 
     fn render(
         &mut self,
-        frame: Option<&wgpu::SwapChainOutput>,
+        asset_manager: &mut AssetManager,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
-        pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
-        world: &mut Option<&mut specs::World>,
+        encoder: &mut wgpu::CommandEncoder,
+        frame: Option<&wgpu::SwapChainOutput>,
         input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>);
+        pipeline: &Pipeline,
+        world: &mut specs::World,
+    ) -> Option<RenderTarget>;
 }
 
 pub trait SimplePipelineDesc: std::fmt::Debug {

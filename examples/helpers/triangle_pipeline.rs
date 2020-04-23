@@ -13,44 +13,41 @@ pub struct TrianglePipeline {
 impl SimplePipeline for TrianglePipeline {
     fn prepare(
         &mut self,
+        _asset_manager: &mut AssetManager,
         _device: &mut wgpu::Device,
-        _pipeline: &Pipeline,
         _encoder: &mut wgpu::CommandEncoder,
+        _pipeline: &Pipeline,
+        _world: &mut specs::World,
     ) {
     }
 
     fn render(
         &mut self,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _asset_manager: &mut AssetManager,
         _depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        pipeline: &Pipeline,
-        mut _asset_manager: Option<&mut AssetManager>,
-        _world: &mut Option<&mut specs::World>,
+        _device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
-        // Buffers can/are stored per mesh.
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        pipeline: &Pipeline,
+        _world: &mut specs::World,
+    ) -> Option<RenderTarget> {
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &frame.as_ref().unwrap().view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color::GREEN,
+            }],
+            depth_stencil_attachment: None,
+        });
+        rpass.set_pipeline(&pipeline.pipeline);
+        rpass.set_bind_group(0, &self.bind_group, &[]);
+        rpass.draw(0..3, 0..1);
 
-        {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.as_ref().unwrap().view,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color::GREEN,
-                }],
-                depth_stencil_attachment: None,
-            });
-            rpass.set_pipeline(&pipeline.pipeline);
-            rpass.set_bind_group(0, &self.bind_group, &[]);
-            rpass.draw(0..3, 0..1);
-        }
-
-        (encoder.finish(), None)
+        None
     }
 }
 

@@ -51,7 +51,7 @@ impl harmony::AppState for AppState {
         );
 
         // You can access the scene here once we store it.
-        app.current_scene = Some(scene);
+        app.current_scene = scene;
     }
 }
 

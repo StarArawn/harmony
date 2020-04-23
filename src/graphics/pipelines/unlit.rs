@@ -6,13 +6,14 @@ use crate::{
     graphics::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
+        renderer::DEPTH_FORMAT,
         resources::RenderTarget,
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::RenderUnlit,
+    scene::systems::{PrepareUnlit, RenderUnlit},
     AssetManager,
 };
 
@@ -25,42 +26,47 @@ pub struct UnlitPipeline {
 impl SimplePipeline for UnlitPipeline {
     fn prepare(
         &mut self,
-        _device: &mut wgpu::Device,
+        _asset_manager: &mut AssetManager,
+        device: &mut wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        _encoder: &mut wgpu::CommandEncoder,
+        world: &mut specs::World,
     ) {
+        let mut prepare_unlit = PrepareUnlit {
+            device,
+            encoder,
+            constants_buffer: &self.constants_buffer,
+        };
+        RunNow::setup(&mut prepare_unlit, world);
+        prepare_unlit.run_now(world);
     }
 
     fn render(
         &mut self,
-        frame: Option<&wgpu::SwapChainOutput>,
+        asset_manager: &mut AssetManager,
         depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
-        pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
-        world: &mut Option<&mut specs::World>,
+        encoder: &mut wgpu::CommandEncoder,
+        frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
-        // Buffers can/are stored per mesh.
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        {
-            let mut render_unlit = RenderUnlit {
-                device,
-                asset_manager: asset_manager.as_ref().unwrap(),
-                encoder: &mut encoder,
-                frame_view: &frame.as_ref().unwrap().view,
-                pipeline,
-                constants_buffer: &self.constants_buffer,
-                global_bind_group: &self.global_bind_group,
-                depth: depth.as_ref().unwrap(),
-            };
-            RunNow::setup(&mut render_unlit, world.as_mut().unwrap());
-            render_unlit.run_now(world.as_mut().unwrap());
-        }
+        pipeline: &Pipeline,
+        world: &mut specs::World,
+    ) -> Option<RenderTarget> {
+        let mut render_unlit = RenderUnlit {
+            device,
+            asset_manager: asset_manager,
+            encoder,
+            frame_view: &frame.as_ref().unwrap().view,
+            pipeline,
+            constants_buffer: &self.constants_buffer,
+            global_bind_group: &self.global_bind_group,
+            depth: depth.as_ref().unwrap(),
+        };
+        RunNow::setup(&mut render_unlit, world);
+        render_unlit.run_now(world);
 
-        (encoder.finish(), None)
+        None
     }
 }
 
@@ -141,16 +147,15 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: true,
-        //     depth_compare: wgpu::CompareFunction::Less,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Greater,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {

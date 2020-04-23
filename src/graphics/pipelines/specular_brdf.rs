@@ -14,48 +14,45 @@ pub struct SpecularBRDFPipeline {
 impl SimplePipeline for SpecularBRDFPipeline {
     fn prepare(
         &mut self,
+        _asset_manager: &mut AssetManager,
         _device: &mut wgpu::Device,
-        _pipeline: &Pipeline,
         _encoder: &mut wgpu::CommandEncoder,
+        _pipeline: &Pipeline,
+        _world: &mut specs::World,
     ) {
     }
 
     fn render(
         &mut self,
-        _frame: Option<&wgpu::SwapChainOutput>,
+        _asset_manager: &mut AssetManager,
         _depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        pipeline: &Pipeline,
-        _asset_manager: Option<&mut AssetManager>,
-        _world: &mut Option<&mut specs::World>,
+        _device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
-        // Buffers can/are stored per mesh.
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        pipeline: &Pipeline,
+        _world: &mut specs::World,
+    ) -> Option<RenderTarget> {
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &output.as_ref().unwrap().texture_view,
+                resolve_target: None,
+                load_op: wgpu::LoadOp::Clear,
+                store_op: wgpu::StoreOp::Store,
+                clear_color: wgpu::Color {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 1.0,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.draw(0..3, 0..1);
 
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &output.as_ref().unwrap().texture_view,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            });
-            render_pass.set_pipeline(&pipeline.pipeline);
-            render_pass.draw(0..3, 0..1);
-        }
-
-        (encoder.finish(), None)
+        None
     }
 }
 

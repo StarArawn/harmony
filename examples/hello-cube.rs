@@ -123,11 +123,11 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::camera::create(&mut scene.world, camera_data);
 
         // You can access the scene here once we store it.
-        app.current_scene = Some(scene);
+        app.current_scene = scene;
     }
 
     fn resize(&mut self, app: &mut harmony::Application) {
-        let world = &mut app.current_scene.as_mut().unwrap().world;
+        let world = &mut app.current_scene.world;
         // This is kinda of a hacky soultion. It might be better to have this be handled internally for each camera.
         let mut cameras = world.write_component::<harmony::scene::components::CameraData>();
         for camera in (&mut cameras).join() {
