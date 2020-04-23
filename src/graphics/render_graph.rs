@@ -6,6 +6,7 @@ use std::collections::HashMap;
 // TODO: handle node dependencies somehow.
 #[derive(Debug)]
 pub struct RenderGraphNode {
+    pub name: String,
     pub(crate) pipeline: Pipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
     pub use_output_from_dependency: bool,
@@ -66,6 +67,7 @@ impl RenderGraph {
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
         let node = RenderGraphNode {
+            name: name.clone(),
             pipeline,
             simple_pipeline: built_pipeline,
             use_output_from_dependency,
