@@ -127,7 +127,7 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::camera::create(&mut scene.world, camera_data);
 
         // You can access the scene here once we store it.
-        app.current_scene = Some(scene);
+        app.current_scene = scene;
     }
 }
 

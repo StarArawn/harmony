@@ -44,7 +44,7 @@ pub struct Application {
     pub delta_time: f32,
     pub(crate) console: crate::gui::components::default::Console,
     pub input: Input,
-    pub current_scene: Option<Scene<'static>>,
+    pub current_scene: Scene<'static>,
     pub render_graph: Option<RenderGraph>,
 }
 
@@ -87,7 +87,7 @@ impl Application {
             delta_time: 0.0,
             console,
             input: Input::new(),
-            current_scene: None,
+            current_scene: Scene::new(None, None),
             render_graph: None,
         }
     }
@@ -99,7 +99,7 @@ impl Application {
     ///
     /// *Note*: Once you've set the current scene you can access it using: `app.current_scene`.
     pub fn set_scene(&mut self, current_scene: Scene<'static>) {
-        self.current_scene = Some(current_scene);
+        self.current_scene = current_scene;
     }
 
     /// A function to help get the actual screen size as a LogicalSize<f32>
@@ -206,24 +206,22 @@ impl Application {
             }
         }
 
-        if self.current_scene.is_some() {
-            let pbr_bind_group_layout = &self
-                .render_graph
-                .as_ref()
-                .unwrap()
-                .get("pbr")
-                .pipeline
-                .bind_group_layouts[2];
+        let pbr_bind_group_layout = &self
+            .render_graph
+            .as_ref()
+            .unwrap()
+            .get("pbr")
+            .pipeline
+            .bind_group_layouts[2];
 
-            let world = &mut self.current_scene.as_mut().unwrap().world;
-            let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
-            let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
-            let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
-            if skybox.is_some() {
-                let mut skybox = skybox.unwrap();
-                skybox.create_bind_group(&self.renderer.device, material_layout);
-                skybox.create_pbr_bind_group(&self.renderer.device, pbr_bind_group_layout);
-            }
+        let world = &mut self.current_scene.world;
+        let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
+        let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
+        let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
+        if skybox.is_some() {
+            let mut skybox = skybox.unwrap();
+            skybox.create_bind_group(&self.renderer.device, material_layout);
+            skybox.create_pbr_bind_group(&self.renderer.device, pbr_bind_group_layout);
         }
 
         let size = self.renderer.window.inner_size();
@@ -281,9 +279,7 @@ impl Application {
                     }
                     self.console.update(&self.input, self.delta_time);
 
-                    if self.current_scene.is_some() {
-                        self.current_scene.as_mut().unwrap().update(self.delta_time);
-                    }
+                    self.current_scene.update(self.delta_time);
 
                     self.input.clear();
                     frame_time -= self.delta_time;
@@ -300,14 +296,12 @@ impl Application {
                 // Render the graph.
                 if self.render_graph.is_some() {
                     let render_graph = self.render_graph.as_mut().unwrap();
-                    if self.current_scene.is_some() {
-                        command_buffers.extend(render_graph.render(
-                            &mut self.renderer,
-                            &mut self.asset_manager,
-                            Some(&mut self.current_scene.as_mut().unwrap().world),
-                            Some(&output),
-                        ));
-                    }
+                    command_buffers.push(render_graph.render(
+                        &mut self.renderer,
+                        &mut self.asset_manager,
+                        &mut self.current_scene.world,
+                        Some(&output),
+                    ))
                 }
 
                 // Gather console components

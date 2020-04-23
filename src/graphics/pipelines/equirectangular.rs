@@ -10,38 +10,21 @@ use crate::{
 pub struct CubeProjectionPipeline {
     texture: String,
     size: f32,
+    bind_group: Option<wgpu::BindGroup>,
 }
 
 impl SimplePipeline for CubeProjectionPipeline {
     fn prepare(
         &mut self,
-        _device: &mut wgpu::Device,
-        _pipeline: &Pipeline,
+        asset_manager: &mut AssetManager,
+        device: &mut wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-    ) {
-    }
-
-    fn render(
-        &mut self,
-        _frame: Option<&wgpu::SwapChainOutput>,
-        _depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
         pipeline: &Pipeline,
-        asset_manager: Option<&mut AssetManager>,
-        _world: &mut Option<&mut specs::World>,
-        _input: Option<&RenderTarget>,
-        output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
-        // Buffers can/are stored per mesh.
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        _world: &mut specs::World,
+    ) {
+        let image = asset_manager.get_image(self.texture.clone());
 
-        let image = asset_manager
-            .as_ref()
-            .unwrap()
-            .get_image(self.texture.clone());
-
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
             bindings: &[
                 wgpu::Binding {
@@ -54,8 +37,21 @@ impl SimplePipeline for CubeProjectionPipeline {
                 },
             ],
             label: None,
-        });
+        }));
+    }
 
+    fn render(
+        &mut self,
+        _asset_manager: &mut AssetManager,
+        _depth: Option<&wgpu::TextureView>,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
+        _input: Option<&RenderTarget>,
+        output: Option<&RenderTarget>,
+        pipeline: &Pipeline,
+        _world: &mut specs::World,
+    ) -> Option<RenderTarget> {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -73,7 +69,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&pipeline.pipeline);
-            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
             render_pass.draw(0..6, 0..6);
         }
 
@@ -113,7 +109,7 @@ impl SimplePipeline for CubeProjectionPipeline {
             );
         }
 
-        (encoder.finish(), Some(cube_map))
+        Some(cube_map)
     }
 }
 
@@ -205,6 +201,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         CubeProjectionPipeline {
             texture: self.texture,
             size: self.size,
+            bind_group: None,
         }
     }
 }

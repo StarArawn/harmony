@@ -144,8 +144,12 @@ impl Skybox {
         // Should be straight forward enough if we use equirectangular projection.
         // First we need a custom pipeline that will run in here to do the conversion.
         //let output = app.renderer.swap_chain.get_next_texture().unwrap();
-        let mut command_buffers =
-            graph.render(&mut app.renderer, &mut app.asset_manager, None, None);
+        let command_buffer = graph.render(
+            &mut app.renderer,
+            &mut app.asset_manager,
+            &mut app.current_scene.world,
+            None,
+        );
 
         let specular = RenderTarget::new(
             &app.renderer.device,
@@ -214,10 +218,10 @@ impl Skybox {
         //     },
         // );
 
-        command_buffers.push(encoder.finish());
-
         // Push to all command buffers to the queue
-        app.renderer.queue.submit(&command_buffers);
+        app.renderer
+            .queue
+            .submit(&vec![command_buffer, encoder.finish()]);
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);

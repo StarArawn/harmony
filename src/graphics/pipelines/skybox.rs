@@ -39,33 +39,16 @@ unsafe impl Pod for SkyboxUniforms {}
 impl SimplePipeline for SkyboxPipeline {
     fn prepare(
         &mut self,
-        _device: &mut wgpu::Device,
+        _asset_manager: &mut AssetManager,
+        device: &mut wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        _encoder: &mut wgpu::CommandEncoder,
+        world: &mut specs::World,
     ) {
-    }
-
-    fn render(
-        &mut self,
-        frame: Option<&wgpu::SwapChainOutput>,
-        depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        pipeline: &Pipeline,
-        _asset_manager: Option<&mut AssetManager>,
-        world: &mut Option<&mut specs::World>,
-        _input: Option<&RenderTarget>,
-        _output: Option<&RenderTarget>,
-    ) -> (wgpu::CommandBuffer, Option<RenderTarget>) {
-        // Buffers can/are stored per mesh.
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
-        let world = world.as_mut().unwrap();
         let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
         if skybox.is_none() {
-            return (encoder.finish(), None);
+            return;
         }
-        let skybox = skybox.unwrap();
         let camera_data = world.read_component::<CameraData>();
 
         use specs::Join;
@@ -76,7 +59,7 @@ impl SimplePipeline for SkyboxPipeline {
         let camera_data = filtered_camera_data.first();
 
         if camera_data.is_none() {
-            return (encoder.finish(), None);
+            return;
         }
 
         let camera_data = camera_data.unwrap();
@@ -96,8 +79,27 @@ impl SimplePipeline for SkyboxPipeline {
             0,
             std::mem::size_of::<SkyboxUniforms>() as u64,
         );
+    }
 
+    fn render(
+        &mut self,
+        _asset_manager: &mut AssetManager,
+        depth: Option<&wgpu::TextureView>,
+        _device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        frame: Option<&wgpu::SwapChainOutput>,
+        _input: Option<&RenderTarget>,
+        _output: Option<&RenderTarget>,
+        pipeline: &Pipeline,
+        world: &mut specs::World,
+    ) -> Option<RenderTarget> {
         {
+            let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
+            if skybox.is_none() {
+                return None;
+            }
+            let skybox = skybox.unwrap();
+
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &frame.as_ref().unwrap().view,
@@ -129,7 +131,7 @@ impl SimplePipeline for SkyboxPipeline {
             render_pass.draw(0..3 as u32, 0..1);
         }
 
-        (encoder.finish(), None)
+        None
     }
 }
 
@@ -215,7 +217,6 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
             stencil_read_mask: 0,
             stencil_write_mask: 0,
         })
-        // None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
