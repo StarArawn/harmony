@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         material::skybox::SPEC_CUBEMAP_MIP_LEVELS, pipeline::VertexStateBuilder,
-        resources::RenderTarget, Pipeline, SimplePipeline, SimplePipelineDesc,
+        resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -54,6 +54,7 @@ impl SimplePipeline for SpecularPipeline {
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         _world: &mut specs::World,
+        _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
@@ -194,6 +195,7 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         self,
         device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        _binding_manager: &mut BindingManager,
     ) -> SpecularPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(

@@ -1,4 +1,4 @@
-use super::{material::Shader, resources::RenderTarget};
+use super::{material::Shader, resources::{BindingManager, RenderTarget}};
 use crate::AssetManager;
 
 #[derive(Debug)]
@@ -34,6 +34,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         world: &mut specs::World,
+        binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget>;
 }
 
@@ -140,6 +141,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        binding_manager: &mut BindingManager,
     ) -> Self::Pipeline;
 }
 

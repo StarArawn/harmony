@@ -9,7 +9,7 @@ use crate::{
     core::input::Input,
     graphics::{
         pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
-        RenderGraph, Renderer,
+        RenderGraph, Renderer, resources::BoundResource,
     },
     gui::Scene as GuiScene,
     scene::Scene,
@@ -171,48 +171,43 @@ impl Application {
         let materials: Vec<&mut super::graphics::material::Material> =
             self.asset_manager.materials.values_mut().collect();
         {
-            let images = &self.asset_manager.images;
-            let unlit_bind_group_layout = &self
+            let render_graph = self
                 .render_graph
-                .as_ref()
-                .unwrap()
-                .get("unlit")
-                .pipeline
-                .bind_group_layouts[1];
-            let pbr_bind_group_layout = &self
-                .render_graph
-                .as_ref()
-                .unwrap()
-                .get("pbr")
-                .pipeline
-                .bind_group_layouts[1];
+                .as_mut()
+                .unwrap();
+            
+            let mut current_bind_group = None;
+            let mut current_index = 0;
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
+                        let unlit_bind_group_layout = &render_graph
+                            .get("unlit")
+                            .pipeline
+                            .bind_group_layouts[1];
                         unlit_material.create_bind_group(
-                            images,
+                            &self.asset_manager.images,
                             &self.renderer.device,
                             unlit_bind_group_layout,
                         );
                     }
                     super::graphics::material::Material::PBR(pbr_material) => {
-                        pbr_material.create_bind_group(
-                            images,
-                            &self.renderer.device,
-                            pbr_bind_group_layout,
-                        );
+                        let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
+                        current_bind_group = Some(pbr_material.create_bind_group(
+                                &self.asset_manager.images,
+                                &self.renderer.device,
+                                pbr_bind_group_layouts,
+                            ));
+                        current_index = pbr_material.index;
                     }
                 }
+                if current_bind_group.is_some() {
+                    render_graph.binding_manager.add_multi_resource("pbr", current_bind_group.take().unwrap(), current_index);
+                }
+
+                current_bind_group = None;
             }
         }
-
-        let pbr_bind_group_layout = &self
-            .render_graph
-            .as_ref()
-            .unwrap()
-            .get("pbr")
-            .pipeline
-            .bind_group_layouts[2];
 
         let world = &mut self.current_scene.world;
         let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
@@ -220,8 +215,11 @@ impl Application {
         let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
         if skybox.is_some() {
             let mut skybox = skybox.unwrap();
-            skybox.create_bind_group(&self.renderer.device, material_layout);
-            skybox.create_pbr_bind_group(&self.renderer.device, pbr_bind_group_layout);
+            skybox.create_bind_group2(&self.renderer.device, material_layout);
+            let render_graph = self.render_graph.as_mut().unwrap();
+            let pbr_node = render_graph.nodes.get_mut("pbr").unwrap();
+            let bound_group = skybox.create_bind_group(&self.asset_manager, &self.renderer.device, &pbr_node.pipeline.bind_group_layouts);
+            render_graph.binding_manager.add_single_resource(pbr_node.name.clone(), bound_group);
         }
 
         let size = self.renderer.window.inner_size();

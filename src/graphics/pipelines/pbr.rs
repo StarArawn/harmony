@@ -7,7 +7,7 @@ use crate::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
         renderer::DEPTH_FORMAT,
-        resources::RenderTarget,
+        resources::{BindingManager, RenderTarget, BindGroup},
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
@@ -21,7 +21,6 @@ use crate::{
 pub struct PBRPipeline {
     constants_buffer: wgpu::Buffer,
     lighting_buffer: wgpu::Buffer,
-    global_bind_group: wgpu::BindGroup,
 }
 
 impl SimplePipeline for PBRPipeline {
@@ -54,6 +53,7 @@ impl SimplePipeline for PBRPipeline {
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         world: &mut specs::World,
+        binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         let mut render_pbr = RenderPBR {
             device,
@@ -63,8 +63,8 @@ impl SimplePipeline for PBRPipeline {
             pipeline,
             constants_buffer: &self.constants_buffer,
             lighting_buffer: &self.lighting_buffer,
-            global_bind_group: &self.global_bind_group,
             depth: depth.as_ref().unwrap(),
+            binding_manager,
         };
         RunNow::setup(&mut render_pbr, world);
         render_pbr.run_now(world);
@@ -265,6 +265,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        binding_manager: &mut BindingManager,
     ) -> PBRPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
@@ -298,10 +299,11 @@ impl SimplePipelineDesc for PBRPipelineDesc {
             label: None,
         });
 
+        binding_manager.add_single_resource("pbr", BindGroup::new(1, global_bind_group));
+
         PBRPipeline {
             constants_buffer,
             lighting_buffer,
-            global_bind_group,
         }
     }
 }

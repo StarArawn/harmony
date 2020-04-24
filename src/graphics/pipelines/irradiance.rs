@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, resources::RenderTarget, Pipeline, SimplePipeline,
+        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline,
         SimplePipelineDesc,
     },
     AssetManager,
@@ -34,6 +34,7 @@ impl SimplePipeline for IrradiancePipeline {
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         _world: &mut specs::World,
+        _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bind_group_layouts[0],
@@ -196,6 +197,7 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
         self,
         _device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        _binding_manager: &mut BindingManager,
     ) -> IrradiancePipeline {
         IrradiancePipeline {
             size: self.size,

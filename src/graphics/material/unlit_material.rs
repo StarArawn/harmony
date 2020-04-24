@@ -15,14 +15,14 @@ unsafe impl Pod for UnlitUniform {}
 
 #[derive(Debug)]
 pub struct UnlitMaterial {
-    pub index: i32,
+    pub index: u32,
     pub main_texture: String,
     pub color: Vec4,
     pub(crate) bind_group_data: Option<BindGroupWithData>,
 }
 
 impl UnlitMaterial {
-    pub fn new<T>(main_texture: T, color: Vec4, material_index: i32) -> Self
+    pub fn new<T>(main_texture: T, color: Vec4, material_index: u32) -> Self
     where
         T: Into<String>,
     {
