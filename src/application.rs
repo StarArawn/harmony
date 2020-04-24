@@ -175,24 +175,21 @@ impl Application {
                 .render_graph
                 .as_mut()
                 .unwrap();
-            // let unlit_bind_group_layout = &self
-            //     .render_graph
-            //     .as_mut()
-            //     .unwrap()
-            //     .get("unlit")
-            //     .pipeline
-            //     .bind_group_layouts[1];
             
             let mut current_bind_group = None;
             let mut current_index = 0;
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
-                        // unlit_material.create_bind_group(
-                        //     images,
-                        //     &self.renderer.device,
-                        //     unlit_bind_group_layout,
-                        // );
+                        let unlit_bind_group_layout = &render_graph
+                            .get("unlit")
+                            .pipeline
+                            .bind_group_layouts[1];
+                        unlit_material.create_bind_group(
+                            &self.asset_manager.images,
+                            &self.renderer.device,
+                            unlit_bind_group_layout,
+                        );
                     }
                     super::graphics::material::Material::PBR(pbr_material) => {
                         let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;

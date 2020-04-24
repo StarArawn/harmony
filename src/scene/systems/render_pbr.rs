@@ -79,7 +79,6 @@ impl<'a> System<'a> for RenderPBR<'a> {
                         let mesh: &Mesh = mesh;
                         let asset_mesh = self.asset_manager.get_mesh(mesh.mesh_name.clone());
                         for sub_mesh in asset_mesh.sub_meshes.iter() {
-                            // render_pass.set_bind_group(1, &current_bind_group.bind_group, &[]);
                             render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
                             render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
                             render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
