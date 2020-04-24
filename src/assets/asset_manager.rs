@@ -13,7 +13,7 @@ pub struct AssetManager {
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
     pub(crate) images: HashMap<String, Image>,
-    pub(crate) materials: HashMap<i32, Material>,
+    pub(crate) materials: HashMap<u32, Material>,
 }
 
 impl AssetManager {
@@ -71,7 +71,7 @@ impl AssetManager {
                 );
             }
             if file_name.ends_with(".gltf") {
-                let current_index = self.materials.len() as i32;
+                let current_index = self.materials.len() as u32;
                 let (mesh, materials) = Mesh::new(
                     device,
                     format!("{}{}", full_file_path, file_name),
@@ -137,7 +137,7 @@ impl AssetManager {
         self.meshes.values_mut().collect()
     }
 
-    pub fn get_material(&self, index: i32) -> &Material {
+    pub fn get_material(&self, index: u32) -> &Material {
         self.materials.get(&index).expect(&format!(
             "Asset Error: Could not find material @index {} asset!",
             index

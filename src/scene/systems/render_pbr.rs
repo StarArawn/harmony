@@ -2,7 +2,7 @@ use crate::AssetManager;
 use crate::{
     graphics::{
         material::{Material, Skybox},
-        Pipeline,
+        Pipeline, resources::BindingManager,
     },
     scene::components::{Mesh, Transform},
 };
@@ -16,8 +16,8 @@ pub struct RenderPBR<'a> {
     pub(crate) pipeline: &'a Pipeline,
     pub(crate) constants_buffer: &'a wgpu::Buffer,
     pub(crate) lighting_buffer: &'a wgpu::Buffer,
-    pub(crate) global_bind_group: &'a wgpu::BindGroup,
     pub(crate) depth: &'a wgpu::TextureView,
+    pub(crate) binding_manager: &'a mut BindingManager,
 }
 
 impl<'a> System<'a> for RenderPBR<'a> {
@@ -30,11 +30,9 @@ impl<'a> System<'a> for RenderPBR<'a> {
 
     fn run(&mut self, (meshes, materials, transforms, skybox): Self::SystemData) {
         use specs::Join;
-
         if skybox.is_none() {
             return;
         }
-        let skybox = skybox.unwrap();
 
         let mut render_pass = self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -60,8 +58,8 @@ impl<'a> System<'a> for RenderPBR<'a> {
             }),
         });
         render_pass.set_pipeline(&self.pipeline.pipeline);
-        render_pass.set_bind_group(1, self.global_bind_group, &[]);
-        render_pass.set_bind_group(3, skybox.pbr_bind_group.as_ref().unwrap(), &[]);
+        self.binding_manager.set_bind_group(&mut render_pass, "pbr", 1);
+        self.binding_manager.set_bind_group(&mut render_pass, "pbr", 3);
 
         let asset_materials = self.asset_manager.get_materials();
         /*
@@ -72,11 +70,8 @@ impl<'a> System<'a> for RenderPBR<'a> {
             let joined_data = (&meshes, &materials, &transforms).join();
             match asset_material {
                 Material::PBR(pbr_material) => {
-                    render_pass.set_bind_group(
-                        2,
-                        &pbr_material.bind_group_data.as_ref().unwrap().bind_group,
-                        &[],
-                    );
+                    self.binding_manager.set_multi_bind_group(&mut render_pass, "pbr", 2, pbr_material.index as u32);
+
                     for (mesh, _, transform) in
                         joined_data.filter(|(_, material, _)| material.index == pbr_material.index)
                     {

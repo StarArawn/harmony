@@ -4,7 +4,7 @@ use specs::WorldExt;
 
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT, resources::RenderTarget, Pipeline,
+        pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT, resources::{BindingManager, RenderTarget}, Pipeline,
         SimplePipeline, SimplePipelineDesc,
     },
     scene::components::CameraData,
@@ -92,6 +92,7 @@ impl SimplePipeline for SkyboxPipeline {
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         world: &mut specs::World,
+        _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         {
             let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
@@ -230,6 +231,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        _binding_manager: &mut BindingManager,
     ) -> SkyboxPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(

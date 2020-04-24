@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, resources::RenderTarget, Pipeline, SimplePipeline,
+        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline,
         SimplePipelineDesc,
     },
     AssetManager,
@@ -51,6 +51,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         _world: &mut specs::World,
+        _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -197,6 +198,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         self,
         _device: &wgpu::Device,
         _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        _binding_manager: &mut BindingManager,
     ) -> CubeProjectionPipeline {
         CubeProjectionPipeline {
             texture: self.texture,

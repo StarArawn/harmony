@@ -1,8 +1,14 @@
-use crate::{
-    graphics::{resources::RenderTarget, RenderGraph},
-    Application,
-};
 use std::fs::File;
+use crate::{
+    graphics::{
+        resources::{
+            BoundResource,
+            RenderTarget, BindGroup
+        },
+        RenderGraph
+    },
+    Application, AssetManager,
+};
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -297,7 +303,7 @@ impl Skybox {
         }
     }
 
-    pub(crate) fn create_bind_group(
+    pub(crate) fn create_bind_group2(
         &mut self,
         device: &wgpu::Device,
         material_layout: &wgpu::BindGroupLayout,
@@ -319,13 +325,33 @@ impl Skybox {
         self.cubemap_bind_group = Some(bind_group);
     }
 
-    pub(crate) fn create_pbr_bind_group(
-        &mut self,
-        device: &wgpu::Device,
-        material_layout: &wgpu::BindGroupLayout,
+    async fn save(
+        buffer_future: impl futures::Future<
+            Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>,
+        >,
     ) {
+        if let Ok(mapping) = buffer_future.await {
+            let mut png_encoder = png::Encoder::new(File::create("save.png").unwrap(), 128, 128);
+            png_encoder.set_depth(png::BitDepth::Eight);
+            png_encoder.set_color(png::ColorType::RGBA);
+            png_encoder
+                .write_header()
+                .unwrap()
+                .write_image_data(mapping.as_slice())
+                .unwrap();
+        }
+    }
+}
+
+impl BoundResource for Skybox {
+    fn create_bind_group<'a>(
+        &mut self,
+        _asset_manager: &AssetManager,
+        device: &wgpu::Device,
+        pipeline_layouts: &'a Vec<wgpu::BindGroupLayout>,
+    ) -> BindGroup {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &material_layout,
+            layout: &pipeline_layouts[2],
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
@@ -355,23 +381,6 @@ impl Skybox {
             label: None,
         });
 
-        self.pbr_bind_group = Some(bind_group);
-    }
-
-    async fn save(
-        buffer_future: impl futures::Future<
-            Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>,
-        >,
-    ) {
-        if let Ok(mapping) = buffer_future.await {
-            let mut png_encoder = png::Encoder::new(File::create("save.png").unwrap(), 128, 128);
-            png_encoder.set_depth(png::BitDepth::Eight);
-            png_encoder.set_color(png::ColorType::RGBA);
-            png_encoder
-                .write_header()
-                .unwrap()
-                .write_image_data(mapping.as_slice())
-                .unwrap();
-        }
+        BindGroup::new(3, bind_group)
     }
 }

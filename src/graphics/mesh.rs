@@ -40,7 +40,7 @@ pub struct SubMesh {
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
-    pub(crate) material_index: i32,
+    pub(crate) material_index: u32,
 }
 
 pub struct Mesh {
@@ -52,7 +52,7 @@ impl Mesh {
     pub fn new<T>(
         device: &wgpu::Device,
         path: T,
-        material_start_index: i32,
+        material_start_index: u32,
     ) -> (Mesh, Vec<Material>)
     where
         T: Into<String>,
@@ -156,7 +156,7 @@ impl Mesh {
                 }
             }
 
-            let material_index = material_start_index + materials.len() as i32;
+            let material_index = material_start_index + materials.len() as u32;
             let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
                 color,

@@ -1,4 +1,4 @@
-use super::{resources::RenderTarget, Pipeline, Renderer, SimplePipeline, SimplePipelineDesc};
+use super::{resources::{BindingManager, RenderTarget}, Pipeline, Renderer, SimplePipeline, SimplePipelineDesc};
 use crate::AssetManager;
 use solvent::DepGraph;
 use std::collections::HashMap;
@@ -13,10 +13,11 @@ pub struct RenderGraphNode {
 }
 
 pub struct RenderGraph {
-    nodes: HashMap<String, RenderGraphNode>,
+    pub(crate) nodes: HashMap<String, RenderGraphNode>,
     pub(crate) outputs: HashMap<String, Option<RenderTarget>>,
     dep_graph: DepGraph<String>,
     pub(crate) local_bind_group_layout: wgpu::BindGroupLayout,
+    pub binding_manager: BindingManager,
 }
 
 impl RenderGraph {
@@ -38,6 +39,7 @@ impl RenderGraph {
             outputs: HashMap::new(),
             dep_graph,
             local_bind_group_layout,
+            binding_manager: BindingManager::new(),
         }
     }
 
@@ -65,7 +67,7 @@ impl RenderGraph {
             },
         );
         let built_pipeline: Box<dyn SimplePipeline> =
-            Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts));
+            Box::new(pipeline_desc.build(&renderer.device, &pipeline.bind_group_layouts, &mut self.binding_manager));
         let node = RenderGraphNode {
             name: name.clone(),
             pipeline,
@@ -167,6 +169,7 @@ impl RenderGraph {
                 output,
                 &node.pipeline,
                 world,
+                &mut self.binding_manager,
             );
             if output.is_some() {
                 self.outputs.insert(name.clone(), output);

@@ -7,7 +7,7 @@ use crate::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
         renderer::DEPTH_FORMAT,
-        resources::RenderTarget,
+        resources::{BindingManager, RenderTarget},
         // renderer::DEPTH_FORMAT,
         Pipeline,
         SimplePipeline,
@@ -52,6 +52,7 @@ impl SimplePipeline for UnlitPipeline {
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
         world: &mut specs::World,
+        _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         let mut render_unlit = RenderUnlit {
             device,
@@ -199,6 +200,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
+        _binding_manager: &mut BindingManager,
     ) -> UnlitPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
