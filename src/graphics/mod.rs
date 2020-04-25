@@ -6,7 +6,7 @@ pub mod material;
 pub mod mesh;
 
 mod render_graph;
-pub use render_graph::RenderGraph;
+pub use render_graph::{RenderGraph, CommandBufferQueue, CommandQueueItem};
 
 mod pipeline;
 pub use pipeline::{
@@ -16,3 +16,5 @@ pub use pipeline::{
 pub mod pipelines;
 
 pub mod resources;
+
+pub mod systems;

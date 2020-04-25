@@ -6,6 +6,7 @@ use crate::graphics::{
     mesh::Mesh,
 };
 use crate::gui::core::Font;
+use legion::systems::resource::Resources;
 
 pub struct AssetManager {
     path: String,
@@ -30,10 +31,10 @@ impl AssetManager {
 
     pub(crate) fn load(
         &mut self,
-        device: &wgpu::Device,
-        queue: &mut wgpu::Queue,
+        resources: &Resources,
         console: &mut crate::gui::components::default::Console,
     ) {
+        let device = resources.get::<wgpu::Device>().unwrap();
         let mut init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -52,7 +53,7 @@ impl AssetManager {
             );
             //let full_path = format!("{}{}", full_file_path, file_name);
             if file_name.ends_with(".shader") {
-                let shader = Shader::new(device, full_file_path.to_string(), file_name.to_string());
+                let shader = Shader::new(&device, full_file_path.to_string(), file_name.to_string());
                 self.shaders.insert(file_name.to_string(), shader);
                 console.info(
                     crate::gui::components::default::ModuleType::Asset,
@@ -61,7 +62,7 @@ impl AssetManager {
             }
             if file_name.ends_with(".ttf") || file_name.ends_with(".otf") {
                 let font = Font::new(
-                    device,
+                    &device,
                     format!("{}{}", full_file_path, file_name).to_string(),
                 );
                 self.fonts.insert(file_name.to_string(), font);
@@ -73,7 +74,7 @@ impl AssetManager {
             if file_name.ends_with(".gltf") {
                 let current_index = self.materials.len() as u32;
                 let (mesh, materials) = Mesh::new(
-                    device,
+                    &device,
                     format!("{}{}", full_file_path, file_name),
                     current_index,
                 );
@@ -93,7 +94,7 @@ impl AssetManager {
                 || file_name.ends_with(".hdr")
             {
                 let image = Image::new(
-                    device,
+                    &device,
                     &mut init_encoder,
                     format!("{}{}", full_file_path, file_name),
                     file_name.to_string(),
@@ -105,6 +106,7 @@ impl AssetManager {
                 );
             }
         }
+        let queue = resources.get::<wgpu::Queue>().unwrap();
         queue.submit(&[init_encoder.finish()]);
     }
 

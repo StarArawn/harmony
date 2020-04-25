@@ -13,7 +13,6 @@ use crate::{
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::{PreparePBR, RenderPBR},
     AssetManager,
 };
 
@@ -27,19 +26,19 @@ impl SimplePipeline for PBRPipeline {
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
     ) {
-        let mut prepare_pbr = PreparePBR {
-            device,
-            encoder,
-            constants_buffer: &self.constants_buffer,
-            lighting_buffer: &self.lighting_buffer,
-        };
-        RunNow::setup(&mut prepare_pbr, world);
-        prepare_pbr.run_now(world);
+        // let mut prepare_pbr = PreparePBR {
+        //     device,
+        //     encoder,
+        //     constants_buffer: &self.constants_buffer,
+        //     lighting_buffer: &self.lighting_buffer,
+        // };
+        // RunNow::setup(&mut prepare_pbr, world);
+        // prepare_pbr.run_now(world);
     }
 
     fn render(
@@ -52,22 +51,22 @@ impl SimplePipeline for PBRPipeline {
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
         binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
-        let mut render_pbr = RenderPBR {
-            device,
-            asset_manager: asset_manager,
-            encoder,
-            frame_view: &frame.as_ref().unwrap().view,
-            pipeline,
-            constants_buffer: &self.constants_buffer,
-            lighting_buffer: &self.lighting_buffer,
-            depth: depth.as_ref().unwrap(),
-            binding_manager,
-        };
-        RunNow::setup(&mut render_pbr, world);
-        render_pbr.run_now(world);
+        // let mut render_pbr = RenderPBR {
+        //     device,
+        //     asset_manager: asset_manager,
+        //     encoder,
+        //     frame_view: &frame.as_ref().unwrap().view,
+        //     pipeline,
+        //     constants_buffer: &self.constants_buffer,
+        //     lighting_buffer: &self.lighting_buffer,
+        //     depth: depth.as_ref().unwrap(),
+        //     binding_manager,
+        // };
+        // RunNow::setup(&mut render_pbr, world);
+        // render_pbr.run_now(world);
 
         None
     }
@@ -86,7 +85,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
         asset_manager.get_shader("pbr.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

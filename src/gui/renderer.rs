@@ -33,7 +33,7 @@ pub struct Renderer {
 impl Renderer {
     pub fn new(
         asset_mananger: &AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         format: wgpu::TextureFormat,
         size: winit::dpi::LogicalSize<u32>,
     ) -> Self {
@@ -120,7 +120,7 @@ impl Renderer {
 
     pub fn draw(
         &mut self,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         target: &wgpu::TextureView,
         renderable: renderables::Renderable,
         bounds: Option<Rectangle>,

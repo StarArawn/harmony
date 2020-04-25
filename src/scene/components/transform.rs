@@ -1,7 +1,6 @@
-use crate::Application;
+use crate::{graphics::RenderGraph, Application};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
-use specs::{Component, DenseVecStorage};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -84,16 +83,16 @@ impl Transform {
     }
 
     pub(crate) fn create_bindings(app: &Application) -> (wgpu::Buffer, wgpu::BindGroup) {
-        let bind_group_layout = &app.render_graph.as_ref().unwrap().local_bind_group_layout;
+        let render_graph = app.current_scene.resources.get::<RenderGraph>().unwrap();
+        let bind_group_layout = &render_graph.local_bind_group_layout;
         // This data needs to be saved and passed onto the pipeline.
-        let local_buffer = app.renderer.device.create_buffer_with_data(
+        let device = app.current_scene.resources.get_mut::<wgpu::Device>().unwrap();
+        let local_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&LocalUniform::default()),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
-        let local_bind_group = app
-            .renderer
-            .device
+        let local_bind_group = device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: bind_group_layout,
                 bindings: &[wgpu::Binding {
@@ -108,8 +107,4 @@ impl Transform {
 
         (local_buffer, local_bind_group)
     }
-}
-
-impl Component for Transform {
-    type Storage = DenseVecStorage<Self>;
 }

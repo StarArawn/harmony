@@ -15,10 +15,10 @@ impl SimplePipeline for SpecularBRDFPipeline {
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        _device: &mut wgpu::Device,
+        _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
     ) {
     }
 
@@ -32,7 +32,7 @@ impl SimplePipeline for SpecularBRDFPipeline {
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -78,7 +78,7 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
         asset_manager.get_shader("specular_brdf.shader")
     }
 
-    fn create_layout(&self, _device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, _device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // No bindings? No problem! Just remember that later on!
         vec![]
     }

@@ -13,7 +13,6 @@ use crate::{
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::{PrepareUnlit, RenderUnlit},
     AssetManager,
 };
 
@@ -27,18 +26,18 @@ impl SimplePipeline for UnlitPipeline {
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
     ) {
-        let mut prepare_unlit = PrepareUnlit {
-            device,
-            encoder,
-            constants_buffer: &self.constants_buffer,
-        };
-        RunNow::setup(&mut prepare_unlit, world);
-        prepare_unlit.run_now(world);
+        // let mut prepare_unlit = PrepareUnlit {
+        //     device,
+        //     encoder,
+        //     constants_buffer: &self.constants_buffer,
+        // };
+        // RunNow::setup(&mut prepare_unlit, world);
+        // prepare_unlit.run_now(world);
     }
 
     fn render(
@@ -51,21 +50,21 @@ impl SimplePipeline for UnlitPipeline {
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
-        let mut render_unlit = RenderUnlit {
-            device,
-            asset_manager: asset_manager,
-            encoder,
-            frame_view: &frame.as_ref().unwrap().view,
-            pipeline,
-            constants_buffer: &self.constants_buffer,
-            global_bind_group: &self.global_bind_group,
-            depth: depth.as_ref().unwrap(),
-        };
-        RunNow::setup(&mut render_unlit, world);
-        render_unlit.run_now(world);
+        // let mut render_unlit = RenderUnlit {
+        //     device,
+        //     asset_manager: asset_manager,
+        //     encoder,
+        //     frame_view: &frame.as_ref().unwrap().view,
+        //     pipeline,
+        //     constants_buffer: &self.constants_buffer,
+        //     global_bind_group: &self.global_bind_group,
+        //     depth: depth.as_ref().unwrap(),
+        // };
+        // RunNow::setup(&mut render_unlit, world);
+        // render_unlit.run_now(world);
 
         None
     }
@@ -84,7 +83,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         asset_manager.get_shader("unlit.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

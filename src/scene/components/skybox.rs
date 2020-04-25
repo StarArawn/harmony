@@ -1,5 +1,3 @@
-use specs::{Component, DenseVecStorage};
-
 #[derive(Default)]
 pub struct SkyboxData {
     // We might have more than one material per mesh.
@@ -14,8 +12,4 @@ impl SkyboxData {
     {
         Self { name: name.into() }
     }
-}
-
-impl Component for SkyboxData {
-    type Storage = DenseVecStorage<Self>;
 }

@@ -68,7 +68,7 @@ const QUAD_VERTS: [Vertex; 4] = [
 impl QuadRenderer {
     pub fn new(
         asset_mananger: &AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         format: wgpu::TextureFormat,
     ) -> Self {
         let constant_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -215,7 +215,7 @@ impl QuadRenderer {
 
     pub fn draw(
         &self,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         instances: &[Quad],
         transformation: Mat4,

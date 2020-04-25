@@ -16,10 +16,10 @@ impl SimplePipeline for IrradiancePipeline {
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        _device: &mut wgpu::Device,
+        _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
     ) {
     }
 
@@ -33,7 +33,7 @@ impl SimplePipeline for IrradiancePipeline {
         input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -135,7 +135,7 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
         asset_manager.get_shader("irradiance.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

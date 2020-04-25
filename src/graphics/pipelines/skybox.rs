@@ -37,48 +37,53 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
+
+    fn get_uniforms(&self) -> Option<(&wgpu::BindGroup, &wgpu::Buffer)> {
+        Some((&self.global_bind_group, &self.constants_buffer))
+    }
+
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
     ) {
-        let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-        if skybox.is_none() {
-            return;
-        }
-        let camera_data = world.read_component::<CameraData>();
+        // let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
+        // if skybox.is_none() {
+        //     return;
+        // }
+        // let camera_data = world.read_component::<CameraData>();
 
-        use specs::Join;
-        let filtered_camera_data: Vec<&CameraData> = camera_data
-            .join()
-            .filter(|data: &&CameraData| data.active)
-            .collect();
-        let camera_data = filtered_camera_data.first();
+        // use specs::Join;
+        // let filtered_camera_data: Vec<&CameraData> = camera_data
+        //     .join()
+        //     .filter(|data: &&CameraData| data.active)
+        //     .collect();
+        // let camera_data = filtered_camera_data.first();
 
-        if camera_data.is_none() {
-            return;
-        }
+        // if camera_data.is_none() {
+        //     return;
+        // }
 
-        let camera_data = camera_data.unwrap();
+        // let camera_data = camera_data.unwrap();
 
-        let uniforms = SkyboxUniforms {
-            proj: camera_data.projection,
-            view: camera_data.view,
-        };
+        // let uniforms = SkyboxUniforms {
+        //     proj: camera_data.projection,
+        //     view: camera_data.view,
+        // };
 
-        let constants_buffer = device
-            .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
+        // let constants_buffer = device
+        //     .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
 
-        encoder.copy_buffer_to_buffer(
-            &constants_buffer,
-            0,
-            &self.constants_buffer,
-            0,
-            std::mem::size_of::<SkyboxUniforms>() as u64,
-        );
+        // encoder.copy_buffer_to_buffer(
+        //     &constants_buffer,
+        //     0,
+        //     &self.constants_buffer,
+        //     0,
+        //     std::mem::size_of::<SkyboxUniforms>() as u64,
+        // );
     }
 
     fn render(
@@ -91,46 +96,46 @@ impl SimplePipeline for SkyboxPipeline {
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        world: &mut specs::World,
+        world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
-        {
-            let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-            if skybox.is_none() {
-                return None;
-            }
-            let skybox = skybox.unwrap();
+        // {
+        //     let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
+        //     if skybox.is_none() {
+        //         return None;
+        //     }
+        //     let skybox = skybox.unwrap();
 
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.as_ref().unwrap().view,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    },
-                }],
-                //depth_stencil_attachment: None,
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: depth.as_ref().unwrap(),
-                    depth_load_op: wgpu::LoadOp::Clear,
-                    depth_store_op: wgpu::StoreOp::Store,
-                    stencil_load_op: wgpu::LoadOp::Clear,
-                    stencil_store_op: wgpu::StoreOp::Store,
-                    clear_depth: 1.0,
-                    clear_stencil: 0,
-                }),
-            });
-            render_pass.set_pipeline(&pipeline.pipeline);
-            render_pass.set_bind_group(0, &self.global_bind_group, &[]);
+        //     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        //         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+        //             attachment: &frame.as_ref().unwrap().view,
+        //             resolve_target: None,
+        //             load_op: wgpu::LoadOp::Clear,
+        //             store_op: wgpu::StoreOp::Store,
+        //             clear_color: wgpu::Color {
+        //                 r: 0.0,
+        //                 g: 0.0,
+        //                 b: 0.0,
+        //                 a: 1.0,
+        //             },
+        //         }],
+        //         //depth_stencil_attachment: None,
+        //         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+        //             attachment: depth.as_ref().unwrap(),
+        //             depth_load_op: wgpu::LoadOp::Clear,
+        //             depth_store_op: wgpu::StoreOp::Store,
+        //             stencil_load_op: wgpu::LoadOp::Clear,
+        //             stencil_store_op: wgpu::StoreOp::Store,
+        //             clear_depth: 1.0,
+        //             clear_stencil: 0,
+        //         }),
+        //     });
+        //     render_pass.set_pipeline(&pipeline.pipeline);
+        //     render_pass.set_bind_group(0, &self.global_bind_group, &[]);
 
-            render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
-            render_pass.draw(0..3 as u32, 0..1);
-        }
+        //     render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
+        //     render_pass.draw(0..3 as u32, 0..1);
+        // }
 
         None
     }
@@ -149,7 +154,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -209,15 +214,16 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Less,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {

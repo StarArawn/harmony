@@ -34,10 +34,13 @@ impl Skybox {
         T: Into<String>,
     {
         // Create a new render graph for this process..
-        let mut graph = RenderGraph::new(&app.renderer.device);
+        let mut graph = { RenderGraph::new(&mut app.current_scene.resources, false) };
+
+        let device = app.current_scene.resources.get::<wgpu::Device>().unwrap();
+        let sc_desc = app.current_scene.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
         let cube_map_target = RenderTarget::new(
-            &app.renderer.device,
+            &device,
             size,
             size * 6.0,
             1,
@@ -53,7 +56,8 @@ impl Skybox {
             );
         graph.add(
             &app.asset_manager,
-            &mut app.renderer,
+            &device,
+            &sc_desc,
             "cube_projection",
             cube_projection_pipeline_desc,
             vec![],
@@ -64,7 +68,7 @@ impl Skybox {
 
         let irradiance_size = 64.0;
         let irradiance_target = RenderTarget::new(
-            &app.renderer.device,
+            &device,
             irradiance_size,
             irradiance_size * 6.0,
             1,
@@ -76,7 +80,8 @@ impl Skybox {
             crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(irradiance_size);
         graph.add(
             &app.asset_manager,
-            &mut app.renderer,
+            &device,
+            &sc_desc,
             "irradiance",
             irradiance_pipeline_desc,
             vec!["cube_projection"],
@@ -90,7 +95,7 @@ impl Skybox {
         for i in 0..SPEC_CUBEMAP_MIP_LEVELS {
             let res = (specular_size / 2u32.pow(i)) as f32;
             let specular_target = RenderTarget::new(
-                &app.renderer.device,
+                &device,
                 res,
                 res * 6.0,
                 1,
@@ -102,7 +107,8 @@ impl Skybox {
                 crate::graphics::pipelines::specular::SpecularPipelineDesc::new(i, res);
             graph.add(
                 &app.asset_manager,
-                &mut app.renderer,
+                &&device,
+                &sc_desc,
                 format!("specular_{}", i),
                 specular_pipeline_desc,
                 vec!["irradiance"],
@@ -115,7 +121,7 @@ impl Skybox {
         // Specular BRDF
         let specular_brdf_size = 128.0;
         let spec_brdf_texture = RenderTarget::new(
-            &app.renderer.device,
+            &device,
             specular_brdf_size,
             specular_brdf_size,
             1,
@@ -131,7 +137,8 @@ impl Skybox {
             );
         graph.add(
             &app.asset_manager,
-            &mut app.renderer,
+            &device,
+            &sc_desc,
             "spec_brdf",
             spec_brdf_pipeline_desc,
             vec![],
@@ -149,16 +156,17 @@ impl Skybox {
         // We need to convert our regular texture map to a cube texture map with 6 faces.
         // Should be straight forward enough if we use equirectangular projection.
         // First we need a custom pipeline that will run in here to do the conversion.
-        //let output = app.renderer.swap_chain.get_next_texture().unwrap();
-        let command_buffer = graph.render(
-            &mut app.renderer,
+        // let output = app.renderer.swap_chain.get_next_texture().unwrap();
+        let command_buffer = graph.render_one_time(
+            &device,
             &mut app.asset_manager,
             &mut app.current_scene.world,
+            None,
             None,
         );
 
         let specular = RenderTarget::new(
-            &app.renderer.device,
+            &device,
             specular_size as f32,
             specular_size as f32,
             6,
@@ -167,9 +175,7 @@ impl Skybox {
             wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         );
 
-        let mut encoder = app
-            .renderer
-            .device
+        let mut encoder = device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // Pull out mipmaps for specular and combine them into 1 image.
@@ -225,14 +231,13 @@ impl Skybox {
         // );
 
         // Push to all command buffers to the queue
-        app.renderer
-            .queue
-            .submit(&vec![command_buffer, encoder.finish()]);
+        let queue = app.current_scene.resources.get::<wgpu::Queue>().unwrap();
+        queue.submit(&vec![encoder.finish()]);
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);
 
-        app.renderer.device.poll(wgpu::Maintain::Wait);
+        device.poll(wgpu::Maintain::Wait);
 
         // futures::executor::block_on(Self::save(buffer_future));
 
@@ -272,9 +277,7 @@ impl Skybox {
             array_layer_count: 6,
         });
 
-        let cubemap_sampler = app
-            .renderer
-            .device
+        let cubemap_sampler = device
             .create_sampler(&wgpu::SamplerDescriptor {
                 address_mode_u: wgpu::AddressMode::ClampToEdge,
                 address_mode_v: wgpu::AddressMode::ClampToEdge,

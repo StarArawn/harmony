@@ -25,7 +25,7 @@ impl TextRenderer {
 
     pub fn draw(
         &mut self,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         target: &wgpu::TextureView,
         renderables: &Vec<crate::gui::renderables::Text>,
@@ -76,7 +76,7 @@ impl TextRenderer {
                 .draw_queued_with_transform_and_scissoring(
                     device,
                     encoder,
-                    &target,
+                    target,
                     transformation.as_slice().try_into().unwrap(),
                     wgpu_glyph::Region {
                         x: bounds.x as u32,

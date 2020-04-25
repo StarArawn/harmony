@@ -1,14 +1,13 @@
+use legion::systems::resource::Resources;
+
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 pub struct Renderer {
     pub(crate) surface: wgpu::Surface,
     pub size: winit::dpi::PhysicalSize<u32>,
     adapter: wgpu::Adapter,
-    pub(crate) device: wgpu::Device,
-    pub(crate) queue: wgpu::Queue,
     pub(crate) swap_chain: wgpu::SwapChain,
     pub(crate) window: winit::window::Window,
-    pub(crate) sc_desc: wgpu::SwapChainDescriptor,
     pub(crate) forward_depth: wgpu::TextureView,
 }
 
@@ -17,6 +16,7 @@ impl Renderer {
         window: winit::window::Window,
         size: winit::dpi::PhysicalSize<u32>,
         surface: wgpu::Surface,
+        resources: &mut Resources,
     ) -> Self {
         let adapter = wgpu::Adapter::request(
             &wgpu::RequestAdapterOptions {
@@ -60,15 +60,16 @@ impl Renderer {
             label: None,
         });
 
+        resources.insert(device);
+        resources.insert(sc_desc);
+        resources.insert(queue);
+
         Self {
             surface,
             size,
             adapter,
-            device,
-            queue,
             swap_chain,
             window,
-            sc_desc,
             forward_depth: depth_texture.create_default_view(),
         }
     }

@@ -8,7 +8,7 @@ mod pbr;
 pub(crate) use pbr::PBRPipelineDesc;
 
 mod skybox;
-pub(crate) use skybox::SkyboxPipelineDesc;
+pub(crate) use skybox::{SkyboxUniforms, SkyboxPipelineDesc};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;

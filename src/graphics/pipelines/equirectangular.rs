@@ -17,10 +17,10 @@ impl SimplePipeline for CubeProjectionPipeline {
     fn prepare(
         &mut self,
         asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
+        device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
     ) {
         let image = asset_manager.get_image(self.texture.clone());
 
@@ -50,7 +50,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
         pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         {
@@ -136,7 +136,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         asset_manager.get_shader("hdr_to_cubemap.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
