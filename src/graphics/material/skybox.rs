@@ -232,7 +232,7 @@ impl Skybox {
 
         // Push to all command buffers to the queue
         let queue = app.current_scene.resources.get::<wgpu::Queue>().unwrap();
-        queue.submit(&vec![encoder.finish()]);
+        queue.submit(&vec![command_buffer, encoder.finish()]);
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);
