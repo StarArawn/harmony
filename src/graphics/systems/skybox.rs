@@ -38,31 +38,27 @@ pub fn create() -> Box<dyn Schedulable> {
             }
 
             for (skybox, ) in skyboxes.iter(&world) {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        attachment: &output.view,
+                        resolve_target: None,
+                        load_op: wgpu::LoadOp::Clear,
+                        store_op: wgpu::StoreOp::Store,
+                        clear_color: wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        },
+                    }],
+                    depth_stencil_attachment: None,
+                });
 
+                render_pass.set_pipeline(&node.pipeline.pipeline);
+                render_pass.set_bind_group(0, &bind_group, &[]);
 
-                {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                            attachment: &output.view,
-                            resolve_target: None,
-                            load_op: wgpu::LoadOp::Clear,
-                            store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color {
-                                r: 0.0,
-                                g: 0.0,
-                                b: 0.0,
-                                a: 1.0,
-                            },
-                        }],
-                        depth_stencil_attachment: None,
-                    });
-
-                    render_pass.set_pipeline(&node.pipeline.pipeline);
-                    render_pass.set_bind_group(0, &bind_group, &[]);
-
-                    render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
-                    render_pass.draw(0..3 as u32, 0..1);
-                }
+                render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
+                render_pass.draw(0..3 as u32, 0..1);
             }
 
             dbg!("Adding new render pass to queue");
