@@ -1,13 +1,11 @@
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Mat4;
-use specs::WorldExt;
 
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT, resources::{BindingManager, RenderTarget}, Pipeline,
+        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline,
         SimplePipeline, SimplePipelineDesc,
     },
-    scene::components::CameraData,
     AssetManager,
 };
 
@@ -38,105 +36,33 @@ unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
 
-    fn get_uniforms(&self) -> Option<(&wgpu::BindGroup, &wgpu::Buffer)> {
-        Some((&self.global_bind_group, &self.constants_buffer))
+    fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)> {
+        Some((vec![&self.global_bind_group], vec![&self.constants_buffer]))
     }
 
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        world: &mut legion::world::World,
+        _world: &mut legion::world::World,
     ) {
-        // let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-        // if skybox.is_none() {
-        //     return;
-        // }
-        // let camera_data = world.read_component::<CameraData>();
-
-        // use specs::Join;
-        // let filtered_camera_data: Vec<&CameraData> = camera_data
-        //     .join()
-        //     .filter(|data: &&CameraData| data.active)
-        //     .collect();
-        // let camera_data = filtered_camera_data.first();
-
-        // if camera_data.is_none() {
-        //     return;
-        // }
-
-        // let camera_data = camera_data.unwrap();
-
-        // let uniforms = SkyboxUniforms {
-        //     proj: camera_data.projection,
-        //     view: camera_data.view,
-        // };
-
-        // let constants_buffer = device
-        //     .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
-
-        // encoder.copy_buffer_to_buffer(
-        //     &constants_buffer,
-        //     0,
-        //     &self.constants_buffer,
-        //     0,
-        //     std::mem::size_of::<SkyboxUniforms>() as u64,
-        // );
     }
 
     fn render(
         &mut self,
         _asset_manager: &mut AssetManager,
-        depth: Option<&wgpu::TextureView>,
+        _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        world: &mut legion::world::World,
+        _pipeline: &Pipeline,
+        _world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
-        // {
-        //     let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-        //     if skybox.is_none() {
-        //         return None;
-        //     }
-        //     let skybox = skybox.unwrap();
-
-        //     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        //         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-        //             attachment: &frame.as_ref().unwrap().view,
-        //             resolve_target: None,
-        //             load_op: wgpu::LoadOp::Clear,
-        //             store_op: wgpu::StoreOp::Store,
-        //             clear_color: wgpu::Color {
-        //                 r: 0.0,
-        //                 g: 0.0,
-        //                 b: 0.0,
-        //                 a: 1.0,
-        //             },
-        //         }],
-        //         //depth_stencil_attachment: None,
-        //         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-        //             attachment: depth.as_ref().unwrap(),
-        //             depth_load_op: wgpu::LoadOp::Clear,
-        //             depth_store_op: wgpu::StoreOp::Store,
-        //             stencil_load_op: wgpu::LoadOp::Clear,
-        //             stencil_store_op: wgpu::StoreOp::Store,
-        //             clear_depth: 1.0,
-        //             clear_stencil: 0,
-        //         }),
-        //     });
-        //     render_pass.set_pipeline(&pipeline.pipeline);
-        //     render_pass.set_bind_group(0, &self.global_bind_group, &[]);
-
-        //     render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
-        //     render_pass.draw(0..3 as u32, 0..1);
-        // }
-
         None
     }
 }

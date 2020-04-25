@@ -1,4 +1,3 @@
-use specs::RunNow;
 use std::mem;
 
 use super::GlobalUniforms;
@@ -26,10 +25,10 @@ impl SimplePipeline for UnlitPipeline {
     fn prepare(
         &mut self,
         _asset_manager: &mut AssetManager,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &Pipeline,
-        world: &mut legion::world::World,
+        _world: &mut legion::world::World,
     ) {
         // let mut prepare_unlit = PrepareUnlit {
         //     device,
@@ -42,15 +41,15 @@ impl SimplePipeline for UnlitPipeline {
 
     fn render(
         &mut self,
-        asset_manager: &mut AssetManager,
-        depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _asset_manager: &mut AssetManager,
+        _depth: Option<&wgpu::TextureView>,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        world: &mut legion::world::World,
+        _pipeline: &Pipeline,
+        _world: &mut legion::world::World,
         _binding_manager: &mut BindingManager,
     ) -> Option<RenderTarget> {
         // let mut render_unlit = RenderUnlit {

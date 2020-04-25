@@ -11,9 +11,8 @@ use crate::{
     core::input::Input,
     graphics::{
         pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
-        RenderGraph, Renderer, resources::BoundResource, CommandBufferQueue, material::Skybox
+        RenderGraph, Renderer, material::Skybox
     },
-    gui::Scene as GuiScene,
     scene::Scene,
     AssetManager,
 };
@@ -71,7 +70,7 @@ impl Application {
         let size = window.inner_size();
         let surface = wgpu::Surface::create(&window);
 
-        let mut renderer = futures::executor::block_on(Renderer::new(window, size, surface, &mut scene.resources));
+        let renderer = futures::executor::block_on(Renderer::new(window, size, surface, &mut scene.resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 
@@ -187,7 +186,7 @@ impl Application {
             let device = self.current_scene.resources.get::<wgpu::Device>().unwrap();
             
             let mut current_bind_group = None;
-            let mut current_index = 0;
+            let current_index = 0;
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
@@ -201,7 +200,7 @@ impl Application {
                             unlit_bind_group_layout,
                         );
                     }
-                    super::graphics::material::Material::PBR(pbr_material) => {
+                    super::graphics::material::Material::PBR(_pbr_material) => {
                         // let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
                         // current_bind_group = Some(pbr_material.create_bind_group(
                         //         &self.asset_manager.images,
@@ -220,7 +219,7 @@ impl Application {
         }
 
         {
-            let mut render_graph = self.current_scene.resources.get_mut::<RenderGraph>().unwrap();
+            let render_graph = self.current_scene.resources.get_mut::<RenderGraph>().unwrap();
             let skybox_pipeline = render_graph.get("skybox");
             let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
             let query = <(Write<Skybox>,)>::query();

@@ -1,4 +1,4 @@
-use super::{resources::{BindingManager, RenderTarget}, Pipeline, Renderer, SimplePipeline, SimplePipelineDesc};
+use super::{resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline, SimplePipelineDesc};
 use crate::AssetManager;
 use solvent::DepGraph;
 use std::collections::HashMap;

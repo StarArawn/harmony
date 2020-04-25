@@ -30,7 +30,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     encoder.copy_buffer_to_buffer(
                         &constants_buffer,
                         0,
-                        uniform_buffer,
+                        uniform_buffer[0],
                         0,
                         std::mem::size_of::<SkyboxUniforms>() as u64,
                     );
@@ -55,7 +55,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 });
 
                 render_pass.set_pipeline(&node.pipeline.pipeline);
-                render_pass.set_bind_group(0, &bind_group, &[]);
+                render_pass.set_bind_group(0, &bind_group[0], &[]);
 
                 render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
                 render_pass.draw(0..3 as u32, 0..1);

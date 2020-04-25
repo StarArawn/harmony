@@ -1,6 +1,5 @@
 use super::{material::Shader, resources::{BindingManager, RenderTarget}};
 use crate::AssetManager;
-use legion::systems::resource::Resources;
 
 #[derive(Debug)]
 pub struct Pipeline {
@@ -24,7 +23,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         world: &mut legion::world::World,
     );
 
-    fn get_uniforms(&self) -> Option<(&wgpu::BindGroup, &wgpu::Buffer)>  {
+    fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)>  {
         None
     }
 

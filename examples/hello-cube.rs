@@ -9,9 +9,8 @@ use winit::{
 };
 
 use harmony::scene::components::{
-    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
+    CameraData, Material, Mesh, Transform,
 };
-use harmony::scene::Scene;
 use harmony::WinitState;
 
 struct WindowSize {
@@ -32,7 +31,7 @@ impl AppState {
     }
 }
 
-struct RotateSystem;
+//struct RotateSystem;
 
 // impl<'a> System<'a> for RotateSystem {
 //     type SystemData = (
