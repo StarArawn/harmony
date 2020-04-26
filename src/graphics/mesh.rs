@@ -1,4 +1,4 @@
-use super::material::{PBRMaterial, UnlitMaterial};
+use super::material::{PBRMaterial};
 use crate::graphics::material::Material;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
@@ -157,12 +157,12 @@ impl Mesh {
             }
 
             let material_index = material_start_index + materials.len() as u32;
-            let material = UnlitMaterial::new(
+            let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
                 color,
                 material_index,
             );
-            materials.push(Material::Unlit(material));
+            materials.push(Material::PBR(material));
 
             // mesh.calculate_tangents();
 

@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        resources::{BindGroup, BoundResource, GPUResourceManager, RenderTarget},
+        resources::{BindGroup, GPUResourceManager, RenderTarget},
         RenderGraph,
     },
     Application, AssetManager,
@@ -347,17 +347,14 @@ impl Skybox {
                 .unwrap();
         }
     }
-}
 
-impl BoundResource for Skybox {
-    fn create_bind_group<'a>(
-        &mut self,
-        _asset_manager: &AssetManager,
+    pub fn create_bind_group<'a>(
+        &self,
         device: &wgpu::Device,
-        pipeline_layouts: &'a Vec<wgpu::BindGroupLayout>,
+        pipeline_layout: &'a wgpu::BindGroupLayout,
     ) -> BindGroup {
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline_layouts[2],
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &pipeline_layout,
             bindings: &[
                 wgpu::Binding {
                     binding: 0,

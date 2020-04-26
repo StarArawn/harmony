@@ -4,7 +4,6 @@ use crate::{
     graphics::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
-        renderer::DEPTH_FORMAT,
         resources::{GPUResourceManager, RenderTarget},
         // renderer::DEPTH_FORMAT,
         SimplePipeline,
@@ -88,7 +87,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 ],
                 label: None,
             });
-        resource_manager.add_bind_group_layout("skybox_pbr_material", material_bind_group_layout);
+        resource_manager.add_bind_group_layout("pbr_material", material_bind_group_layout);
 
         let pbr_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -139,12 +138,11 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 label: None,
             });
 
-        resource_manager.add_bind_group_layout("pbr_material", pbr_bind_group_layout);
+        resource_manager.add_bind_group_layout("skybox_pbr_material", pbr_bind_group_layout);
 
         let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals");
-        let material_bind_group_layout =
-            resource_manager.get_bind_group_layout("skybox_pbr_material");
-        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
+        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
 
         vec![
             global_bind_group_layout,
@@ -177,15 +175,16 @@ impl SimplePipelineDesc for PBRPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Greater,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Greater,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {

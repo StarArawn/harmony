@@ -225,6 +225,32 @@ pub fn create() -> Box<dyn Schedulable> {
                             _ => (),
                         }
                     }
+
+                    // Render pbr materials.
+                    let pbr_node = render_graph.get("pbr");
+                    render_pass.set_pipeline(&pbr_node.pipeline);
+                    render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
+                    resource_manager.set_bind_group(&mut render_pass, "skybox_pbr_material", 3);
+                    for material in pbr_materials.iter() {
+                        match material {
+                            Material::PBR(data) => {
+                                resource_manager.set_multi_bind_group(&mut render_pass, "pbr", 2, data.index as u32);
+                                for (mesh, _, transform) in mesh_query.iter(&world)
+                                    .filter(|(_, material, _)| material.index == data.index)
+                                {
+                                    resource_manager.set_multi_bind_group(&mut render_pass, "transform", 0, transform.index);
+                                    let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
+                                    for sub_mesh in asset_mesh.sub_meshes.iter() {
+                                        render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
+                                        render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+                                        render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
+                                    }
+                                }
+
+                            },
+                            _ => (),
+                        }
+                    }
                 }
 
                 command_buffer_queue

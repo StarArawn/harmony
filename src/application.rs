@@ -1,6 +1,5 @@
 use std::{sync::Arc, time::Instant};
 use winit::{
-    dpi::LogicalSize,
     event::Event,
     event_loop::{ControlFlow, EventLoop},
 };
@@ -201,28 +200,26 @@ impl Application {
         // Once materials have been created we need to create more info for them.
         {
             let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let render_graph = self.resources.get::<RenderGraph>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
-            asset_manager.load_materials(&render_graph, &device, &mut resource_manager);
+            asset_manager.load_materials(&device, &mut resource_manager);
         }
         
         {
-            let render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
-            let resouce_manager = self.resources.get::<GPUResourceManager>().unwrap();
-            let skybox_pipeline = render_graph.get("skybox");
-            let material_layout = resouce_manager.get_bind_group_layout("skybox_material");
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 let device = self.resources.get::<wgpu::Device>().unwrap();
-                skybox.create_bind_group2(&device, material_layout);
+                {
+                    let material_layout = resource_manager.get_bind_group_layout("skybox_material");
+                    skybox.create_bind_group2(&device, material_layout);
+                }
 
-                // let (pbr_node_name, bound_group) = {
-                //     let pbr_node = render_graph.nodes.get_mut("pbr").unwrap();
-                //     let bound_group = skybox.create_bind_group(&self.asset_manager, &device, &pbr_node.pipeline.bind_group_layouts);
-                //     (pbr_node.name.clone(), bound_group)
-                // };
-                //render_graph.binding_manager.add_single_resource(pbr_node_name, bound_group);
+                let bound_group = {
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
+                    skybox.create_bind_group(&device, pbr_bind_group_layout)
+                };
+                resource_manager.add_single_bind_group("skybox_pbr_material", bound_group);
             }
         }
     }

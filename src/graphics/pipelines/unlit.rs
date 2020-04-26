@@ -4,7 +4,6 @@ use crate::{
     graphics::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
-        renderer::DEPTH_FORMAT,
         resources::{GPUResourceManager, RenderTarget},
         // renderer::DEPTH_FORMAT,
         SimplePipeline,

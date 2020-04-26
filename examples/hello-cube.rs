@@ -8,9 +8,9 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{
+use harmony::scene::{resources::DeltaTime, components::{
     CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
-};
+}, Scene};
 use harmony::WinitState;
 
 struct WindowSize {
@@ -53,9 +53,27 @@ impl AppState {
 //     }
 // }
 
+fn create_rotate_system() -> Box<dyn Schedulable> {
+    SystemBuilder::new("Rotate Cube")
+        .read_resource::<DeltaTime>()
+        .with_query(<Write<Transform>>::query())
+        .build(|_,
+            mut world,
+            delta_time,
+            transform_query,
+        | {
+            for mut transform in transform_query.iter_mut(&mut world) {
+                transform.rotate_on_y(-2.0 * delta_time.0);
+            }
+    })
+}
+
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        // let dispatch_builder = DispatcherBuilder::default().with(RotateSystem, "RotateSystem", &[]);
+        let scheduler_builder = Schedule::builder()
+            .add_system(create_rotate_system());
+        app.current_scene = Scene::new(None, Some(scheduler_builder));
+        
 
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.

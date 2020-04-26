@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 use crate::core::Font;
 use crate::graphics::{
     material::{Image, Material, Shader},
-    mesh::Mesh, RenderGraph, resources::GPUResourceManager,
+    mesh::Mesh, resources::GPUResourceManager,
 };
 
 pub struct AssetManager {
@@ -184,29 +184,28 @@ impl AssetManager {
         self.fonts.values().collect()
     }
 
-    pub(crate) fn load_materials(&mut self, render_graph: &RenderGraph, device: &wgpu::Device, resource_manager: &mut GPUResourceManager) {
+    pub(crate) fn load_materials(&mut self, device: &wgpu::Device, resource_manager: &mut GPUResourceManager) {
         
         let mut current_bind_group = None;
-        let current_index = 0;
+        let mut current_index = 0;
         for material in self.materials.values_mut() {
             match material {
                 crate::graphics::material::Material::Unlit(unlit_material) => {
-                    let unlit_bind_group_layout =
-                        resource_manager.get_bind_group_layout("unlit_material");
+                    let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
                     unlit_material.create_bind_group(
                         &self.images,
                         &device,
                         unlit_bind_group_layout,
                     );
                 }
-                crate::graphics::material::Material::PBR(_pbr_material) => {
-                    // let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
-                    // current_bind_group = Some(pbr_material.create_bind_group(
-                    //         &self.asset_manager.images,
-                    //         &self.renderer.device,
-                    //         pbr_bind_group_layouts,
-                    //     ));
-                    // current_index = pbr_material.index;
+                crate::graphics::material::Material::PBR(pbr_material) => {
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
+                    current_bind_group = Some(pbr_material.create_bind_group(
+                            &self.images,
+                            device,
+                            pbr_bind_group_layout,
+                        ));
+                    current_index = pbr_material.index;
                 }
             }
             if current_bind_group.is_some() {
