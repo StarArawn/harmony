@@ -12,7 +12,6 @@ pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
         let mut command_queue = resources.get_mut::<CommandBufferQueue>().unwrap();
         command_buffers.extend(render_graph.collect_buffers(&mut command_queue));
         
-        dbg!("Pushing queue!");
         queue.submit(&command_buffers);
     });
     thread

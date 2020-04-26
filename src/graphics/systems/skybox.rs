@@ -60,8 +60,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
                 render_pass.draw(0..3 as u32, 0..1);
             }
-
-            dbg!("Adding new render pass to queue");
+            
             command_buffer_queue.push(CommandQueueItem { buffer: encoder.finish(), name: "skybox".to_string() }).unwrap();
         })
 }

@@ -34,10 +34,10 @@ impl Skybox {
         T: Into<String>,
     {
         // Create a new render graph for this process..
-        let mut graph = { RenderGraph::new(&mut app.current_scene.resources, false) };
+        let mut graph = { RenderGraph::new(&mut app.resources, false) };
 
-        let device = app.current_scene.resources.get::<wgpu::Device>().unwrap();
-        let sc_desc = app.current_scene.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
         let cube_map_target = RenderTarget::new(
             &device,
@@ -231,7 +231,7 @@ impl Skybox {
         // );
 
         // Push to all command buffers to the queue
-        let queue = app.current_scene.resources.get::<wgpu::Queue>().unwrap();
+        let queue = app.resources.get::<wgpu::Queue>().unwrap();
         queue.submit(&vec![command_buffer, encoder.finish()]);
 
         // Note that we're not calling `.await` here.

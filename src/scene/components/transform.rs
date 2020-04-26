@@ -83,10 +83,10 @@ impl Transform {
     }
 
     pub(crate) fn create_bindings(app: &Application) -> (wgpu::Buffer, wgpu::BindGroup) {
-        let render_graph = app.current_scene.resources.get::<RenderGraph>().unwrap();
+        let render_graph = app.resources.get::<RenderGraph>().unwrap();
         let bind_group_layout = &render_graph.local_bind_group_layout;
         // This data needs to be saved and passed onto the pipeline.
-        let device = app.current_scene.resources.get_mut::<wgpu::Device>().unwrap();
+        let device = app.resources.get_mut::<wgpu::Device>().unwrap();
         let local_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&LocalUniform::default()),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,

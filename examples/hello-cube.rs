@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::components::{
-    CameraData, Material, Mesh, Transform,
+    CameraData, Material, Mesh, Transform, DirectionalLightData, LightType,
 };
 use harmony::WinitState;
 
@@ -85,14 +85,15 @@ impl harmony::AppState for AppState {
        app.current_scene.world.insert((), vec![(skybox, )]);
 
         // Add directional light to our scene.
-        // harmony::scene::entities::light::create(
-        //     &mut scene.world,
-        //     LightType::Directional(DirectionalLightData {
-        //         direction: Vec3::new(0.0, 1.0, -0.5),
-        //         color: Vec3::new(1.0, 1.0, 1.0),
-        //     }),
-        //     Transform::new(app),
-        //);
+        let light_transform = Transform::new(app);
+        harmony::scene::entities::light::create(
+            &mut app.current_scene.world,
+            LightType::Directional(DirectionalLightData {
+                direction: Vec3::new(0.0, 1.0, -0.5),
+                color: Vec3::new(1.0, 1.0, 1.0),
+            }),
+            light_transform,
+        );
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
