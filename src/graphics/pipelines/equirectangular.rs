@@ -17,7 +17,7 @@ pub struct CubeProjectionPipeline {
 impl SimplePipeline for CubeProjectionPipeline {
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &wgpu::RenderPipeline,
@@ -27,7 +27,7 @@ impl SimplePipeline for CubeProjectionPipeline {
 
     fn render(
         &mut self,
-        asset_manager: &mut AssetManager,
+        asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,

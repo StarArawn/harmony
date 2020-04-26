@@ -64,13 +64,13 @@ pub fn create() -> Box<dyn Schedulable> {
                     wgpu::BufferUsage::COPY_SRC,
                 );
 
-                // encoder.copy_buffer_to_buffer(
-                //     &constants_buffer,
-                //     0,
-                //     &self.constants_buffer,
-                //     0,
-                //     std::mem::size_of::<GlobalUniform>() as u64,
-                // );
+                encoder.copy_buffer_to_buffer(
+                    &constants_buffer,
+                    0,
+                    &resource_manager.global_uniform_buffer,
+                    0,
+                    std::mem::size_of::<GlobalUniform>() as u64,
+                );
 
                 // ******************************************************************************
                 // This section is where we actually render our meshes.

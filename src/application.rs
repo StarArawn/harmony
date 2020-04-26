@@ -32,7 +32,6 @@ pub trait AppState {
 
 pub struct Application {
     pub renderer: Renderer,
-    pub asset_manager: AssetManager,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
@@ -88,10 +87,10 @@ impl Application {
             .flush()
             .add_thread_local_fn(graphics::systems::render::create())
             .build();
+        resources.insert(asset_manager);
 
         Application {
             renderer,
-            asset_manager,
             clock: Instant::now(),
             fixed_timestep: 1.0 / 60.0,
             elapsed_time: 0.0,
@@ -132,7 +131,12 @@ impl Application {
     where
         T: AppState,
     {
-        self.asset_manager.load(&self.resources);
+        {
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            let device = self.resources.get::<wgpu::Device>().unwrap();
+            let mut queue = self.resources.get_mut::<wgpu::Queue>().unwrap();
+            asset_manager.load(&device, &mut queue);
+        }
 
         {
             let render_graph = RenderGraph::new(&mut self.resources, true);
@@ -140,6 +144,7 @@ impl Application {
         }
 
         {
+            let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
             let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
             let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
@@ -147,7 +152,7 @@ impl Application {
             // Skybox pipeline
             let skybox_pipeline_desc = SkyboxPipelineDesc::default();
             render_graph.add(
-                &self.asset_manager,
+                &asset_manager,
                 &device,
                 &sc_desc,
                 &mut resource_manager,
@@ -161,7 +166,7 @@ impl Application {
             // Unlit pipeline
             let unlit_pipeline_desc = UnlitPipelineDesc::default();
             render_graph.add(
-                &self.asset_manager,
+                &asset_manager,
                 &device,
                 &sc_desc,
                 &mut resource_manager,
@@ -175,7 +180,7 @@ impl Application {
             // PBR pipeline
             let pbr_pipeline_desc = PBRPipelineDesc::default();
             render_graph.add(
-                &self.asset_manager,
+                &asset_manager,
                 &device,
                 &sc_desc,
                 &mut resource_manager,
@@ -191,48 +196,14 @@ impl Application {
         app_state.load(self);
 
         // Once materials have been created we need to create more info for them.
-        let materials: Vec<&mut super::graphics::material::Material> =
-            self.asset_manager.materials.values_mut().collect();
         {
-            let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            let render_graph = self.resources.get::<RenderGraph>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
-
-            let mut current_bind_group = None;
-            let current_index = 0;
-            for material in materials {
-                match material {
-                    super::graphics::material::Material::Unlit(unlit_material) => {
-                        let unlit_bind_group_layout =
-                            resource_manager.get_bind_group_layout("unlit");
-                        unlit_material.create_bind_group(
-                            &self.asset_manager.images,
-                            &device,
-                            unlit_bind_group_layout,
-                        );
-                    }
-                    super::graphics::material::Material::PBR(_pbr_material) => {
-                        // let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
-                        // current_bind_group = Some(pbr_material.create_bind_group(
-                        //         &self.asset_manager.images,
-                        //         &self.renderer.device,
-                        //         pbr_bind_group_layouts,
-                        //     ));
-                        // current_index = pbr_material.index;
-                    }
-                }
-                if current_bind_group.is_some() {
-                    resource_manager.add_multi_bind_group(
-                        "pbr",
-                        current_bind_group.take().unwrap(),
-                        current_index,
-                    );
-                }
-
-                current_bind_group = None;
-            }
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            asset_manager.load_materials(&render_graph, &device, &mut resource_manager);
         }
-
+        
         {
             let render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
             let resouce_manager = self.resources.get::<GPUResourceManager>().unwrap();

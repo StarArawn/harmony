@@ -152,7 +152,7 @@ impl RenderGraph {
     pub(crate) fn render_one_time(
         &mut self,
         device: &wgpu::Device,
-        asset_manager: &mut AssetManager,
+        asset_manager: &AssetManager,
         resource_manager: &mut GPUResourceManager,
         world: &mut legion::world::World,
         frame: Option<&wgpu::SwapChainOutput>,

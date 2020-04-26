@@ -38,7 +38,7 @@ pub struct SpecularPipeline {
 impl SimplePipeline for SpecularPipeline {
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &wgpu::RenderPipeline,
@@ -48,7 +48,7 @@ impl SimplePipeline for SpecularPipeline {
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,

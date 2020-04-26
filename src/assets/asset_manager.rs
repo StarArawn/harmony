@@ -1,4 +1,3 @@
-use legion::systems::resource::Resources;
 use log::*;
 use std::collections::HashMap;
 use walkdir::WalkDir;
@@ -6,7 +5,7 @@ use walkdir::WalkDir;
 use crate::core::Font;
 use crate::graphics::{
     material::{Image, Material, Shader},
-    mesh::Mesh,
+    mesh::Mesh, RenderGraph, resources::GPUResourceManager,
 };
 
 pub struct AssetManager {
@@ -30,8 +29,7 @@ impl AssetManager {
         }
     }
 
-    pub(crate) fn load(&mut self, resources: &Resources) {
-        let device = resources.get::<wgpu::Device>().unwrap();
+    pub(crate) fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
         let mut init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -92,7 +90,6 @@ impl AssetManager {
                 info!("Loaded image: {}", file_name);
             }
         }
-        let queue = resources.get::<wgpu::Queue>().unwrap();
         queue.submit(&[init_encoder.finish()]);
     }
 
@@ -185,5 +182,42 @@ impl AssetManager {
 
     pub fn get_fonts(&self) -> Vec<&Font> {
         self.fonts.values().collect()
+    }
+
+    pub(crate) fn load_materials(&mut self, render_graph: &RenderGraph, device: &wgpu::Device, resource_manager: &mut GPUResourceManager) {
+        
+        let mut current_bind_group = None;
+        let current_index = 0;
+        for material in self.materials.values_mut() {
+            match material {
+                crate::graphics::material::Material::Unlit(unlit_material) => {
+                    let unlit_bind_group_layout =
+                        resource_manager.get_bind_group_layout("unlit");
+                    unlit_material.create_bind_group(
+                        &self.images,
+                        &device,
+                        unlit_bind_group_layout,
+                    );
+                }
+                crate::graphics::material::Material::PBR(_pbr_material) => {
+                    // let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
+                    // current_bind_group = Some(pbr_material.create_bind_group(
+                    //         &self.asset_manager.images,
+                    //         &self.renderer.device,
+                    //         pbr_bind_group_layouts,
+                    //     ));
+                    // current_index = pbr_material.index;
+                }
+            }
+            if current_bind_group.is_some() {
+                resource_manager.add_multi_bind_group(
+                    "pbr",
+                    current_bind_group.take().unwrap(),
+                    current_index,
+                );
+            }
+
+            current_bind_group = None;
+        }
     }
 }

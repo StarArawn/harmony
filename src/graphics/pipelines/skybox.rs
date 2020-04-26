@@ -42,7 +42,7 @@ impl SimplePipeline for SkyboxPipeline {
 
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &wgpu::RenderPipeline,
@@ -52,7 +52,7 @@ impl SimplePipeline for SkyboxPipeline {
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,

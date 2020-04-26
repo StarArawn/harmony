@@ -7,7 +7,7 @@ use winit::{
 
 use harmony::{
     graphics::{resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph},
-    WinitState,
+    WinitState, AssetManager,
 };
 
 mod helpers;
@@ -84,6 +84,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
+        let asset_manager = app.resources.get::<AssetManager>().unwrap();
         let mut render_graph = app.resources.get_mut::<RenderGraph>().unwrap();
         let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
         let device = app.resources.get::<wgpu::Device>().unwrap();
@@ -92,7 +93,7 @@ impl harmony::AppState for AppState {
         // Setup our custom render pass.
         let pipeline_desc = triangle_pipeline::TrianglePipelineDesc::default();
         render_graph.add(
-            &app.asset_manager,
+            &asset_manager,
             &device,
             &sc_desc,
             &mut resource_manager,

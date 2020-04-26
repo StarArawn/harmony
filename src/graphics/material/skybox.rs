@@ -33,6 +33,7 @@ impl Skybox {
         // Create a new render graph for this process..
         let mut graph = { RenderGraph::new(&mut app.resources, false) };
 
+        let asset_manager = app.resources.get::<AssetManager>().unwrap();
         let device = app.resources.get::<wgpu::Device>().unwrap();
         let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
         let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
@@ -53,7 +54,7 @@ impl Skybox {
                 size,
             );
         graph.add(
-            &app.asset_manager,
+            &asset_manager,
             &device,
             &sc_desc,
             &mut resource_manager,
@@ -78,7 +79,7 @@ impl Skybox {
         let irradiance_pipeline_desc =
             crate::graphics::pipelines::irradiance::IrradiancePipelineDesc::new(irradiance_size);
         graph.add(
-            &app.asset_manager,
+            &asset_manager,
             &device,
             &sc_desc,
             &mut resource_manager,
@@ -106,7 +107,7 @@ impl Skybox {
             let specular_pipeline_desc =
                 crate::graphics::pipelines::specular::SpecularPipelineDesc::new(i, res);
             graph.add(
-                &app.asset_manager,
+                &asset_manager,
                 &&device,
                 &sc_desc,
                 &mut resource_manager,
@@ -137,7 +138,7 @@ impl Skybox {
                 specular_brdf_size,
             );
         graph.add(
-            &app.asset_manager,
+            &asset_manager,
             &device,
             &sc_desc,
             &mut resource_manager,
@@ -161,7 +162,7 @@ impl Skybox {
         // let output = app.renderer.swap_chain.get_next_texture().unwrap();
         let command_buffer = graph.render_one_time(
             &device,
-            &mut app.asset_manager,
+            &asset_manager,
             &mut resource_manager,
             &mut app.current_scene.world,
             None,

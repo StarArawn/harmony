@@ -15,7 +15,7 @@ pub struct SpecularBRDFPipeline {
 impl SimplePipeline for SpecularBRDFPipeline {
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
         _pipeline: &wgpu::RenderPipeline,
@@ -25,7 +25,7 @@ impl SimplePipeline for SpecularBRDFPipeline {
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
