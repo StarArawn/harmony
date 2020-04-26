@@ -13,11 +13,11 @@ pub struct BindGroupWithData {
 pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
     fn prepare(
         &mut self,
-        asset_manager: &mut AssetManager,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        pipeline: &wgpu::RenderPipeline,
-        world: &mut legion::world::World,
+        _asset_manager: &mut AssetManager,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
     ) {
     }
 
@@ -27,16 +27,16 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
 
     fn render(
         &mut self,
-        asset_manager: &mut AssetManager,
-        depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
-        input: Option<&RenderTarget>,
-        output: Option<&RenderTarget>,
-        pipeline: &wgpu::RenderPipeline,
-        world: &mut legion::world::World,
-        resource_manager: &mut GPUResourceManager,
+        _asset_manager: &mut AssetManager,
+        _depth: Option<&wgpu::TextureView>,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
+        _input: Option<&RenderTarget>,
+        _output: Option<&RenderTarget>,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
+        _resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         None
     }

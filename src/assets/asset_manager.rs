@@ -1,13 +1,13 @@
-use log::*;
-use walkdir::WalkDir;
-use std::collections::HashMap;
 use legion::systems::resource::Resources;
+use log::*;
+use std::collections::HashMap;
+use walkdir::WalkDir;
 
+use crate::core::Font;
 use crate::graphics::{
     material::{Image, Material, Shader},
     mesh::Mesh,
 };
-use crate::core::Font;
 
 pub struct AssetManager {
     path: String,
@@ -30,10 +30,7 @@ impl AssetManager {
         }
     }
 
-    pub(crate) fn load(
-        &mut self,
-        resources: &Resources,
-    ) {
+    pub(crate) fn load(&mut self, resources: &Resources) {
         let device = resources.get::<wgpu::Device>().unwrap();
         let mut init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
