@@ -9,9 +9,7 @@ mod render_graph;
 pub use render_graph::{CommandBufferQueue, CommandQueueItem, RenderGraph};
 
 mod pipeline;
-pub use pipeline::{
-    BindGroupWithData, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
-};
+pub use pipeline::{BindGroupWithData, SimplePipeline, SimplePipelineDesc, VertexStateBuilder};
 
 pub mod pipelines;
 

@@ -79,15 +79,16 @@ impl Application {
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
-        
-        let renderer = futures::executor::block_on(Renderer::new(window, size, surface, &mut resources));
+
+        let renderer =
+            futures::executor::block_on(Renderer::new(window, size, surface, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 
         let console = crate::gui::components::default::Console::new();
 
-        let mut render_schedule_builder = Schedule::builder()
-            .add_system(graphics::systems::skybox::create());
+        let mut render_schedule_builder =
+            Schedule::builder().add_system(graphics::systems::skybox::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -217,7 +218,8 @@ impl Application {
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
-                        let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit");
+                        let unlit_bind_group_layout =
+                            resource_manager.get_bind_group_layout("unlit");
                         unlit_material.create_bind_group(
                             &self.asset_manager.images,
                             &device,

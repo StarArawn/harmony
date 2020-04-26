@@ -80,7 +80,11 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -92,7 +96,6 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("skybox_globals", global_bind_group_layout);
-        
 
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -115,7 +118,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("skybox_material", material_bind_group_layout);
-        
+
         let global_bind_group_layout = resource_manager.get_bind_group_layout("skybox_globals");
         let material_bind_group_layout = resource_manager.get_bind_group_layout("skybox_material");
 

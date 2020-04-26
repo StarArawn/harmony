@@ -89,10 +89,8 @@ impl RenderGraph {
                 None
             },
         );
-        let built_pipeline: Box<dyn SimplePipeline> = Box::new(pipeline_desc.build(
-            &device,
-            resource_manager,
-        ));
+        let built_pipeline: Box<dyn SimplePipeline> =
+            Box::new(pipeline_desc.build(&device, resource_manager));
         let node = RenderGraphNode {
             name: name.clone(),
             pipeline,

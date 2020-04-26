@@ -1,8 +1,6 @@
-use harmony::{
-    graphics::{
-        resources::{BindGroup, GPUResourceManager},
-        SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
-    },
+use harmony::graphics::{
+    resources::{BindGroup, GPUResourceManager},
+    SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
 };
 
 #[derive(Debug)]
@@ -23,7 +21,11 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         asset_manager.get_shader("triangle.shader")
     }
 
-    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
             label: None,

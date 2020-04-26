@@ -79,7 +79,11 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
         asset_manager.get_shader("specular_brdf.shader")
     }
 
-    fn create_layout<'a>(&self, _device: &wgpu::Device, _resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        _device: &wgpu::Device,
+        _resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // No bindings? No problem! Just remember that later on!
         vec![]
     }

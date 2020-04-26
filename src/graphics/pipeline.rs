@@ -18,7 +18,8 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         encoder: &mut wgpu::CommandEncoder,
         pipeline: &wgpu::RenderPipeline,
         world: &mut legion::world::World,
-    ) { }
+    ) {
+    }
 
     fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)> {
         None
@@ -36,7 +37,9 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         pipeline: &wgpu::RenderPipeline,
         world: &mut legion::world::World,
         resource_manager: &mut GPUResourceManager,
-    ) -> Option<RenderTarget> { None }
+    ) -> Option<RenderTarget> {
+        None
+    }
 }
 
 pub trait SimplePipelineDesc: std::fmt::Debug {
@@ -48,7 +51,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
         resource_manager: &mut GPUResourceManager,
-        local_bind_group_layout: Option<&wgpu::BindGroupLayout>
+        local_bind_group_layout: Option<&wgpu::BindGroupLayout>,
     ) -> wgpu::RenderPipeline {
         let shader = self.load_shader(asset_manager);
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
@@ -107,14 +110,18 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
             sample_mask,
             alpha_to_coverage_enabled,
         });
-        
+
         pipeline
     }
 
     // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
     fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
-    fn create_layout<'a>(&self, _device: &wgpu::Device, _resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout>;
+    fn create_layout<'a>(
+        &self,
+        _device: &wgpu::Device,
+        _resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout>;
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor;
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology;
     fn color_states_desc(

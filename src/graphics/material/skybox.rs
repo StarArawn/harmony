@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        resources::{BindGroup, BoundResource, RenderTarget, GPUResourceManager},
+        resources::{BindGroup, BoundResource, GPUResourceManager, RenderTarget},
         RenderGraph,
     },
     Application, AssetManager,

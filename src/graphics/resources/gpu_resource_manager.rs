@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::BindGroup;
-use crate::graphics::pipelines::{LightingUniform, GlobalUniform};
+use crate::graphics::pipelines::{GlobalUniform, LightingUniform};
 
 /// Stores bind groups for consumption by pipelines.
 pub struct GPUResourceManager {
@@ -84,7 +84,11 @@ impl GPUResourceManager {
         }
     }
 
-    pub fn add_single_bind_group<T: Into<String>>(&mut self, render_node: T, bind_group: BindGroup) {
+    pub fn add_single_bind_group<T: Into<String>>(
+        &mut self,
+        render_node: T,
+        bind_group: BindGroup,
+    ) {
         let render_node = render_node.into();
         let bind_group_index = bind_group.index;
         if self.single_bind_groups.contains_key(&render_node) {
@@ -190,10 +194,16 @@ impl GPUResourceManager {
     }
 
     /// Let's you add bind group layourts.
-    pub fn add_bind_group_layout<T: Into<String>>(&mut self, name: T, bind_group_layout: wgpu::BindGroupLayout) {
+    pub fn add_bind_group_layout<T: Into<String>>(
+        &mut self,
+        name: T,
+        bind_group_layout: wgpu::BindGroupLayout,
+    ) {
         let name = name.into();
         if self.bind_group_layouts.contains_key(&name) {
-            panic!("Bind group layout already exists use `get_bind_group_layout` or a different key.");
+            panic!(
+                "Bind group layout already exists use `get_bind_group_layout` or a different key."
+            );
         }
         self.bind_group_layouts.insert(name, bind_group_layout);
     }

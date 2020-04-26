@@ -1,5 +1,5 @@
-use legion::systems::resource::Resources;
 use super::resources::GPUResourceManager;
+use legion::systems::resource::Resources;
 
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 

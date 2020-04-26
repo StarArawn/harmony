@@ -1,11 +1,14 @@
+use legion::prelude::*;
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::ControlFlow,
 };
-use legion::prelude::*;
 
-use harmony::{graphics::{resources::GPUResourceManager, RenderGraph, CommandBufferQueue, CommandQueueItem}, WinitState};
+use harmony::{
+    graphics::{resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph},
+    WinitState,
+};
 
 mod helpers;
 pub use helpers::*;
@@ -45,42 +48,42 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
              _world,
              (command_buffer_queue, render_graph, device, output, resource_manager),
              _| {
-            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Triangle Pass") });
-
-            // Name of our node we created in app state "load".
-            let node = render_graph.get("triangle");
-
-            {
-                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                        attachment: &output.view,
-                        resolve_target: None,
-                        load_op: wgpu::LoadOp::Clear,
-                        store_op: wgpu::StoreOp::Store,
-                        clear_color: wgpu::Color::GREEN,
-                    }],
-                    depth_stencil_attachment: None,
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Triangle Pass"),
                 });
-                rpass.set_pipeline(&node.pipeline);
-                resource_manager.set_bind_group(&mut rpass, "triangle", 0);
-                rpass.draw(0..3, 0..1);
-            }
 
-            // Name here should match node name.
-            command_buffer_queue
-                .push(CommandQueueItem {
-                    buffer: encoder.finish(),
-                    name: "triangle".to_string(),
-                })
-                .unwrap();
-        })
+                // Name of our node we created in app state "load".
+                let node = render_graph.get("triangle");
+
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                            attachment: &output.view,
+                            resolve_target: None,
+                            load_op: wgpu::LoadOp::Clear,
+                            store_op: wgpu::StoreOp::Store,
+                            clear_color: wgpu::Color::GREEN,
+                        }],
+                        depth_stencil_attachment: None,
+                    });
+                    rpass.set_pipeline(&node.pipeline);
+                    resource_manager.set_bind_group(&mut rpass, "triangle", 0);
+                    rpass.draw(0..3, 0..1);
+                }
+
+                // Name here should match node name.
+                command_buffer_queue
+                    .push(CommandQueueItem {
+                        buffer: encoder.finish(),
+                        name: "triangle".to_string(),
+                    })
+                    .unwrap();
+            },
+        )
 }
-
-
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-
         let mut render_graph = app.resources.get_mut::<RenderGraph>().unwrap();
         let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
         let device = app.resources.get::<wgpu::Device>().unwrap();
@@ -93,11 +96,11 @@ impl harmony::AppState for AppState {
             &device,
             &sc_desc,
             &mut resource_manager,
-            "triangle", // The name of the pipeline node.
+            "triangle",    // The name of the pipeline node.
             pipeline_desc, // A description of what our pipeline is which should match the shader in the pipeline as well.
-            vec![], // Can be used to pass in dependencies which dictate draw order.
+            vec![],        // Can be used to pass in dependencies which dictate draw order.
             false, // Automatically include local bindings from transforms these get applied to slot 0.
-            None, // Optional output target useful rendering to a texture.
+            None,  // Optional output target useful rendering to a texture.
             false, // This option will pass the previous output as the input. Useful for chaining stuff together.
         );
     }
@@ -119,7 +122,12 @@ fn main() {
     // When we create our application we tell it we have some custom render systems.
     // It is IMPORTANT to remember NOT to add render systems to a scene's scheduler.
     // As the scene scheduler runs potentially multiple times per frame.
-    let mut application = harmony::Application::new(wb, &event_loop, asset_path, vec![create_triangle_render_system()]);
+    let mut application = harmony::Application::new(
+        wb,
+        &event_loop,
+        asset_path,
+        vec![create_triangle_render_system()],
+    );
     let mut app_state = AppState::new();
     // Call application load to have harmony load all the required assets.
     application.load(&mut app_state);

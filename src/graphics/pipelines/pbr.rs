@@ -14,8 +14,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct PBRPipeline {
-}
+pub struct PBRPipeline {}
 
 impl SimplePipeline for PBRPipeline {
     fn prepare(
@@ -58,7 +57,11 @@ impl SimplePipelineDesc for PBRPipelineDesc {
         asset_manager.get_shader("pbr.shader")
     }
 
-    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -86,7 +89,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("skybox_pbr_material", material_bind_group_layout);
-        
+
         let pbr_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
@@ -135,13 +138,13 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 ],
                 label: None,
             });
-        
+
         resource_manager.add_bind_group_layout("pbr_material", pbr_bind_group_layout);
 
         let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals");
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
+        let material_bind_group_layout =
+            resource_manager.get_bind_group_layout("skybox_pbr_material");
         let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
-
 
         vec![
             global_bind_group_layout,
@@ -227,8 +230,6 @@ impl SimplePipelineDesc for PBRPipelineDesc {
         _device: &wgpu::Device,
         _resource_manager: &mut GPUResourceManager,
     ) -> PBRPipeline {
-
-        PBRPipeline {
-        }
+        PBRPipeline {}
     }
 }

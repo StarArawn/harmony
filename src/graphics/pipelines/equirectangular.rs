@@ -41,7 +41,8 @@ impl SimplePipeline for CubeProjectionPipeline {
         {
             let image = asset_manager.get_image(self.texture.clone());
 
-            let global_bind_group = resource_manager.get_bind_group_layout("equirectangular_globals");
+            let global_bind_group =
+                resource_manager.get_bind_group_layout("equirectangular_globals");
 
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: global_bind_group,
@@ -140,8 +141,11 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         asset_manager.get_shader("hdr_to_cubemap.shader")
     }
 
-    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
-        
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -164,7 +168,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("equirectangular_globals", global_bind_group_layout);
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("equirectangular_globals");
+        let global_bind_group_layout =
+            resource_manager.get_bind_group_layout("equirectangular_globals");
 
         vec![global_bind_group_layout]
     }
