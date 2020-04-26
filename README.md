@@ -1,5 +1,5 @@
 # Harmony
-A modern 3D/2D game engine that uses wgpu and is designed to work out of the box with minimal effort. It uses specs for handling game/rendering data.
+A modern 3D/2D game engine that uses wgpu and is designed to work out of the box with minimal effort. It uses legion for handling game/rendering data.
 
 Note: Currently this library is very early in development. Things are very likely going to change. 
 
@@ -14,18 +14,18 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Perspective Camera
 - [x] Render Graph
 - [x] Skybox rendering from an .hdr texture.
+- [x] Multi-threaded rendering
 
 ## Future Features (Prioritized)
 1. [x] Custom render pipelines
-2. [x] ~~Frame Profile graph~~ Some experimental work done in a separate branch.
-3. [x] Lighting (Directional, Point)
-4. [ ] PBR shading model
-5. [ ] HDR/Tonemap rendering
-6. [ ] Temporal SMAA
-7. [ ] SSAO
-8. [ ] Shadow Mapping
-9. [ ] Asset Bundling and custom assets types.
-10. [ ] More useful scene features
+2. [x] Lighting (Directional, Point)
+3. [ ] PBR shading model
+4. [ ] HDR/Tonemap rendering
+5. [ ] Temporal SMAA
+6. [ ] SSAO
+7. [ ] Shadow Mapping
+8. [ ] Asset Bundling and custom assets types.
+9. [ ] More useful scene features
 
 ## Long Term
 - [ ] Investigate using a hybrid rendering pipeline setup similar to halcyon, but without ray tracing(for now..). 
