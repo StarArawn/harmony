@@ -28,25 +28,16 @@ pub trait AppState {
 
     /// Called when the window resizes
     fn resize(&mut self, _app: &mut Application) {}
-
-    /// Draw's the gui.
-    /// Return your current gui scene here or none if you don't have any.
-    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene> {
-        None
-    }
 }
 
 pub struct Application {
     pub renderer: Renderer,
-    gui_renderer: Option<crate::gui::Renderer>,
-    gui_renderables: Vec<crate::gui::renderables::Renderable>,
     pub asset_manager: AssetManager,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
     pub frame_time: f32,
     pub delta_time: f32,
-    pub(crate) console: crate::gui::components::default::Console,
     pub input: Input,
     pub current_scene: Scene,
     pub render_schedule: Schedule,
@@ -85,8 +76,6 @@ impl Application {
 
         let asset_manager = AssetManager::new(asset_path.into());
 
-        let console = crate::gui::components::default::Console::new();
-
         let mut render_schedule_builder =
             Schedule::builder().add_system(graphics::systems::skybox::create());
 
@@ -102,15 +91,12 @@ impl Application {
 
         Application {
             renderer,
-            gui_renderer: None,
-            gui_renderables: Vec::new(),
             asset_manager,
             clock: Instant::now(),
             fixed_timestep: 1.0 / 60.0,
             elapsed_time: 0.0,
             frame_time: 0.0,
             delta_time: 0.0,
-            console,
             input: Input::new(),
             current_scene: scene,
             resources,
@@ -146,8 +132,7 @@ impl Application {
     where
         T: AppState,
     {
-        self.asset_manager.load(&self.resources, &mut self.console);
-        self.console.load(&self.asset_manager);
+        self.asset_manager.load(&self.resources);
 
         {
             let render_graph = RenderGraph::new(&mut self.resources, true);
@@ -266,20 +251,6 @@ impl Application {
                 //render_graph.binding_manager.add_single_resource(pbr_node_name, bound_group);
             }
         }
-
-        let size = self.renderer.window.inner_size();
-
-        // Start up gui after load..
-        {
-            let device = self.resources.get::<wgpu::Device>().unwrap();
-            let gui_renderer = crate::gui::Renderer::new(
-                &self.asset_manager,
-                &device,
-                wgpu::TextureFormat::Bgra8UnormSrgb,
-                LogicalSize::new(size.width, size.height),
-            );
-            self.gui_renderer = Some(gui_renderer);
-        }
     }
 
     /// Run's the application which means two things.
@@ -301,29 +272,12 @@ impl Application {
         T: AppState,
     {
         self.input.update_events(event);
-        let bounds = crate::gui::core::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: self.renderer.size.width as f32 / self.renderer.window.scale_factor() as f32,
-            height: self.renderer.size.height as f32 / self.renderer.window.scale_factor() as f32,
-        };
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
 
                 while frame_time > 0.0 {
                     self.delta_time = f32::min(frame_time, self.fixed_timestep);
-
-                    let gui_scene = app_state.draw_gui(self);
-                    if gui_scene.is_some() {
-                        self.gui_renderables = gui_scene
-                            .unwrap()
-                            .get_components()
-                            .iter()
-                            .map(|component| component.draw(bounds))
-                            .collect()
-                    }
-                    self.console.update(&self.input, self.delta_time);
 
                     self.current_scene
                         .update(self.delta_time, &mut self.resources);
@@ -344,41 +298,6 @@ impl Application {
                     .execute(&mut self.current_scene.world, &mut self.resources);
 
                 self.renderer.window.request_redraw();
-            }
-            Event::RedrawRequested(_) => {
-                let start = Instant::now();
-                // let output = self.renderer.render();
-                // let mut command_buffers = Vec::new();
-
-                // Gather console components
-                // let mut root_components: Vec<crate::gui::renderables::Renderable> = self
-                //     .console
-                //     .get_components()
-                //     .iter()
-                //     .map(|component| component.draw(bounds))
-                //     .collect();
-                // root_components.extend(self.gui_renderables.clone());
-
-                // let root = crate::gui::renderables::Renderable::Group {
-                //     bounds,
-                //     renderables: root_components,
-                // };
-
-                // let gui_renderer = self.gui_renderer.as_mut().unwrap();
-                // let device = self.current_scene.resources.get_mut::<wgpu::Device>().unwrap();
-                // command_buffers.extend(gui_renderer.draw(
-                //     &device,
-                //     &output.view,
-                //     root,
-                //     Some(bounds),
-                //     self.renderer.window.scale_factor() as f32,
-                //     &mut self.asset_manager,
-                // ));
-
-                std::thread::yield_now();
-
-                self.frame_time =
-                    Instant::now().duration_since(start).subsec_millis() as f32 / 1000.0;
             }
             Event::WindowEvent {
                 event: winit::event::WindowEvent::Resized(size),
