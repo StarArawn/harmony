@@ -9,6 +9,7 @@ pub struct GPUResourceManager {
     bind_group_layouts: HashMap<String, wgpu::BindGroupLayout>,
     single_bind_groups: HashMap<String, HashMap<u32, BindGroup>>,
     multi_bind_groups: HashMap<String, HashMap<u32, HashMap<u32, BindGroup>>>,
+    multi_buffer: HashMap<String, HashMap<u32, wgpu::Buffer>>,
 
     pub global_uniform_buffer: wgpu::Buffer,
     pub global_lighting_buffer: wgpu::Buffer,
@@ -78,6 +79,7 @@ impl GPUResourceManager {
             bind_group_layouts,
             single_bind_groups: HashMap::new(),
             multi_bind_groups: HashMap::new(),
+            multi_buffer: HashMap::new(),
             global_bind_group,
             global_lighting_buffer,
             global_uniform_buffer,
@@ -129,6 +131,31 @@ impl GPUResourceManager {
                 bindings_hash_map.insert(bind_group_index, hashmap_bind_group);
             }
         }
+    }
+
+    pub fn add_multi_buffer<T: Into<String>>(
+        &mut self,
+        render_node: T,
+        buffer: wgpu::Buffer,
+        item_index: u32,
+    ) {
+        let render_node = render_node.into();
+        if self.multi_buffer.contains_key(&render_node) {
+            let item_hash_map = self.multi_buffer.get_mut(&render_node).unwrap();
+            item_hash_map.insert(item_index, buffer);
+        } else {
+            let mut hash_map = HashMap::new();
+            hash_map.insert(item_index, buffer);
+            self.multi_buffer.insert(render_node, hash_map);
+        }
+    }
+
+    pub fn get_multi_buffer<T: Into<String>>(
+        &self,
+        render_node: T,
+        item_index: u32
+    ) -> &wgpu::Buffer {
+        self.multi_buffer.get(&render_node.into()).unwrap().get(&item_index).unwrap()
     }
 
     pub fn get_multi_bind_group<T: Into<String>>(

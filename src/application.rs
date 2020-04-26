@@ -16,7 +16,7 @@ use crate::{
         RenderGraph, Renderer,
     },
     scene::Scene,
-    AssetManager,
+    AssetManager, TransformCount,
 };
 use graphics::resources::GPUResourceManager;
 
@@ -75,8 +75,9 @@ impl Application {
 
         let asset_manager = AssetManager::new(asset_path.into());
 
-        let mut render_schedule_builder =
-            Schedule::builder().add_system(graphics::systems::skybox::create());
+        let mut render_schedule_builder = Schedule::builder()
+            .add_system(graphics::systems::skybox::create())
+            .add_system(graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -88,6 +89,8 @@ impl Application {
             .add_thread_local_fn(graphics::systems::render::create())
             .build();
         resources.insert(asset_manager);
+
+        resources.insert(TransformCount(0));
 
         Application {
             renderer,

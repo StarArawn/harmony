@@ -192,7 +192,7 @@ impl AssetManager {
             match material {
                 crate::graphics::material::Material::Unlit(unlit_material) => {
                     let unlit_bind_group_layout =
-                        resource_manager.get_bind_group_layout("unlit");
+                        resource_manager.get_bind_group_layout("unlit_material");
                     unlit_material.create_bind_group(
                         &self.images,
                         &device,

@@ -1,4 +1,4 @@
-use crate::{graphics::RenderGraph, Application};
+use crate::{graphics::{resources::{BindGroup, GPUResourceManager}, RenderGraph}, Application, TransformCount};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
 
@@ -20,26 +20,25 @@ impl Default for LocalUniform {
 
 #[derive(Debug)]
 pub struct Transform {
+    pub index: u32,
     pub position: Vec3,
     pub scale: Vec3,
     pub rotation: Quat,
     pub matrix: Mat4,
-
-    pub(crate) local_buffer: wgpu::Buffer,
-    pub(crate) bind_group: wgpu::BindGroup,
 }
 
 impl Transform {
     pub fn new(app: &mut Application) -> Self {
-        let (local_buffer, bind_group) = Self::create_bindings(app);
+        let mut index = app.resources.get_mut::<TransformCount>().unwrap();
+        index.0 += 1;
+        Self::create_bindings(app, index.0);
 
         Self {
+            index: index.0,
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Quat::identity(),
             matrix: Mat4::identity(),
-            local_buffer,
-            bind_group,
         }
     }
 
@@ -82,7 +81,8 @@ impl Transform {
         self.matrix = translation * rotation * scale;
     }
 
-    pub(crate) fn create_bindings(app: &Application) -> (wgpu::Buffer, wgpu::BindGroup) {
+    pub(crate) fn create_bindings(app: &Application, index: u32) {
+        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
         let render_graph = app.resources.get::<RenderGraph>().unwrap();
         let bind_group_layout = &render_graph.local_bind_group_layout;
         // This data needs to be saved and passed onto the pipeline.
@@ -104,6 +104,8 @@ impl Transform {
             label: None,
         });
 
-        (local_buffer, local_bind_group)
+        resource_manager.add_multi_bind_group("transform", BindGroup::new(0, local_bind_group), index);
+        resource_manager.add_multi_buffer("transform", local_buffer, index);
+
     }
 }
