@@ -1,8 +1,8 @@
-use crate::graphics::{resources::{BindGroup}};
+use super::Image;
+use crate::graphics::resources::BindGroup;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Vec4;
-use std::{mem, collections::HashMap};
-use super::Image;
+use std::{collections::HashMap, mem};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -39,8 +39,8 @@ impl PBRMaterial {
         &mut self,
         images: &HashMap<String, Image>,
         device: &wgpu::Device,
-        pipeline_layouts: &'a Vec<wgpu::BindGroupLayout>
-    ) -> BindGroup { 
+        pipeline_layouts: &'a Vec<wgpu::BindGroupLayout>,
+    ) -> BindGroup {
         let material_uniform_size = mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
         let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
             size: material_uniform_size,
@@ -61,7 +61,7 @@ impl PBRMaterial {
             layout: &pipeline_layouts[1],
             bindings: &[
                 wgpu::Binding {
-                    binding: 0, 
+                    binding: 0,
                     resource: wgpu::BindingResource::Buffer {
                         buffer: self.uniform_buf.as_ref().unwrap(),
                         range: 0..material_uniform_size,
@@ -81,5 +81,4 @@ impl PBRMaterial {
 
         BindGroup::new(2, bind_group)
     }
-    
 }

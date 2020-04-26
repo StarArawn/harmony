@@ -1,6 +1,7 @@
 use harmony::{
     graphics::{
-        resources::{BindingManager, RenderTarget, BindGroup}, Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
+        resources::{BindGroup, GPUResourceManager, RenderTarget},
+        Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
     },
     AssetManager,
 };
@@ -14,7 +15,7 @@ impl SimplePipeline for TrianglePipeline {
         _asset_manager: &mut AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
+        _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
     ) {
     }
@@ -28,9 +29,9 @@ impl SimplePipeline for TrianglePipeline {
         frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
+        pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        binding_manager: &mut BindingManager,
+        binding_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -109,7 +110,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         self,
         device: &wgpu::Device,
         bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        binding_manager: &mut BindingManager,
+        binding_manager: &mut GPUResourceManager,
     ) -> TrianglePipeline {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layouts[0],
@@ -117,6 +118,6 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
             label: None,
         });
         binding_manager.add_single_resource("triangle", BindGroup::new(0, bind_group));
-        TrianglePipeline { }
+        TrianglePipeline {}
     }
 }

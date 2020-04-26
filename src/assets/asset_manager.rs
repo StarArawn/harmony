@@ -53,7 +53,8 @@ impl AssetManager {
             );
             //let full_path = format!("{}{}", full_file_path, file_name);
             if file_name.ends_with(".shader") {
-                let shader = Shader::new(&device, full_file_path.to_string(), file_name.to_string());
+                let shader =
+                    Shader::new(&device, full_file_path.to_string(), file_name.to_string());
                 self.shaders.insert(file_name.to_string(), shader);
                 console.info(
                     crate::gui::components::default::ModuleType::Asset,

@@ -1,14 +1,11 @@
-use std::fs::File;
 use crate::{
     graphics::{
-        resources::{
-            BoundResource,
-            RenderTarget, BindGroup
-        },
-        RenderGraph
+        resources::{BindGroup, BoundResource, RenderTarget, GPUResourceManager},
+        RenderGraph,
     },
     Application, AssetManager,
 };
+use std::fs::File;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -38,6 +35,7 @@ impl Skybox {
 
         let device = app.resources.get::<wgpu::Device>().unwrap();
         let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
 
         let cube_map_target = RenderTarget::new(
             &device,
@@ -58,6 +56,7 @@ impl Skybox {
             &app.asset_manager,
             &device,
             &sc_desc,
+            &mut resource_manager,
             "cube_projection",
             cube_projection_pipeline_desc,
             vec![],
@@ -82,6 +81,7 @@ impl Skybox {
             &app.asset_manager,
             &device,
             &sc_desc,
+            &mut resource_manager,
             "irradiance",
             irradiance_pipeline_desc,
             vec!["cube_projection"],
@@ -109,6 +109,7 @@ impl Skybox {
                 &app.asset_manager,
                 &&device,
                 &sc_desc,
+                &mut resource_manager,
                 format!("specular_{}", i),
                 specular_pipeline_desc,
                 vec!["irradiance"],
@@ -139,6 +140,7 @@ impl Skybox {
             &app.asset_manager,
             &device,
             &sc_desc,
+            &mut resource_manager,
             "spec_brdf",
             spec_brdf_pipeline_desc,
             vec![],
@@ -160,6 +162,7 @@ impl Skybox {
         let command_buffer = graph.render_one_time(
             &device,
             &mut app.asset_manager,
+            &mut resource_manager,
             &mut app.current_scene.world,
             None,
             None,
@@ -175,8 +178,8 @@ impl Skybox {
             wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         );
 
-        let mut encoder = device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // Pull out mipmaps for specular and combine them into 1 image.
         for mip_level in 0..SPEC_CUBEMAP_MIP_LEVELS {
@@ -277,18 +280,17 @@ impl Skybox {
             array_layer_count: 6,
         });
 
-        let cubemap_sampler = device
-            .create_sampler(&wgpu::SamplerDescriptor {
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Linear,
-                lod_min_clamp: -100.0,
-                lod_max_clamp: 100.0,
-                compare: wgpu::CompareFunction::Undefined,
-            });
+        let cubemap_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: wgpu::CompareFunction::Undefined,
+        });
 
         Self {
             size,

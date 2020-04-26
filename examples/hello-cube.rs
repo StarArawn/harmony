@@ -1,6 +1,6 @@
+use legion::prelude::*;
 use log;
 use nalgebra_glm::Vec3;
-use legion::prelude::*;
 
 use winit::{
     dpi::LogicalSize,
@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::components::{
-    CameraData, Material, Mesh, Transform, DirectionalLightData, LightType,
+    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
 };
 use harmony::WinitState;
 
@@ -56,7 +56,7 @@ impl AppState {
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
         // let dispatch_builder = DispatcherBuilder::default().with(RotateSystem, "RotateSystem", &[]);
-        
+
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
@@ -65,24 +65,20 @@ impl harmony::AppState for AppState {
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
         let transform = Transform::new(app);
-        app.current_scene
-            .world
-            .insert(
-                (),
-                vec![
-                    (
-                        Mesh::new("cube.gltf"),
-                        Material::new(0), // Need to be an index to the material
-                        transform, // Transform
-                    )
-                ]
-            );
+        app.current_scene.world.insert(
+            (),
+            vec![(
+                Mesh::new("cube.gltf"),
+                Material::new(0), // Need to be an index to the material
+                transform,        // Transform
+            )],
+        );
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
         // Skybox needs to be added as a resource in specs. (we only should have one).
-       app.current_scene.world.insert((), vec![(skybox, )]);
+        app.current_scene.world.insert((), vec![(skybox,)]);
 
         // Add directional light to our scene.
         let light_transform = Transform::new(app);

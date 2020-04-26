@@ -3,7 +3,8 @@ use nalgebra_glm::Mat4;
 
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline,
+        pipeline::VertexStateBuilder,
+        resources::{GPUResourceManager, RenderTarget},
         SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
@@ -35,7 +36,6 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
-
     fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)> {
         Some((vec![&self.global_bind_group], vec![&self.constants_buffer]))
     }
@@ -45,7 +45,7 @@ impl SimplePipeline for SkyboxPipeline {
         _asset_manager: &mut AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
+        _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
     ) {
     }
@@ -59,9 +59,9 @@ impl SimplePipeline for SkyboxPipeline {
         _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        _pipeline: &Pipeline,
+        _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        _binding_manager: &mut BindingManager,
+        _binding_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         None
     }
@@ -80,7 +80,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -91,6 +91,8 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 }],
                 label: None,
             });
+        resource_manager.add_bind_group_layout("skybox_globals", global_bind_group_layout);
+        
 
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -112,6 +114,10 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 ],
                 label: None,
             });
+        resource_manager.add_bind_group_layout("skybox_material", material_bind_group_layout);
+        
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("skybox_globals");
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("skybox_material");
 
         vec![global_bind_group_layout, material_bind_group_layout]
     }
@@ -162,8 +168,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     fn build(
         self,
         device: &wgpu::Device,
-        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        resource_manager: &mut GPUResourceManager,
     ) -> SkyboxPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
@@ -171,8 +176,10 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("skybox_globals");
+
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layouts[0],
+            layout: global_bind_group_layout,
             bindings: &[wgpu::Binding {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer {

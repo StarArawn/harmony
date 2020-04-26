@@ -8,7 +8,7 @@ mod pbr;
 pub(crate) use pbr::PBRPipelineDesc;
 
 mod skybox;
-pub(crate) use skybox::{SkyboxUniforms, SkyboxPipelineDesc};
+pub(crate) use skybox::{SkyboxPipelineDesc, SkyboxUniforms};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;
@@ -17,11 +17,11 @@ pub(crate) mod specular_brdf;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct GlobalUniforms {
+pub struct GlobalUniform {
     pub view_projection: Mat4,
 }
 
-impl Default for GlobalUniforms {
+impl Default for GlobalUniform {
     fn default() -> Self {
         Self {
             view_projection: Mat4::identity(),
@@ -29,8 +29,8 @@ impl Default for GlobalUniforms {
     }
 }
 
-unsafe impl Zeroable for GlobalUniforms {}
-unsafe impl Pod for GlobalUniforms {}
+unsafe impl Zeroable for GlobalUniform {}
+unsafe impl Pod for GlobalUniform {}
 
 pub const MAX_LIGHTS: usize = 10;
 

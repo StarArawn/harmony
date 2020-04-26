@@ -1,7 +1,8 @@
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline,
-        SimplePipelineDesc,
+        pipeline::VertexStateBuilder,
+        resources::{GPUResourceManager, RenderTarget},
+        SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -16,44 +17,47 @@ pub struct CubeProjectionPipeline {
 impl SimplePipeline for CubeProjectionPipeline {
     fn prepare(
         &mut self,
-        asset_manager: &mut AssetManager,
-        device: &wgpu::Device,
+        _asset_manager: &mut AssetManager,
+        _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        pipeline: &Pipeline,
+        _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
     ) {
-        let image = asset_manager.get_image(self.texture.clone());
-
-        self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.bind_group_layouts[0],
-            bindings: &[
-                wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&image.view),
-                },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&image.sampler),
-                },
-            ],
-            label: None,
-        }));
     }
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        asset_manager: &mut AssetManager,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
+        pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        _binding_manager: &mut BindingManager,
+        resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         {
+            let image = asset_manager.get_image(self.texture.clone());
+
+            let global_bind_group = resource_manager.get_bind_group_layout("equirectangular_globals");
+
+            self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: global_bind_group,
+                bindings: &[
+                    wgpu::Binding {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&image.view),
+                    },
+                    wgpu::Binding {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&image.sampler),
+                    },
+                ],
+                label: None,
+            }));
+
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.as_ref().unwrap().texture_view,
@@ -69,7 +73,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 }],
                 depth_stencil_attachment: None,
             });
-            render_pass.set_pipeline(&pipeline.pipeline);
+            render_pass.set_pipeline(&pipeline);
             render_pass.set_bind_group(0, self.bind_group.as_ref().unwrap(), &[]);
             render_pass.draw(0..6, 0..6);
         }
@@ -136,7 +140,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         asset_manager.get_shader("hdr_to_cubemap.shader")
     }
 
-    fn create_layout(&self, device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(&self, device: &wgpu::Device, resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
+        
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -158,6 +163,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                 ],
                 label: None,
             });
+        resource_manager.add_bind_group_layout("equirectangular_globals", global_bind_group_layout);
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("equirectangular_globals");
 
         vec![global_bind_group_layout]
     }
@@ -197,8 +204,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn build(
         self,
         _device: &wgpu::Device,
-        _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        _resource_manager: &mut GPUResourceManager,
     ) -> CubeProjectionPipeline {
         CubeProjectionPipeline {
             texture: self.texture,

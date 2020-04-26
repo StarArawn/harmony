@@ -17,7 +17,11 @@ impl Scene {
         let game_schedule_builder = schedule_builder.unwrap_or(Schedule::builder());
         let game_schedule = game_schedule_builder.build();
 
-        Scene { world, game_schedule, universe }
+        Scene {
+            world,
+            game_schedule,
+            universe,
+        }
     }
 
     pub(crate) fn update(&mut self, delta_time: f32, resources: &mut Resources) {

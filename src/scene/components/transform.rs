@@ -92,18 +92,17 @@ impl Transform {
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
-        let local_bind_group = device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: bind_group_layout,
-                bindings: &[wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &local_buffer,
-                        range: 0..std::mem::size_of::<LocalUniform>() as u64,
-                    },
-                }],
-                label: None,
-            });
+        let local_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: bind_group_layout,
+            bindings: &[wgpu::Binding {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &local_buffer,
+                    range: 0..std::mem::size_of::<LocalUniform>() as u64,
+                },
+            }],
+            label: None,
+        });
 
         (local_buffer, local_bind_group)
     }

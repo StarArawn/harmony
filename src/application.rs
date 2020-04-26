@@ -10,12 +10,15 @@ use legion::prelude::*;
 use crate::{
     core::input::Input,
     graphics::{
+        self,
+        material::Skybox,
         pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
-        RenderGraph, Renderer, material::Skybox, self
+        RenderGraph, Renderer,
     },
     scene::Scene,
     AssetManager,
 };
+use graphics::resources::GPUResourceManager;
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -75,7 +78,7 @@ impl Application {
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
-
+        
         let renderer = futures::executor::block_on(Renderer::new(window, size, surface, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
@@ -87,7 +90,7 @@ impl Application {
             .flush()
             .add_thread_local_fn(graphics::systems::render::create())
             .build();
-        
+
         Application {
             renderer,
             gui_renderer: None,
@@ -134,19 +137,17 @@ impl Application {
     where
         T: AppState,
     {
-        self.asset_manager.load(
-            &self.resources,
-            &mut self.console,
-        );
+        self.asset_manager.load(&self.resources, &mut self.console);
         self.console.load(&self.asset_manager);
 
         {
             let render_graph = RenderGraph::new(&mut self.resources, true);
             self.resources.insert(render_graph);
         }
-        
+
         {
             let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             // Skybox pipeline
@@ -155,6 +156,7 @@ impl Application {
                 &self.asset_manager,
                 &device,
                 &sc_desc,
+                &mut resource_manager,
                 "skybox",
                 skybox_pipeline_desc,
                 vec![],
@@ -168,6 +170,7 @@ impl Application {
                 &self.asset_manager,
                 &device,
                 &sc_desc,
+                &mut resource_manager,
                 "unlit",
                 unlit_pipeline_desc,
                 vec!["skybox"],
@@ -181,6 +184,7 @@ impl Application {
                 &self.asset_manager,
                 &device,
                 &sc_desc,
+                &mut resource_manager,
                 "pbr",
                 pbr_pipeline_desc,
                 vec!["skybox"],
@@ -197,17 +201,15 @@ impl Application {
             self.asset_manager.materials.values_mut().collect();
         {
             let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
-            
+
             let mut current_bind_group = None;
             let current_index = 0;
             for material in materials {
                 match material {
                     super::graphics::material::Material::Unlit(unlit_material) => {
-                        let unlit_bind_group_layout = &render_graph
-                            .get("unlit")
-                            .pipeline
-                            .bind_group_layouts[1];
+                        let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit");
                         unlit_material.create_bind_group(
                             &self.asset_manager.images,
                             &device,
@@ -225,7 +227,11 @@ impl Application {
                     }
                 }
                 if current_bind_group.is_some() {
-                    render_graph.binding_manager.add_multi_resource("pbr", current_bind_group.take().unwrap(), current_index);
+                    resource_manager.add_multi_bind_group(
+                        "pbr",
+                        current_bind_group.take().unwrap(),
+                        current_index,
+                    );
                 }
 
                 current_bind_group = None;
@@ -234,13 +240,14 @@ impl Application {
 
         {
             let render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            let resouce_manager = self.resources.get::<GPUResourceManager>().unwrap();
             let skybox_pipeline = render_graph.get("skybox");
-            let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
+            let material_layout = resouce_manager.get_bind_group_layout("skybox_material");
             let query = <(Write<Skybox>,)>::query();
-            for (mut skybox, ) in query.iter_mut(&mut self.current_scene.world) {
+            for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 let device = self.resources.get::<wgpu::Device>().unwrap();
                 skybox.create_bind_group2(&device, material_layout);
-                
+
                 // let (pbr_node_name, bound_group) = {
                 //     let pbr_node = render_graph.nodes.get_mut("pbr").unwrap();
                 //     let bound_group = skybox.create_bind_group(&self.asset_manager, &device, &pbr_node.pipeline.bind_group_layouts);
@@ -296,7 +303,7 @@ impl Application {
 
                 while frame_time > 0.0 {
                     self.delta_time = f32::min(frame_time, self.fixed_timestep);
-                    
+
                     let gui_scene = app_state.draw_gui(self);
                     if gui_scene.is_some() {
                         self.gui_renderables = gui_scene
@@ -308,7 +315,8 @@ impl Application {
                     }
                     self.console.update(&self.input, self.delta_time);
 
-                    self.current_scene.update(self.delta_time, &mut self.resources);
+                    self.current_scene
+                        .update(self.delta_time, &mut self.resources);
 
                     self.input.clear();
                     frame_time -= self.delta_time;
@@ -322,7 +330,8 @@ impl Application {
                 }
 
                 // Render's the scene.
-                self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
+                self.render_schedule
+                    .execute(&mut self.current_scene.world, &mut self.resources);
 
                 self.renderer.window.request_redraw();
             }
@@ -367,13 +376,16 @@ impl Application {
             } => {
                 {
                     let device = self.resources.get::<wgpu::Device>().unwrap();
-                    let mut sc_desc = self.resources.get_mut::<wgpu::SwapChainDescriptor>().unwrap();
+                    let mut sc_desc = self
+                        .resources
+                        .get_mut::<wgpu::SwapChainDescriptor>()
+                        .unwrap();
 
                     sc_desc.width = size.width;
                     sc_desc.height = size.height;
                     self.renderer.size = *size;
-                    self.renderer.swap_chain = device
-                        .create_swap_chain(&self.renderer.surface, &sc_desc);
+                    self.renderer.swap_chain =
+                        device.create_swap_chain(&self.renderer.surface, &sc_desc);
                 }
                 app_state.resize(self);
             }

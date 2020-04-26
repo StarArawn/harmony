@@ -6,11 +6,11 @@ pub mod material;
 pub mod mesh;
 
 mod render_graph;
-pub use render_graph::{RenderGraph, CommandBufferQueue, CommandQueueItem};
+pub use render_graph::{CommandBufferQueue, CommandQueueItem, RenderGraph};
 
 mod pipeline;
 pub use pipeline::{
-    BindGroupWithData, Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
+    BindGroupWithData, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
 };
 
 pub mod pipelines;

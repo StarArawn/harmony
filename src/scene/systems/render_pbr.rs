@@ -2,7 +2,7 @@ use crate::AssetManager;
 use crate::{
     graphics::{
         material::{Material, Skybox},
-        Pipeline, resources::BindingManager,
+        Pipeline, resources::GPUResourceManager,
     },
     scene::components::{Mesh, Transform},
 };
@@ -17,7 +17,7 @@ pub struct RenderPBR<'a> {
     pub(crate) constants_buffer: &'a wgpu::Buffer,
     pub(crate) lighting_buffer: &'a wgpu::Buffer,
     pub(crate) depth: &'a wgpu::TextureView,
-    pub(crate) binding_manager: &'a mut BindingManager,
+    pub(crate) binding_manager: &'a mut GPUResourceManager,
 }
 
 impl<'a> System<'a> for RenderPBR<'a> {

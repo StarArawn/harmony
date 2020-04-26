@@ -1,8 +1,11 @@
-use super::{resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline, SimplePipelineDesc};
+use super::{
+    resources::{GPUResourceManager, RenderTarget},
+    SimplePipeline, SimplePipelineDesc,
+};
 use crate::AssetManager;
+use legion::systems::resource::Resources;
 use solvent::DepGraph;
 use std::collections::HashMap;
-use legion::systems::resource::Resources;
 
 use crossbeam::queue::ArrayQueue;
 
@@ -11,13 +14,13 @@ pub struct CommandQueueItem {
     pub buffer: wgpu::CommandBuffer,
 }
 
-pub type CommandBufferQueue = ArrayQueue::<CommandQueueItem>;
+pub type CommandBufferQueue = ArrayQueue<CommandQueueItem>;
 
 // TODO: handle node dependencies somehow.
 #[derive(Debug)]
 pub struct RenderGraphNode {
     pub name: String,
-    pub(crate) pipeline: Pipeline,
+    pub(crate) pipeline: wgpu::RenderPipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
     pub use_output_from_dependency: bool,
 }
@@ -27,14 +30,13 @@ pub struct RenderGraph {
     pub(crate) outputs: HashMap<String, Option<RenderTarget>>,
     dep_graph: DepGraph<String>,
     pub(crate) local_bind_group_layout: wgpu::BindGroupLayout,
-    pub binding_manager: BindingManager,
 }
 
 impl RenderGraph {
     pub(crate) fn new(resources: &mut Resources, create_command_queue: bool) -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());
-        
+
         let local_bind_group_layout = {
             let device = resources.get::<wgpu::Device>().unwrap();
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -57,7 +59,6 @@ impl RenderGraph {
             outputs: HashMap::new(),
             dep_graph,
             local_bind_group_layout,
-            binding_manager: BindingManager::new(),
         }
     }
 
@@ -68,6 +69,7 @@ impl RenderGraph {
         asset_manager: &AssetManager,
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
+        resource_manager: &mut GPUResourceManager,
         name: T2,
         mut pipeline_desc: T,
         dependency: Vec<&str>,
@@ -80,14 +82,17 @@ impl RenderGraph {
             asset_manager,
             device,
             sc_desc,
+            resource_manager,
             if include_local_bindings {
                 Some(&self.local_bind_group_layout)
             } else {
                 None
             },
         );
-        let built_pipeline: Box<dyn SimplePipeline> =
-            Box::new(pipeline_desc.build(&device, &pipeline.bind_group_layouts, &mut self.binding_manager));
+        let built_pipeline: Box<dyn SimplePipeline> = Box::new(pipeline_desc.build(
+            &device,
+            resource_manager,
+        ));
         let node = RenderGraphNode {
             name: name.clone(),
             pipeline,
@@ -150,17 +155,17 @@ impl RenderGraph {
         &mut self,
         device: &wgpu::Device,
         asset_manager: &mut AssetManager,
+        resource_manager: &mut GPUResourceManager,
         world: &mut legion::world::World,
         frame: Option<&wgpu::SwapChainOutput>,
         forward_depth: Option<&wgpu::TextureView>,
     ) -> wgpu::CommandBuffer {
-        let mut encoder = device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("main"),
-            });
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("main"),
+        });
 
         let order = self.get_order();
-        
+
         for name in order {
             let node = self.nodes.get_mut(&name).unwrap();
             let mut input = None;
@@ -195,7 +200,7 @@ impl RenderGraph {
                 output,
                 &node.pipeline,
                 world,
-                &mut self.binding_manager,
+                resource_manager,
             );
             if output.is_some() {
                 self.outputs.insert(name.clone(), output);
@@ -205,7 +210,10 @@ impl RenderGraph {
         encoder.finish()
     }
 
-    pub fn collect_buffers(&self, command_queue: &mut CommandBufferQueue) -> Vec<wgpu::CommandBuffer> {
+    pub fn collect_buffers(
+        &self,
+        command_queue: &mut CommandBufferQueue,
+    ) -> Vec<wgpu::CommandBuffer> {
         let mut command_buffers = Vec::new();
         let mut queue_items = Vec::new();
         while let Ok(command) = command_queue.pop() {
@@ -216,7 +224,9 @@ impl RenderGraph {
         let ordering = self.get_order();
 
         for order in ordering {
-            let queue_item_index = queue_items.iter().position(|queue_item| queue_item.name == order);
+            let queue_item_index = queue_items
+                .iter()
+                .position(|queue_item| queue_item.name == order);
             if queue_item_index.is_some() {
                 let queue_item = queue_items.remove(queue_item_index.unwrap());
                 command_buffers.push(queue_item.buffer);

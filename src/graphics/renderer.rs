@@ -1,4 +1,5 @@
 use legion::systems::resource::Resources;
+use super::resources::GPUResourceManager;
 
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
@@ -60,9 +61,10 @@ impl Renderer {
             label: None,
         });
 
-        resources.insert(device);
+        resources.insert(GPUResourceManager::new(&device));
         resources.insert(sc_desc);
         resources.insert(queue);
+        resources.insert(device);
 
         Self {
             surface,

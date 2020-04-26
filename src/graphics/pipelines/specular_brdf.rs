@@ -1,7 +1,8 @@
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline,
-        SimplePipelineDesc,
+        pipeline::VertexStateBuilder,
+        resources::{GPUResourceManager, RenderTarget},
+        SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -17,7 +18,7 @@ impl SimplePipeline for SpecularBRDFPipeline {
         _asset_manager: &mut AssetManager,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
+        _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
     ) {
     }
@@ -31,9 +32,9 @@ impl SimplePipeline for SpecularBRDFPipeline {
         _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
+        pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        _binding_manager: &mut BindingManager,
+        _binding_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -50,7 +51,7 @@ impl SimplePipeline for SpecularBRDFPipeline {
             }],
             depth_stencil_attachment: None,
         });
-        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.set_pipeline(&pipeline);
         render_pass.draw(0..3, 0..1);
 
         None
@@ -78,7 +79,7 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
         asset_manager.get_shader("specular_brdf.shader")
     }
 
-    fn create_layout(&self, _device: &wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(&self, _device: &wgpu::Device, _resource_manager: &'a mut GPUResourceManager) -> Vec<&'a wgpu::BindGroupLayout> {
         // No bindings? No problem! Just remember that later on!
         vec![]
     }
@@ -118,8 +119,7 @@ impl SimplePipelineDesc for SpecularBRDFPipelineDesc {
     fn build(
         self,
         _device: &wgpu::Device,
-        _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        _binding_manager: &mut GPUResourceManager,
     ) -> SpecularBRDFPipeline {
         SpecularBRDFPipeline { size: self.size }
     }
