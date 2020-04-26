@@ -150,7 +150,7 @@ fn main() {
 
     // Tell harmony where our asset path is.
     let asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
-    let mut application = harmony::Application::new(wb, &event_loop, asset_path);
+    let mut application = harmony::Application::new(wb, &event_loop, asset_path, vec![]);
     let mut app_state = AppState::new();
     // Call application load to have harmony load all the required assets.
     application.load(&mut app_state);

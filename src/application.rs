@@ -66,6 +66,7 @@ impl Application {
         window_builder: winit::window::WindowBuilder,
         event_loop: &EventLoop<()>,
         asset_path: T,
+        mut render_systems: Vec<Box<dyn Schedulable>>,
     ) -> Self
     where
         T: Into<String>,
@@ -85,8 +86,15 @@ impl Application {
 
         let console = crate::gui::components::default::Console::new();
 
-        let render_schedule = Schedule::builder()
-            .add_system(graphics::systems::skybox::create())
+        let mut render_schedule_builder = Schedule::builder()
+            .add_system(graphics::systems::skybox::create());
+
+        for index in 0..render_systems.len() {
+            let system = render_systems.remove(index);
+            render_schedule_builder = render_schedule_builder.add_system(system);
+        }
+
+        let render_schedule = render_schedule_builder
             .flush()
             .add_thread_local_fn(graphics::systems::render::create())
             .build();

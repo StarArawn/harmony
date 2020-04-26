@@ -20,7 +20,7 @@ pub type CommandBufferQueue = ArrayQueue<CommandQueueItem>;
 #[derive(Debug)]
 pub struct RenderGraphNode {
     pub name: String,
-    pub(crate) pipeline: wgpu::RenderPipeline,
+    pub pipeline: wgpu::RenderPipeline,
     pub(crate) simple_pipeline: Box<dyn SimplePipeline>,
     pub use_output_from_dependency: bool,
 }
