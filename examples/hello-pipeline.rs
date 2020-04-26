@@ -37,7 +37,7 @@ impl AppState {
 // Note: It's important to remember that this system runs on a SEPARATE thread from main.
 // So watch out for issues with things being parallel.
 pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
-    SystemBuilder::new("render_skybox")
+    SystemBuilder::new("render_triangle")
         .write_resource::<CommandBufferQueue>()
         .read_resource::<RenderGraph>()
         .read_resource::<wgpu::Device>()
