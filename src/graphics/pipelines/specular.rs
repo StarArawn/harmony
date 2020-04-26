@@ -1,7 +1,9 @@
 use crate::{
     graphics::{
-        material::skybox::SPEC_CUBEMAP_MIP_LEVELS, pipeline::VertexStateBuilder,
-        resources::{BindingManager, RenderTarget}, Pipeline, SimplePipeline, SimplePipelineDesc,
+        material::skybox::SPEC_CUBEMAP_MIP_LEVELS,
+        pipeline::VertexStateBuilder,
+        resources::{GPUResourceManager, RenderTarget},
+        SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -30,34 +32,38 @@ unsafe impl Pod for Uniforms {}
 pub struct SpecularPipeline {
     constants_buffer: wgpu::Buffer,
     resoultion: f32,
+    mip_level: u32,
 }
 
 impl SimplePipeline for SpecularPipeline {
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
-        _device: &mut wgpu::Device,
+        _asset_manager: &AssetManager,
+        _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
-        _world: &mut specs::World,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
     ) {
     }
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
+        _asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         _frame: Option<&wgpu::SwapChainOutput>,
         input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        _world: &mut specs::World,
-        _binding_manager: &mut BindingManager,
+        pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
+        resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
+        let global_bind_group_layout =
+            resource_manager.get_bind_group_layout(format!("specular_globals_{}", self.mip_level));
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.bind_group_layouts[0],
+            layout: global_bind_group_layout,
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
@@ -95,7 +101,7 @@ impl SimplePipeline for SpecularPipeline {
             }],
             depth_stencil_attachment: None,
         });
-        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.set_pipeline(&pipeline);
         render_pass.set_bind_group(0, &bind_group, &[]);
         render_pass.draw(0..6, 0..6);
 
@@ -128,7 +134,11 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         asset_manager.get_shader("specular.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -155,6 +165,11 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
                 ],
                 label: None,
             });
+        let binding_layout_name = format!("specular_globals_{}", self.mip_level);
+        resource_manager
+            .add_bind_group_layout(binding_layout_name.clone(), global_bind_group_layout);
+        let global_bind_group_layout =
+            resource_manager.get_bind_group_layout(binding_layout_name.clone());
 
         vec![global_bind_group_layout]
     }
@@ -194,8 +209,7 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
     fn build(
         self,
         device: &wgpu::Device,
-        _bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        _resource_manager: &mut GPUResourceManager,
     ) -> SpecularPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
@@ -209,6 +223,7 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         SpecularPipeline {
             constants_buffer,
             resoultion: self.resoultion,
+            mip_level: self.mip_level,
         }
     }
 }

@@ -1,71 +1,63 @@
-use specs::RunNow;
 use std::mem;
 
-use super::GlobalUniforms;
 use crate::{
     graphics::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
-        renderer::DEPTH_FORMAT,
-        resources::{BindingManager, RenderTarget},
+        resources::{GPUResourceManager, RenderTarget},
         // renderer::DEPTH_FORMAT,
-        Pipeline,
         SimplePipeline,
         SimplePipelineDesc,
     },
-    scene::systems::{PrepareUnlit, RenderUnlit},
     AssetManager,
 };
 
 #[derive(Debug)]
-pub struct UnlitPipeline {
-    constants_buffer: wgpu::Buffer,
-    global_bind_group: wgpu::BindGroup,
-}
+pub struct UnlitPipeline {}
 
 impl SimplePipeline for UnlitPipeline {
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
-        world: &mut specs::World,
+        _asset_manager: &AssetManager,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
     ) {
-        let mut prepare_unlit = PrepareUnlit {
-            device,
-            encoder,
-            constants_buffer: &self.constants_buffer,
-        };
-        RunNow::setup(&mut prepare_unlit, world);
-        prepare_unlit.run_now(world);
+        // let mut prepare_unlit = PrepareUnlit {
+        //     device,
+        //     encoder,
+        //     constants_buffer: &self.constants_buffer,
+        // };
+        // RunNow::setup(&mut prepare_unlit, world);
+        // prepare_unlit.run_now(world);
     }
 
     fn render(
         &mut self,
-        asset_manager: &mut AssetManager,
-        depth: Option<&wgpu::TextureView>,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _asset_manager: &AssetManager,
+        _depth: Option<&wgpu::TextureView>,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        world: &mut specs::World,
-        _binding_manager: &mut BindingManager,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
+        _binding_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
-        let mut render_unlit = RenderUnlit {
-            device,
-            asset_manager: asset_manager,
-            encoder,
-            frame_view: &frame.as_ref().unwrap().view,
-            pipeline,
-            constants_buffer: &self.constants_buffer,
-            global_bind_group: &self.global_bind_group,
-            depth: depth.as_ref().unwrap(),
-        };
-        RunNow::setup(&mut render_unlit, world);
-        render_unlit.run_now(world);
+        // let mut render_unlit = RenderUnlit {
+        //     device,
+        //     asset_manager: asset_manager,
+        //     encoder,
+        //     frame_view: &frame.as_ref().unwrap().view,
+        //     pipeline,
+        //     constants_buffer: &self.constants_buffer,
+        //     global_bind_group: &self.global_bind_group,
+        //     depth: depth.as_ref().unwrap(),
+        // };
+        // RunNow::setup(&mut render_unlit, world);
+        // render_unlit.run_now(world);
 
         None
     }
@@ -84,18 +76,11 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         asset_manager.get_shader("unlit.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
-        // We can create whatever layout we want here.
-        let global_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                }],
-                label: None,
-            });
-
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
@@ -121,6 +106,12 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
                 ],
                 label: None,
             });
+
+        resource_manager.add_bind_group_layout("unlit_material", material_bind_group_layout);
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
+
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals");
+
         vec![global_bind_group_layout, material_bind_group_layout]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
@@ -148,15 +139,16 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Greater,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Greater,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
@@ -198,31 +190,9 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
 
     fn build(
         self,
-        device: &wgpu::Device,
-        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        _device: &wgpu::Device,
+        _binding_manager: &mut GPUResourceManager,
     ) -> UnlitPipeline {
-        // This data needs to be saved and passed onto the pipeline.
-        let constants_buffer = device.create_buffer_with_data(
-            bytemuck::bytes_of(&GlobalUniforms::default()),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
-
-        let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layouts[0],
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &constants_buffer,
-                    range: 0..std::mem::size_of::<GlobalUniforms>() as u64,
-                },
-            }],
-            label: None,
-        });
-
-        UnlitPipeline {
-            constants_buffer,
-            global_bind_group,
-        }
+        UnlitPipeline {}
     }
 }

@@ -1,5 +1,4 @@
 use nalgebra_glm::{Mat4, Vec3};
-use specs::{Component, DenseVecStorage};
 
 pub struct CameraData {
     pub active: bool,
@@ -48,8 +47,4 @@ impl CameraData {
     pub fn get_matrix(&self) -> Mat4 {
         self.projection * self.view
     }
-}
-
-impl Component for CameraData {
-    type Storage = DenseVecStorage<Self>;
 }

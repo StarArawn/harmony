@@ -1,11 +1,12 @@
+use log::*;
 use std::collections::HashMap;
 use walkdir::WalkDir;
 
+use crate::core::Font;
 use crate::graphics::{
     material::{Image, Material, Shader},
-    mesh::Mesh,
+    mesh::Mesh, resources::GPUResourceManager,
 };
-use crate::gui::core::Font;
 
 pub struct AssetManager {
     path: String,
@@ -28,12 +29,7 @@ impl AssetManager {
         }
     }
 
-    pub(crate) fn load(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &mut wgpu::Queue,
-        console: &mut crate::gui::components::default::Console,
-    ) {
+    pub(crate) fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
         let mut init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -52,28 +48,23 @@ impl AssetManager {
             );
             //let full_path = format!("{}{}", full_file_path, file_name);
             if file_name.ends_with(".shader") {
-                let shader = Shader::new(device, full_file_path.to_string(), file_name.to_string());
+                let shader =
+                    Shader::new(&device, full_file_path.to_string(), file_name.to_string());
                 self.shaders.insert(file_name.to_string(), shader);
-                console.info(
-                    crate::gui::components::default::ModuleType::Asset,
-                    format!("Compiled shader: {}", file_name),
-                );
+                info!("Compiled shader: {}", file_name);
             }
             if file_name.ends_with(".ttf") || file_name.ends_with(".otf") {
                 let font = Font::new(
-                    device,
+                    &device,
                     format!("{}{}", full_file_path, file_name).to_string(),
                 );
                 self.fonts.insert(file_name.to_string(), font);
-                console.info(
-                    crate::gui::components::default::ModuleType::Asset,
-                    format!("Loaded font: {}", file_name),
-                );
+                info!("Loaded font: {}", file_name);
             }
             if file_name.ends_with(".gltf") {
                 let current_index = self.materials.len() as u32;
                 let (mesh, materials) = Mesh::new(
-                    device,
+                    &device,
                     format!("{}{}", full_file_path, file_name),
                     current_index,
                 );
@@ -83,26 +74,20 @@ impl AssetManager {
                     index += 1;
                 }
                 self.meshes.insert(file_name.to_string(), mesh);
-                console.info(
-                    crate::gui::components::default::ModuleType::Asset,
-                    format!("Loaded mesh: {}", file_name),
-                );
+                info!("Loaded mesh: {}", file_name);
             }
             if file_name.ends_with(".png")
                 || file_name.ends_with(".jpg")
                 || file_name.ends_with(".hdr")
             {
                 let image = Image::new(
-                    device,
+                    &device,
                     &mut init_encoder,
                     format!("{}{}", full_file_path, file_name),
                     file_name.to_string(),
                 );
                 self.images.insert(file_name.to_string(), image);
-                console.info(
-                    crate::gui::components::default::ModuleType::Asset,
-                    format!("Loaded image: {}", file_name),
-                );
+                info!("Loaded image: {}", file_name);
             }
         }
         queue.submit(&[init_encoder.finish()]);
@@ -197,5 +182,41 @@ impl AssetManager {
 
     pub fn get_fonts(&self) -> Vec<&Font> {
         self.fonts.values().collect()
+    }
+
+    pub(crate) fn load_materials(&mut self, device: &wgpu::Device, resource_manager: &mut GPUResourceManager) {
+        
+        let mut current_bind_group = None;
+        let mut current_index = 0;
+        for material in self.materials.values_mut() {
+            match material {
+                crate::graphics::material::Material::Unlit(unlit_material) => {
+                    let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
+                    unlit_material.create_bind_group(
+                        &self.images,
+                        &device,
+                        unlit_bind_group_layout,
+                    );
+                }
+                crate::graphics::material::Material::PBR(pbr_material) => {
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
+                    current_bind_group = Some(pbr_material.create_bind_group(
+                            &self.images,
+                            device,
+                            pbr_bind_group_layout,
+                        ));
+                    current_index = pbr_material.index;
+                }
+            }
+            if current_bind_group.is_some() {
+                resource_manager.add_multi_bind_group(
+                    "pbr",
+                    current_bind_group.take().unwrap(),
+                    current_index,
+                );
+            }
+
+            current_bind_group = None;
+        }
     }
 }

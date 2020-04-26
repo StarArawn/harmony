@@ -1,4 +1,4 @@
-use super::material::PBRMaterial;
+use super::material::{PBRMaterial};
 use crate::graphics::material::Material;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};

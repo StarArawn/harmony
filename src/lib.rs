@@ -5,7 +5,6 @@
 
 pub mod core;
 pub mod graphics;
-pub mod gui;
 pub mod scene;
 
 mod application;
@@ -15,3 +14,5 @@ mod winit_state;
 pub use application::{AppState, Application};
 pub use assets::AssetManager;
 pub use winit_state::WinitState;
+
+pub struct TransformCount(u32);

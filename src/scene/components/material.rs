@@ -1,5 +1,3 @@
-use specs::{Component, DenseVecStorage};
-
 #[derive(Default)]
 pub struct Material {
     // We might have more than one material per mesh.
@@ -13,8 +11,4 @@ impl Material {
             index: material_index,
         }
     }
-}
-
-impl Component for Material {
-    type Storage = DenseVecStorage<Self>;
 }

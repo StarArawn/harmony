@@ -1,5 +1,4 @@
 use nalgebra_glm::Vec3;
-use specs::{Component, DenseVecStorage};
 
 pub enum LightType {
     Directional(DirectionalLightData),
@@ -20,10 +19,6 @@ impl Default for DirectionalLightData {
     }
 }
 
-impl Component for DirectionalLightData {
-    type Storage = DenseVecStorage<Self>;
-}
-
 pub struct PointLightData {
     pub color: Vec3,
     pub attenuation: f32,
@@ -36,8 +31,4 @@ impl Default for PointLightData {
             attenuation: 0.0,
         }
     }
-}
-
-impl Component for PointLightData {
-    type Storage = DenseVecStorage<Self>;
 }

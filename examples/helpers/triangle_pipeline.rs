@@ -1,54 +1,12 @@
-use harmony::{
-    graphics::{
-        resources::{BindingManager, RenderTarget, BindGroup}, Pipeline, SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
-    },
-    AssetManager,
+use harmony::graphics::{
+    resources::{BindGroup, GPUResourceManager},
+    SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
 };
 
 #[derive(Debug)]
 pub struct TrianglePipeline;
 
-impl SimplePipeline for TrianglePipeline {
-    fn prepare(
-        &mut self,
-        _asset_manager: &mut AssetManager,
-        _device: &mut wgpu::Device,
-        _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
-        _world: &mut specs::World,
-    ) {
-    }
-
-    fn render(
-        &mut self,
-        _asset_manager: &mut AssetManager,
-        _depth: Option<&wgpu::TextureView>,
-        _device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
-        _input: Option<&RenderTarget>,
-        _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        _world: &mut specs::World,
-        binding_manager: &mut BindingManager,
-    ) -> Option<RenderTarget> {
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &frame.as_ref().unwrap().view,
-                resolve_target: None,
-                load_op: wgpu::LoadOp::Clear,
-                store_op: wgpu::StoreOp::Store,
-                clear_color: wgpu::Color::GREEN,
-            }],
-            depth_stencil_attachment: None,
-        });
-        rpass.set_pipeline(&pipeline.pipeline);
-        binding_manager.set_bind_group(&mut rpass, "triangle", 0);
-        rpass.draw(0..3, 0..1);
-
-        None
-    }
-}
+impl SimplePipeline for TrianglePipeline {}
 
 #[derive(Debug, Default)]
 pub struct TrianglePipelineDesc {}
@@ -63,11 +21,17 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         asset_manager.get_shader("triangle.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
             label: None,
         });
+        resource_manager.add_bind_group_layout("triangle_layout", bind_group_layout);
+        let bind_group_layout = resource_manager.get_bind_group_layout("triangle_layout");
 
         vec![bind_group_layout]
     }
@@ -108,15 +72,16 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
     fn build(
         self,
         device: &wgpu::Device,
-        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        binding_manager: &mut BindingManager,
+        resource_manager: &mut GPUResourceManager,
     ) -> TrianglePipeline {
+        // This doesn't have to live here, but it's a convient place to create bind groups / buffers if you need one.
+        let layout = resource_manager.get_bind_group_layout("triangle_layout");
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layouts[0],
+            layout,
             bindings: &[],
             label: None,
         });
-        binding_manager.add_single_resource("triangle", BindGroup::new(0, bind_group));
-        TrianglePipeline { }
+        resource_manager.add_single_bind_group("triangle", BindGroup::new(0, bind_group));
+        TrianglePipeline {}
     }
 }

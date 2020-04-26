@@ -1,20 +1,23 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 use winit::{
-    dpi::LogicalSize,
     event::Event,
     event_loop::{ControlFlow, EventLoop},
 };
 
+use legion::prelude::*;
+
 use crate::{
     core::input::Input,
     graphics::{
+        self,
+        material::Skybox,
         pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
-        RenderGraph, Renderer, resources::BoundResource,
+        RenderGraph, Renderer,
     },
-    gui::Scene as GuiScene,
     scene::Scene,
-    AssetManager,
+    AssetManager, TransformCount,
 };
+use graphics::resources::GPUResourceManager;
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -24,28 +27,19 @@ pub trait AppState {
 
     /// Called when the window resizes
     fn resize(&mut self, _app: &mut Application) {}
-
-    /// Draw's the gui.
-    /// Return your current gui scene here or none if you don't have any.
-    fn draw_gui(&mut self, _app: &mut Application) -> Option<&dyn crate::gui::Scene> {
-        None
-    }
 }
 
 pub struct Application {
     pub renderer: Renderer,
-    gui_renderer: Option<crate::gui::Renderer>,
-    gui_renderables: Vec<crate::gui::renderables::Renderable>,
-    pub asset_manager: AssetManager,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
     pub frame_time: f32,
     pub delta_time: f32,
-    pub(crate) console: crate::gui::components::default::Console,
     pub input: Input,
-    pub current_scene: Scene<'static>,
-    pub render_graph: Option<RenderGraph>,
+    pub current_scene: Scene,
+    pub render_schedule: Schedule,
+    pub resources: Resources,
 }
 
 impl Application {
@@ -61,34 +55,53 @@ impl Application {
         window_builder: winit::window::WindowBuilder,
         event_loop: &EventLoop<()>,
         asset_path: T,
+        mut render_systems: Vec<Box<dyn Schedulable>>,
     ) -> Self
     where
         T: Into<String>,
     {
+        let scene = Scene::new(None, None);
         let window = window_builder.build(event_loop).unwrap();
         let size = window.inner_size();
         let surface = wgpu::Surface::create(&window);
 
-        let renderer = futures::executor::block_on(Renderer::new(window, size, surface));
+        // Add resources
+        let mut resources = Resources::default();
+        resources.insert(crate::scene::resources::DeltaTime(0.05));
+
+        let renderer =
+            futures::executor::block_on(Renderer::new(window, size, surface, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 
-        let console = crate::gui::components::default::Console::new();
+        let mut render_schedule_builder = Schedule::builder()
+            .add_system(graphics::systems::skybox::create())
+            .add_system(graphics::systems::mesh::create());
+
+        for index in 0..render_systems.len() {
+            let system = render_systems.remove(index);
+            render_schedule_builder = render_schedule_builder.add_system(system);
+        }
+
+        let render_schedule = render_schedule_builder
+            .flush()
+            .add_thread_local_fn(graphics::systems::render::create())
+            .build();
+        resources.insert(asset_manager);
+
+        resources.insert(TransformCount(0));
 
         Application {
             renderer,
-            gui_renderer: None,
-            gui_renderables: Vec::new(),
-            asset_manager,
             clock: Instant::now(),
             fixed_timestep: 1.0 / 60.0,
             elapsed_time: 0.0,
             frame_time: 0.0,
             delta_time: 0.0,
-            console,
             input: Input::new(),
-            current_scene: Scene::new(None, None),
-            render_graph: None,
+            current_scene: scene,
+            resources,
+            render_schedule,
         }
     }
 
@@ -98,7 +111,7 @@ impl Application {
     /// * `current_scene` - The current scene.
     ///
     /// *Note*: Once you've set the current scene you can access it using: `app.current_scene`.
-    pub fn set_scene(&mut self, current_scene: Scene<'static>) {
+    pub fn set_scene(&mut self, current_scene: Scene) {
         self.current_scene = current_scene;
     }
 
@@ -120,118 +133,95 @@ impl Application {
     where
         T: AppState,
     {
-        self.asset_manager.load(
-            &self.renderer.device,
-            &mut self.renderer.queue,
-            &mut self.console,
-        );
-        self.console.load(&self.asset_manager);
+        {
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            let device = self.resources.get::<wgpu::Device>().unwrap();
+            let mut queue = self.resources.get_mut::<wgpu::Queue>().unwrap();
+            asset_manager.load(&device, &mut queue);
+        }
 
-        self.render_graph = Some(RenderGraph::new(&self.renderer.device));
-        // Skybox pipeline
-        let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(
-            &self.asset_manager,
-            &mut self.renderer,
-            "skybox",
-            skybox_pipeline_desc,
-            vec![],
-            false,
-            None,
-            false,
-        );
-        // Unlit pipeline
-        let unlit_pipeline_desc = UnlitPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(
-            &self.asset_manager,
-            &mut self.renderer,
-            "unlit",
-            unlit_pipeline_desc,
-            vec!["skybox"],
-            true,
-            None,
-            false,
-        );
-        // PBR pipeline
-        let pbr_pipeline_desc = PBRPipelineDesc::default();
-        self.render_graph.as_mut().unwrap().add(
-            &self.asset_manager,
-            &mut self.renderer,
-            "pbr",
-            pbr_pipeline_desc,
-            vec!["skybox"],
-            true,
-            None,
-            false,
-        );
+        {
+            let render_graph = RenderGraph::new(&mut self.resources, true);
+            self.resources.insert(render_graph);
+        }
+
+        {
+            let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let device = self.resources.get::<wgpu::Device>().unwrap();
+            let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+            // Skybox pipeline
+            let skybox_pipeline_desc = SkyboxPipelineDesc::default();
+            render_graph.add(
+                &asset_manager,
+                &device,
+                &sc_desc,
+                &mut resource_manager,
+                "skybox",
+                skybox_pipeline_desc,
+                vec![],
+                false,
+                None,
+                false,
+            );
+            // Unlit pipeline
+            let unlit_pipeline_desc = UnlitPipelineDesc::default();
+            render_graph.add(
+                &asset_manager,
+                &device,
+                &sc_desc,
+                &mut resource_manager,
+                "unlit",
+                unlit_pipeline_desc,
+                vec!["skybox"],
+                true,
+                None,
+                false,
+            );
+            // PBR pipeline
+            let pbr_pipeline_desc = PBRPipelineDesc::default();
+            render_graph.add(
+                &asset_manager,
+                &device,
+                &sc_desc,
+                &mut resource_manager,
+                "pbr",
+                pbr_pipeline_desc,
+                vec!["skybox"],
+                true,
+                None,
+                false,
+            );
+        }
 
         app_state.load(self);
 
         // Once materials have been created we need to create more info for them.
-        let materials: Vec<&mut super::graphics::material::Material> =
-            self.asset_manager.materials.values_mut().collect();
         {
-            let render_graph = self
-                .render_graph
-                .as_mut()
-                .unwrap();
-            
-            let mut current_bind_group = None;
-            let mut current_index = 0;
-            for material in materials {
-                match material {
-                    super::graphics::material::Material::Unlit(unlit_material) => {
-                        let unlit_bind_group_layout = &render_graph
-                            .get("unlit")
-                            .pipeline
-                            .bind_group_layouts[1];
-                        unlit_material.create_bind_group(
-                            &self.asset_manager.images,
-                            &self.renderer.device,
-                            unlit_bind_group_layout,
-                        );
-                    }
-                    super::graphics::material::Material::PBR(pbr_material) => {
-                        let pbr_bind_group_layouts = &render_graph.get("pbr").pipeline.bind_group_layouts;
-                        current_bind_group = Some(pbr_material.create_bind_group(
-                                &self.asset_manager.images,
-                                &self.renderer.device,
-                                pbr_bind_group_layouts,
-                            ));
-                        current_index = pbr_material.index;
-                    }
-                }
-                if current_bind_group.is_some() {
-                    render_graph.binding_manager.add_multi_resource("pbr", current_bind_group.take().unwrap(), current_index);
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            let device = self.resources.get::<wgpu::Device>().unwrap();
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            asset_manager.load_materials(&device, &mut resource_manager);
+        }
+        
+        {
+            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let query = <(Write<Skybox>,)>::query();
+            for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
+                let device = self.resources.get::<wgpu::Device>().unwrap();
+                {
+                    let material_layout = resource_manager.get_bind_group_layout("skybox_material");
+                    skybox.create_bind_group2(&device, material_layout);
                 }
 
-                current_bind_group = None;
+                let bound_group = {
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
+                    skybox.create_bind_group(&device, pbr_bind_group_layout)
+                };
+                resource_manager.add_single_bind_group("skybox_pbr_material", bound_group);
             }
         }
-
-        let world = &mut self.current_scene.world;
-        let skybox_pipeline = self.render_graph.as_ref().unwrap().get("skybox");
-        let material_layout = &skybox_pipeline.pipeline.bind_group_layouts[1];
-        let skybox = world.try_fetch_mut::<super::graphics::material::Skybox>();
-        if skybox.is_some() {
-            let mut skybox = skybox.unwrap();
-            skybox.create_bind_group2(&self.renderer.device, material_layout);
-            let render_graph = self.render_graph.as_mut().unwrap();
-            let pbr_node = render_graph.nodes.get_mut("pbr").unwrap();
-            let bound_group = skybox.create_bind_group(&self.asset_manager, &self.renderer.device, &pbr_node.pipeline.bind_group_layouts);
-            render_graph.binding_manager.add_single_resource(pbr_node.name.clone(), bound_group);
-        }
-
-        let size = self.renderer.window.inner_size();
-
-        // Start up gui after load..
-        let gui_renderer = crate::gui::Renderer::new(
-            &self.asset_manager,
-            &mut self.renderer.device,
-            wgpu::TextureFormat::Bgra8UnormSrgb,
-            LogicalSize::new(size.width, size.height),
-        );
-        self.gui_renderer = Some(gui_renderer);
     }
 
     /// Run's the application which means two things.
@@ -253,98 +243,50 @@ impl Application {
         T: AppState,
     {
         self.input.update_events(event);
-        let bounds = crate::gui::core::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: self.renderer.size.width as f32 / self.renderer.window.scale_factor() as f32, // TODO: Use window scale NOT 2.0.
-            height: self.renderer.size.height as f32 / self.renderer.window.scale_factor() as f32,
-        };
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
+
                 while frame_time > 0.0 {
                     self.delta_time = f32::min(frame_time, self.fixed_timestep);
 
-                    app_state.update(self);
-                    let gui_scene = app_state.draw_gui(self);
-                    if gui_scene.is_some() {
-                        self.gui_renderables = gui_scene
-                            .unwrap()
-                            .get_components()
-                            .iter()
-                            .map(|component| component.draw(bounds))
-                            .collect()
-                    }
-                    self.console.update(&self.input, self.delta_time);
-
-                    self.current_scene.update(self.delta_time);
+                    self.current_scene
+                        .update(self.delta_time, &mut self.resources);
 
                     self.input.clear();
                     frame_time -= self.delta_time;
                     self.elapsed_time += self.delta_time;
                 }
 
-                self.renderer.window.request_redraw();
-            }
-            Event::RedrawRequested(_) => {
-                let start = Instant::now();
-                let output = self.renderer.render();
-                let mut command_buffers = Vec::new();
-
-                // Render the graph.
-                if self.render_graph.is_some() {
-                    let render_graph = self.render_graph.as_mut().unwrap();
-                    command_buffers.push(render_graph.render(
-                        &mut self.renderer,
-                        &mut self.asset_manager,
-                        &mut self.current_scene.world,
-                        Some(&output),
-                    ))
+                // Store current frame buffer.
+                {
+                    let output = Arc::new(self.renderer.render());
+                    self.resources.insert(output);
                 }
 
-                // Gather console components
-                let mut root_components: Vec<crate::gui::renderables::Renderable> = self
-                    .console
-                    .get_components()
-                    .iter()
-                    .map(|component| component.draw(bounds))
-                    .collect();
-                root_components.extend(self.gui_renderables.clone());
+                // Render's the scene.
+                self.render_schedule
+                    .execute(&mut self.current_scene.world, &mut self.resources);
 
-                let root = crate::gui::renderables::Renderable::Group {
-                    bounds,
-                    renderables: root_components,
-                };
-
-                let gui_renderer = self.gui_renderer.as_mut().unwrap();
-                command_buffers.extend(gui_renderer.draw(
-                    &mut self.renderer.device,
-                    &output.view,
-                    root,
-                    Some(bounds),
-                    self.renderer.window.scale_factor() as f32,
-                    &mut self.asset_manager,
-                ));
-
-                // Then we submit the work
-                self.renderer.queue.submit(&command_buffers);
-
-                std::thread::yield_now();
-
-                self.frame_time =
-                    Instant::now().duration_since(start).subsec_millis() as f32 / 1000.0;
+                self.renderer.window.request_redraw();
             }
             Event::WindowEvent {
                 event: winit::event::WindowEvent::Resized(size),
                 ..
             } => {
-                self.renderer.sc_desc.width = size.width;
-                self.renderer.sc_desc.height = size.height;
-                self.renderer.size = *size;
-                self.renderer.swap_chain = self
-                    .renderer
-                    .device
-                    .create_swap_chain(&self.renderer.surface, &self.renderer.sc_desc);
+                {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let mut sc_desc = self
+                        .resources
+                        .get_mut::<wgpu::SwapChainDescriptor>()
+                        .unwrap();
+
+                    sc_desc.width = size.width;
+                    sc_desc.height = size.height;
+                    self.renderer.size = *size;
+                    self.renderer.swap_chain =
+                        device.create_swap_chain(&self.renderer.surface, &sc_desc);
+                }
                 app_state.resize(self);
             }
             _ => (),

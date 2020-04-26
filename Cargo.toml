@@ -11,28 +11,24 @@ default = []
 
 [dependencies]
 arrayvec = "0.5.1"
+crossbeam = "0.7.3"
 env_logger = "0.7.1"
 futures = "0.3"
 gltf="0.15.2"
 glyph_brush = "0.6"
-image = "0.23.3"
+image = "0.23.4"
+legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"
 png = "0.16.3"
 nalgebra = "0.21.0"
 nalgebra-glm = "0.7"
 shaderc = "0.6"
-specs = "0.16.1"
 stretch = "0.3.2"
 solvent = "0.8.1"
 walkdir = "2"
-wgpu = { git="https://github.com/StarArawn/wgpu-rs", rev="5234df523d621ae9745aca0ae9f7c10b69f66546" }
-wgpu_glyph = { git="https://github.com/StarArawn/wgpu_glyph", rev="cb60cc3c7775ff060e1576ca31a7ceb5c85cae5f" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="0fb47262eaf8a7fe13c3175de599ec1014811381" }
+wgpu-core = "0.5.3"
+wgpu_glyph = { git = "https://github.com/StarArawn/wgpu_glyph", rev="b6ffde1bc1b5f6a5f0e8401d540ff01abd351883" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
-
-[patch.crates-io]
-wgpu = { git="https://github.com/StarArawn/wgpu-rs", rev="5234df523d621ae9745aca0ae9f7c10b69f66546" }
-# wgpu-core = { git = "https://github.com/gfx-rs/wgpu", rev = "daf45362bcfc9d012003b498e94888366efd2f5b" }
-# wgpu-types = { git = "https://github.com/gfx-rs/wgpu", rev = "daf45362bcfc9d012003b498e94888366efd2f5b" }
-# wgpu-native = { git = "https://github.com/gfx-rs/wgpu", rev = "daf45362bcfc9d012003b498e94888366efd2f5b" }

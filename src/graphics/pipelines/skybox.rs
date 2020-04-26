@@ -1,13 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Mat4;
-use specs::WorldExt;
 
 use crate::{
     graphics::{
-        pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT, resources::{BindingManager, RenderTarget}, Pipeline,
+        pipeline::VertexStateBuilder,
+        resources::{GPUResourceManager, RenderTarget},
         SimplePipeline, SimplePipelineDesc,
     },
-    scene::components::CameraData,
     AssetManager,
 };
 
@@ -37,101 +36,33 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 impl SimplePipeline for SkyboxPipeline {
+    fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)> {
+        Some((vec![&self.global_bind_group], vec![&self.constants_buffer]))
+    }
+
     fn prepare(
         &mut self,
-        _asset_manager: &mut AssetManager,
-        device: &mut wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &Pipeline,
-        world: &mut specs::World,
+        _asset_manager: &AssetManager,
+        _device: &wgpu::Device,
+        _encoder: &mut wgpu::CommandEncoder,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
     ) {
-        let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-        if skybox.is_none() {
-            return;
-        }
-        let camera_data = world.read_component::<CameraData>();
-
-        use specs::Join;
-        let filtered_camera_data: Vec<&CameraData> = camera_data
-            .join()
-            .filter(|data: &&CameraData| data.active)
-            .collect();
-        let camera_data = filtered_camera_data.first();
-
-        if camera_data.is_none() {
-            return;
-        }
-
-        let camera_data = camera_data.unwrap();
-
-        let uniforms = SkyboxUniforms {
-            proj: camera_data.projection,
-            view: camera_data.view,
-        };
-
-        let constants_buffer = device
-            .create_buffer_with_data(bytemuck::bytes_of(&uniforms), wgpu::BufferUsage::COPY_SRC);
-
-        encoder.copy_buffer_to_buffer(
-            &constants_buffer,
-            0,
-            &self.constants_buffer,
-            0,
-            std::mem::size_of::<SkyboxUniforms>() as u64,
-        );
     }
 
     fn render(
         &mut self,
-        _asset_manager: &mut AssetManager,
-        depth: Option<&wgpu::TextureView>,
+        _asset_manager: &AssetManager,
+        _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        frame: Option<&wgpu::SwapChainOutput>,
+        _encoder: &mut wgpu::CommandEncoder,
+        _frame: Option<&wgpu::SwapChainOutput>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
-        pipeline: &Pipeline,
-        world: &mut specs::World,
-        _binding_manager: &mut BindingManager,
+        _pipeline: &wgpu::RenderPipeline,
+        _world: &mut legion::world::World,
+        _binding_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
-        {
-            let skybox = world.try_fetch::<crate::graphics::material::Skybox>();
-            if skybox.is_none() {
-                return None;
-            }
-            let skybox = skybox.unwrap();
-
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.as_ref().unwrap().view,
-                    resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    },
-                }],
-                //depth_stencil_attachment: None,
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: depth.as_ref().unwrap(),
-                    depth_load_op: wgpu::LoadOp::Clear,
-                    depth_store_op: wgpu::StoreOp::Store,
-                    stencil_load_op: wgpu::LoadOp::Clear,
-                    stencil_store_op: wgpu::StoreOp::Store,
-                    clear_depth: 1.0,
-                    clear_stencil: 0,
-                }),
-            });
-            render_pass.set_pipeline(&pipeline.pipeline);
-            render_pass.set_bind_group(0, &self.global_bind_group, &[]);
-
-            render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
-            render_pass.draw(0..3 as u32, 0..1);
-        }
-
         None
     }
 }
@@ -149,7 +80,11 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
         asset_manager.get_shader("skybox.shader")
     }
 
-    fn create_layout(&self, device: &mut wgpu::Device) -> Vec<wgpu::BindGroupLayout> {
+    fn create_layout<'a>(
+        &self,
+        device: &wgpu::Device,
+        resource_manager: &'a mut GPUResourceManager,
+    ) -> Vec<&'a wgpu::BindGroupLayout> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -160,6 +95,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 }],
                 label: None,
             });
+        resource_manager.add_bind_group_layout("skybox_globals", global_bind_group_layout);
 
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -181,6 +117,10 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
                 ],
                 label: None,
             });
+        resource_manager.add_bind_group_layout("skybox_material", material_bind_group_layout);
+
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("skybox_globals");
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("skybox_material");
 
         vec![global_bind_group_layout, material_bind_group_layout]
     }
@@ -209,15 +149,16 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        Some(wgpu::DepthStencilStateDescriptor {
-            format: DEPTH_FORMAT,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
-            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-            stencil_read_mask: 0,
-            stencil_write_mask: 0,
-        })
+        // Some(wgpu::DepthStencilStateDescriptor {
+        //     format: DEPTH_FORMAT,
+        //     depth_write_enabled: true,
+        //     depth_compare: wgpu::CompareFunction::Less,
+        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        //     stencil_read_mask: 0,
+        //     stencil_write_mask: 0,
+        // })
+        None
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
@@ -230,8 +171,7 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     fn build(
         self,
         device: &wgpu::Device,
-        bind_group_layouts: &Vec<wgpu::BindGroupLayout>,
-        _binding_manager: &mut BindingManager,
+        resource_manager: &mut GPUResourceManager,
     ) -> SkyboxPipeline {
         // This data needs to be saved and passed onto the pipeline.
         let constants_buffer = device.create_buffer_with_data(
@@ -239,8 +179,10 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("skybox_globals");
+
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layouts[0],
+            layout: global_bind_group_layout,
             bindings: &[wgpu::Binding {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer {

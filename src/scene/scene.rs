@@ -1,41 +1,35 @@
-use super::components;
 use super::resources;
-use specs::world::WorldExt;
-use specs::{Dispatcher, DispatcherBuilder, World};
+use legion::prelude::*;
+use legion::systems::schedule::Builder;
 
-pub struct Scene<'a> {
+pub struct Scene {
+    pub universe: Universe,
     pub world: World,
-    dispatcher: Dispatcher<'a, 'a>,
+    pub game_schedule: Schedule,
 }
 
-impl<'a> Scene<'a> {
-    pub fn new(world: Option<World>, dispatch_buider: Option<DispatcherBuilder<'a, 'a>>) -> Self {
-        // Add our components here
-        let mut world = world.unwrap_or(World::new());
-        world.insert(resources::DeltaTime(0.05));
-        world.register::<components::Mesh>();
-        world.register::<components::Material>();
-        world.register::<components::CameraData>();
-        world.register::<components::Transform>();
-        world.register::<components::SkyboxData>();
-        world.register::<components::DirectionalLightData>();
-        world.register::<components::PointLightData>();
+impl Scene {
+    pub fn new(world: Option<World>, schedule_builder: Option<Builder>) -> Self {
+        let universe = Universe::new();
+        let world = world.unwrap_or(universe.create_world());
 
         // Add our systems here..
-        let dispatch_buider = dispatch_buider.unwrap_or(DispatcherBuilder::new());
+        let game_schedule_builder = schedule_builder.unwrap_or(Schedule::builder());
+        let game_schedule = game_schedule_builder.build();
 
-        let dispatcher = dispatch_buider.build();
-
-        Scene { world, dispatcher }
+        Scene {
+            world,
+            game_schedule,
+            universe,
+        }
     }
 
-    pub(crate) fn update(&mut self, delta_time: f32) {
+    pub(crate) fn update(&mut self, delta_time: f32, resources: &mut Resources) {
         {
-            let mut delta = self.world.write_resource::<resources::DeltaTime>();
+            let mut delta = resources.get_mut::<resources::DeltaTime>().unwrap();
             *delta = resources::DeltaTime(delta_time);
         }
 
-        self.dispatcher.dispatch(&mut self.world);
-        self.world.maintain();
+        self.game_schedule.execute(&mut self.world, resources);
     }
 }

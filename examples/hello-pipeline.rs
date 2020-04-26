@@ -1,17 +1,18 @@
-use log;
-use specs::prelude::*;
-
+use legion::prelude::*;
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::ControlFlow,
 };
 
-use harmony::scene::Scene;
-use harmony::WinitState;
+use harmony::{
+    graphics::{resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph},
+    WinitState, AssetManager,
+};
 
 mod helpers;
 pub use helpers::*;
+use std::sync::Arc;
 
 struct WindowSize {
     width: u32,
@@ -31,27 +32,78 @@ impl AppState {
     }
 }
 
+// This is an example of how to render a custom pipeline.
+// You can swap between different pipelines as much as you'd like within this system.
+// Note: It's important to remember that this system runs on a SEPARATE thread from main.
+// So watch out for issues with things being parallel.
+pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
+    SystemBuilder::new("render_triangle")
+        .write_resource::<CommandBufferQueue>()
+        .read_resource::<RenderGraph>()
+        .read_resource::<wgpu::Device>()
+        .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<GPUResourceManager>()
+        .build(
+            |_,
+             _world,
+             (command_buffer_queue, render_graph, device, output, resource_manager),
+             _| {
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Triangle Pass"),
+                });
+
+                // Name of our node we created in app state "load".
+                let node = render_graph.get("triangle");
+
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                            attachment: &output.view,
+                            resolve_target: None,
+                            load_op: wgpu::LoadOp::Clear,
+                            store_op: wgpu::StoreOp::Store,
+                            clear_color: wgpu::Color::GREEN,
+                        }],
+                        depth_stencil_attachment: None,
+                    });
+                    rpass.set_pipeline(&node.pipeline);
+                    resource_manager.set_bind_group(&mut rpass, "triangle", 0);
+                    rpass.draw(0..3, 0..1);
+                }
+
+                // Name here should match node name.
+                command_buffer_queue
+                    .push(CommandQueueItem {
+                        buffer: encoder.finish(),
+                        name: "triangle".to_string(),
+                    })
+                    .unwrap();
+            },
+        )
+}
+
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        let dispatch_builder = DispatcherBuilder::default();
-        let scene = Scene::new(None, Some(dispatch_builder));
+        let asset_manager = app.resources.get::<AssetManager>().unwrap();
+        let mut render_graph = app.resources.get_mut::<RenderGraph>().unwrap();
+        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
         // Setup our custom render pass.
-        let render_graph = app.render_graph.as_mut().unwrap();
         let pipeline_desc = triangle_pipeline::TrianglePipelineDesc::default();
         render_graph.add(
-            &app.asset_manager,
-            &mut app.renderer,
-            "triangle",
-            pipeline_desc,
-            vec![],
-            false,
-            None,
-            false,
+            &asset_manager,
+            &device,
+            &sc_desc,
+            &mut resource_manager,
+            "triangle",    // The name of the pipeline node.
+            pipeline_desc, // A description of what our pipeline is which should match the shader in the pipeline as well.
+            vec![],        // Can be used to pass in dependencies which dictate draw order.
+            false, // Automatically include local bindings from transforms these get applied to slot 0.
+            None,  // Optional output target useful rendering to a texture.
+            false, // This option will pass the previous output as the input. Useful for chaining stuff together.
         );
-
-        // You can access the scene here once we store it.
-        app.current_scene = scene;
     }
 }
 
@@ -68,7 +120,15 @@ fn main() {
 
     // Tell harmony where our asset path is.
     let asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
-    let mut application = harmony::Application::new(wb, &event_loop, asset_path);
+    // When we create our application we tell it we have some custom render systems.
+    // It is IMPORTANT to remember NOT to add render systems to a scene's scheduler.
+    // As the scene scheduler runs potentially multiple times per frame.
+    let mut application = harmony::Application::new(
+        wb,
+        &event_loop,
+        asset_path,
+        vec![create_triangle_render_system()],
+    );
     let mut app_state = AppState::new();
     // Call application load to have harmony load all the required assets.
     application.load(&mut app_state);
