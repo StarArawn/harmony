@@ -18,7 +18,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         encoder: &mut wgpu::CommandEncoder,
         pipeline: &wgpu::RenderPipeline,
         world: &mut legion::world::World,
-    );
+    ) { }
 
     fn get_uniforms(&self) -> Option<(Vec<&wgpu::BindGroup>, Vec<&wgpu::Buffer>)> {
         None
@@ -36,7 +36,7 @@ pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
         pipeline: &wgpu::RenderPipeline,
         world: &mut legion::world::World,
         resource_manager: &mut GPUResourceManager,
-    ) -> Option<RenderTarget>;
+    ) -> Option<RenderTarget> { None }
 }
 
 pub trait SimplePipelineDesc: std::fmt::Debug {

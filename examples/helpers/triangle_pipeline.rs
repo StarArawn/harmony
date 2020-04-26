@@ -1,41 +1,14 @@
 use harmony::{
     graphics::{
-        resources::{BindGroup, GPUResourceManager, RenderTarget},
+        resources::{BindGroup, GPUResourceManager},
         SimplePipeline, SimplePipelineDesc, VertexStateBuilder,
     },
-    AssetManager,
 };
 
 #[derive(Debug)]
 pub struct TrianglePipeline;
 
-impl SimplePipeline for TrianglePipeline {
-    fn prepare(
-        &mut self,
-        _asset_manager: &mut AssetManager,
-        _device: &wgpu::Device,
-        _encoder: &mut wgpu::CommandEncoder,
-        _pipeline: &wgpu::RenderPipeline,
-        _world: &mut legion::world::World,
-    ) {
-    }
-
-    fn render(
-        &mut self,
-        _asset_manager: &mut AssetManager,
-        _depth: Option<&wgpu::TextureView>,
-        _device: &wgpu::Device,
-        _encoder: &mut wgpu::CommandEncoder,
-        _frame: Option<&wgpu::SwapChainOutput>,
-        _input: Option<&RenderTarget>,
-        _output: Option<&RenderTarget>,
-        _pipeline: &wgpu::RenderPipeline,
-        _world: &mut legion::world::World,
-        _resource_manager: &mut GPUResourceManager,
-    ) -> Option<RenderTarget> {
-        None
-    }
-}
+impl SimplePipeline for TrianglePipeline {}
 
 #[derive(Debug, Default)]
 pub struct TrianglePipelineDesc {}
@@ -99,6 +72,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         device: &wgpu::Device,
         resource_manager: &mut GPUResourceManager,
     ) -> TrianglePipeline {
+        // This doesn't have to live here, but it's a convient place to create bind groups / buffers if you need one.
         let layout = resource_manager.get_bind_group_layout("triangle_layout");
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,

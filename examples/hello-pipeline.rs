@@ -47,7 +47,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
              _| {
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Triangle Pass") });
 
-            // Name of our node.
+            // Name of our node we created in app state "load".
             let node = render_graph.get("triangle");
 
             {
@@ -93,12 +93,12 @@ impl harmony::AppState for AppState {
             &device,
             &sc_desc,
             &mut resource_manager,
-            "triangle",
-            pipeline_desc,
-            vec![],
-            false,
-            None,
-            false,
+            "triangle", // The name of the pipeline node.
+            pipeline_desc, // A description of what our pipeline is which should match the shader in the pipeline as well.
+            vec![], // Can be used to pass in dependencies which dictate draw order.
+            false, // Automatically include local bindings from transforms these get applied to slot 0.
+            None, // Optional output target useful rendering to a texture.
+            false, // This option will pass the previous output as the input. Useful for chaining stuff together.
         );
     }
 }
