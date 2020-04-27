@@ -17,19 +17,22 @@ unsafe impl Pod for PBRMaterialUniform {}
 pub struct PBRMaterial {
     pub index: u32,
     pub main_texture: String,
+    pub roughness_texture: String,
+    pub normal_texture: String,
     pub color: Vec4,
     pub uniform_buf: Option<wgpu::Buffer>,
 }
 
 impl PBRMaterial {
-    pub fn new<T>(main_texture: T, color: Vec4, material_index: u32) -> Self
+    pub fn new<T>(main_texture: T, normal_texture: T, roughness_texture: T, color: Vec4, material_index: u32) -> Self
     where
         T: Into<String>,
     {
-        let main_texture = main_texture.into();
         Self {
             index: material_index,
-            main_texture: main_texture.clone(),
+            main_texture: main_texture.into(),
+            roughness_texture: roughness_texture.into(),
+            normal_texture: normal_texture.into(),
             color,
             uniform_buf: None,
         }
@@ -51,7 +54,19 @@ impl PBRMaterial {
 
         // Asset manager will panic if image doesn't exist, but we don't want that.
         // So use get_image_option instead.
-        let image = images.get(&self.main_texture)
+        let main_image = images.get(&self.main_texture)
+            .unwrap_or(
+                images.get("white.png")
+                    .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
+            );
+        
+        let normal_image = images.get(&self.normal_texture)
+            .unwrap_or(
+                images.get("white.png")
+                    .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
+            );
+        
+        let roughness_image = images.get(&self.roughness_texture)
             .unwrap_or(
                 images.get("white.png")
                     .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
@@ -69,11 +84,19 @@ impl PBRMaterial {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&image.view),
+                    resource: wgpu::BindingResource::Sampler(&main_image.sampler),
                 },
                 wgpu::Binding {
                     binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&image.sampler),
+                    resource: wgpu::BindingResource::TextureView(&main_image.view),
+                },
+                wgpu::Binding {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&normal_image.view),
+                },
+                wgpu::Binding {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&roughness_image.view),
                 },
             ],
             label: None,

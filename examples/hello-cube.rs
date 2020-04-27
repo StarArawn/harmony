@@ -31,28 +31,6 @@ impl AppState {
     }
 }
 
-//struct RotateSystem;
-
-// impl<'a> System<'a> for RotateSystem {
-//     type SystemData = (
-//         Read<'a, harmony::scene::resources::DeltaTime>,
-//         WriteStorage<'a, harmony::scene::components::Transform>,
-//     );
-
-//     fn run(&mut self, (delta_time, mut transforms): Self::SystemData) {
-//         for transform in (&mut transforms).join() {
-//             // Rust analyzer doesn't really always type stuff right
-//             let transform: &mut Transform = transform;
-
-//             // Transform is a specific type which calculates the world matrix of your object.
-//             // In this case it's our cube.
-//             // rotate_on_y rotates the cube along the Y axis. It is a helper function to make it
-//             // easier to modify quaternions without remember how to.
-//             transform.rotate_on_y(-2.0 * delta_time.0);
-//         }
-//     }
-// }
-
 fn create_rotate_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("Rotate Cube")
         .read_resource::<DeltaTime>()
@@ -64,6 +42,7 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         | {
             for mut transform in transform_query.iter_mut(&mut world) {
                 transform.rotate_on_y(-2.0 * delta_time.0);
+                transform.rotate_on_x(-1.0 * delta_time.0);
             }
     })
 }
@@ -134,8 +113,9 @@ impl harmony::AppState for AppState {
             0.01,
             10.0,
         );
+        camera_data.position = Vec3::new(0.0, 0.0, -5.0);
         camera_data.update_view(
-            Vec3::new(0.0, 0.0, -5.0), // This is our camera's "position".
+            camera_data.position, // This is our camera's "position".
             Vec3::new(0.0, 0.0, 0.0),  // Where the camera is looking at.
             Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
         );

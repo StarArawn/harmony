@@ -122,7 +122,6 @@ impl Mesh {
             let pbr = gltf_material.pbr_metallic_roughness();
 
             let color_factor = pbr.base_color_factor();
-            let mut main_texture = None;
             let color = Vec4::new(
                 color_factor[0],
                 color_factor[1],
@@ -130,35 +129,35 @@ impl Mesh {
                 color_factor[3],
             );
 
-            let info = pbr.base_color_texture();
-            if info.is_some() {
-                let info = info.unwrap();
-                let tex = info.texture();
-                let image: Option<&gltf::Image<'_>> = images.get(tex.index());
-                if image.is_some() {
-                    let image = image.unwrap();
-                    let source = image.source();
-                    match source {
-                        gltf::image::Source::Uri { uri, .. } => {
-                            let main_texture_file_name = Some(
-                                Path::new(&uri)
-                                    .file_name()
-                                    .and_then(OsStr::to_str)
-                                    .unwrap()
-                                    .to_string(),
-                            );
-                            if main_texture_file_name.is_some() {
-                                main_texture = Some(main_texture_file_name.unwrap());
-                            }
-                        }
-                        _ => (),
+            let main_info = pbr.base_color_texture();
+            let mut normal_texture= None;
+            let normal_source = gltf_material.normal_texture().unwrap().texture().source().source();
+            match normal_source {
+                gltf::image::Source::Uri { uri, .. } => {
+                    let texture_file_name = Some(
+                        Path::new(&uri)
+                            .file_name()
+                            .and_then(OsStr::to_str)
+                            .unwrap()
+                            .to_string(),
+                    );
+                    if texture_file_name.is_some() {
+                        normal_texture = Some(texture_file_name.unwrap());
                     }
                 }
+                _ => (),
             }
+            let roughness_info = pbr.metallic_roughness_texture();
 
+
+            let main_texture = Self::get_texture_url(&main_info, &images);
+            let roughness_texture = Self::get_texture_url(&roughness_info, &images);
+            
             let material_index = material_start_index + materials.len() as u32;
             let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
+                normal_texture.unwrap_or("white.png".to_string()),
+                roughness_texture.unwrap_or("white.png".to_string()),
                 color,
                 material_index,
             );
@@ -188,6 +187,8 @@ impl Mesh {
             });
         }
 
+        dbg!(&sub_meshes);
+
         (Mesh { sub_meshes }, materials)
     }
 
@@ -200,5 +201,35 @@ impl Mesh {
             gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
             _ => panic!(format!("Error loading mesht topology isn't supported!")),
         }
+    }
+
+    fn get_texture_url(info: &Option<gltf::texture::Info<'_>>, images: &Vec<gltf::Image<'_>>) -> Option<String> {
+        let mut file_name = None;
+        if info.is_some() {
+            let info = info.as_ref().unwrap();
+            let tex = info.texture();
+            
+            let image: Option<&gltf::Image<'_>> = images.get(tex.index());
+            if image.is_some() {
+                let image = image.unwrap();
+                let source = image.source();
+                match source {
+                    gltf::image::Source::Uri { uri, .. } => {
+                        let texture_file_name = Some(
+                            Path::new(&uri)
+                                .file_name()
+                                .and_then(OsStr::to_str)
+                                .unwrap()
+                                .to_string(),
+                        );
+                        if texture_file_name.is_some() {
+                            file_name = Some(texture_file_name.unwrap());
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+        file_name
     }
 }

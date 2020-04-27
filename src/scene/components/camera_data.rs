@@ -2,6 +2,7 @@ use nalgebra_glm::{Mat4, Vec3};
 
 pub struct CameraData {
     pub active: bool,
+    pub position: Vec3,
     pub projection: Mat4,
     pub view: Mat4,
 
@@ -14,6 +15,7 @@ impl Default for CameraData {
     fn default() -> Self {
         Self {
             active: false,
+            position: Vec3::zeros(),
             projection: Mat4::identity(),
             view: Mat4::identity(),
             fov: 70.0,
@@ -26,6 +28,7 @@ impl Default for CameraData {
 impl CameraData {
     pub fn new_perspective(fov: f32, width: f32, height: f32, z_near: f32, z_far: f32) -> Self {
         Self {
+            position: Vec3::zeros(),
             projection: nalgebra_glm::perspective_fov_lh_no(fov, width, height, z_near, z_far),
             view: Mat4::identity(),
             active: true,

@@ -362,23 +362,11 @@ impl Skybox {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
-                },
-                wgpu::Binding {
-                    binding: 2,
                     resource: wgpu::BindingResource::TextureView(&self.specular_view),
                 },
                 wgpu::Binding {
-                    binding: 3,
-                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
-                },
-                wgpu::Binding {
-                    binding: 4,
+                    binding: 2,
                     resource: wgpu::BindingResource::TextureView(&self.brdf_view),
-                },
-                wgpu::Binding {
-                    binding: 5,
-                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
                 },
             ],
             label: None,

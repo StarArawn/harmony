@@ -130,6 +130,9 @@
       },
       {
          "uri" : "Cube_MetallicRoughness.png"
+      },
+      {
+         "uri" : "Cube_Normals.png"
       }
    ],
    "materials" : [
@@ -142,6 +145,9 @@
             "metallicRoughnessTexture" : {
                "index" : 1
             }
+         },
+         "normalTexture": {
+            "index": 2
          }
       }
    ],
@@ -188,6 +194,10 @@
       {
          "sampler" : 0,
          "source" : 1
+      },
+      {
+         "sampler" : 0,
+         "source" : 2
       }
    ]
 }
