@@ -36,7 +36,6 @@ pub struct Application {
     elapsed_time: f32,
     pub frame_time: f32,
     pub delta_time: f32,
-    pub input: Input,
     pub current_scene: Scene,
     pub render_schedule: Schedule,
     pub resources: Resources,
@@ -75,7 +74,7 @@ impl Application {
         let asset_manager = AssetManager::new(asset_path.into());
 
         let mut render_schedule_builder = Schedule::builder()
-            .add_system(graphics::systems::skybox::create())
+            //.add_system(graphics::systems::skybox::create())
             .add_system(graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
@@ -91,6 +90,8 @@ impl Application {
 
         resources.insert(TransformCount(0));
 
+        resources.insert(Input::new());
+
         Application {
             renderer,
             clock: Instant::now(),
@@ -98,7 +99,6 @@ impl Application {
             elapsed_time: 0.0,
             frame_time: 0.0,
             delta_time: 0.0,
-            input: Input::new(),
             current_scene: scene,
             resources,
             render_schedule,
@@ -242,7 +242,10 @@ impl Application {
     ) where
         T: AppState,
     {
-        self.input.update_events(event);
+        {
+            let mut input = self.resources.get_mut::<Input>().unwrap();
+            input.update_events(event);
+        }
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
@@ -253,7 +256,11 @@ impl Application {
                     self.current_scene
                         .update(self.delta_time, &mut self.resources);
 
-                    self.input.clear();
+                    {
+                        let mut input = self.resources.get_mut::<Input>().unwrap();
+                        input.clear();
+                    }
+                    
                     frame_time -= self.delta_time;
                     self.elapsed_time += self.delta_time;
                 }

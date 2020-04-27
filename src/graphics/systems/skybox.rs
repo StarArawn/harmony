@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         material::Skybox, pipelines::SkyboxUniforms, render_graph::RenderGraphNode,
-        CommandBufferQueue, CommandQueueItem, RenderGraph,
+        CommandBufferQueue, CommandQueueItem, RenderGraph, renderer::DepthTexture,
     },
     scene::components::CameraData,
 };
@@ -14,12 +14,13 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<RenderGraph>()
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<DepthTexture>()
         .with_query(<(Read<Skybox>,)>::query())
         .with_query(<(Read<CameraData>,)>::query())
         .build(
             |_,
              world,
-             (command_buffer_queue, render_graph, device, output),
+             (command_buffer_queue, render_graph, device, output, depth_texture),
              (skyboxes, cameras)| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
@@ -65,7 +66,15 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 1.0,
                             },
                         }],
-                        depth_stencil_attachment: None,
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                            attachment: &depth_texture.0,
+                            depth_load_op: wgpu::LoadOp::Clear,
+                            depth_store_op: wgpu::StoreOp::Store,
+                            stencil_load_op: wgpu::LoadOp::Clear,
+                            stencil_store_op: wgpu::StoreOp::Store,
+                            clear_depth: 1.0,
+                            clear_stencil: 0,
+                        }),
                     });
 
                     render_pass.set_pipeline(&node.pipeline);

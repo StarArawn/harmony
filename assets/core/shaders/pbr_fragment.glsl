@@ -9,8 +9,9 @@ layout(set = 1, binding = 0) uniform Globals {
 layout(location = 0) in vec2 i_uv;
 layout(location = 1) in vec3 i_normal;
 layout(location = 2) in vec4 i_position;
-layout(location = 3) in vec3 i_tangent;
-layout(location = 4) in float i_tbn_handedness;
+layout(location = 3) in mat3 i_TBN;
+// layout(location = 3) in vec3 i_tangent;
+// layout(location = 4) in float i_tbn_handedness;
 layout(location = 0) out vec4 outColor;
 
 layout(set = 2, binding = 0) uniform Locals {
@@ -36,15 +37,13 @@ void main() {
     float metallic = metallic_roughness.x;
     float roughness = metallic_roughness.y;
 
-    normal = normal * 2.0 - 1.0;
+    normal = 2.0 * normal - 1.0;
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
-    vec3 N = normalize(i_normal);
-    vec3 T = normalize(i_tangent - N * dot(N, i_tangent));
-    vec3 B = normalize(cross(N, T)) * i_tbn_handedness;
-    mat3 TBN = transpose(mat3(T, B, N));
-    N = normalize(TBN * normal);
-    vec3 R = reflect(-view, N);
+
+    vec3 N = normalize(i_TBN * normal);
+
+    vec3 R = reflect(view, i_normal);
     float NdotV = abs(dot(N, view)) + 0.00001;
 
     vec3 f0 = mix(vec3(0.04), main_color.rgb, metallic);
@@ -57,40 +56,40 @@ void main() {
     vec3 ambient_diffuse_fac = vec3(1.0) - ambient_spec_fres;
     ambient_diffuse_fac *= 1.0 - metallic;
 
-    vec3 ambient = (ambient_irradiance * main_color.rgb * ambient_diffuse_fac) + (ambient_spec * (ambient_spec_fres * env_brdf.x + env_brdf.y));
-    float a = roughness * roughness;
+    // vec3 ambient = (ambient_irradiance * main_color.rgb * ambient_diffuse_fac) + (ambient_spec * (ambient_spec_fres * env_brdf.x + env_brdf.y));
+    // float a = roughness * roughness;
 
-    // accumulate color
-    vec3 light_acc = vec3(0.0);
-    for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
-        DirectionalLight light = get_directional_light(i);
+    // // accumulate color
+    // vec3 light_acc = vec3(0.0);
+    // for (int i=0; i < int(light_num.x) && i < MAX_LIGHTS; ++i) {
+    //     DirectionalLight light = get_directional_light(i);
 
-        float d2 = dot(light.direction.xyz, light.direction.xyz);
-        vec3 L = normalize(light.direction.xyz);
-        vec3 H = normalize(view + L);
-        vec3 l_contrib = light.color.xyz * 1.0 / d2;
+    //     float d2 = dot(light.direction.xyz, light.direction.xyz);
+    //     vec3 L = normalize(light.direction.xyz);
+    //     vec3 H = normalize(view + L);
+    //     vec3 l_contrib = light.color.xyz * 100.0 / d2;
 
-        float NdotL = saturate(dot(N, L));
-        float NdotH = saturate(dot(N, H));
-        float VdotH = saturate(dot(H, view));
-        vec3 fresnel = f_schlick(f0, VdotH);
-        vec3 k_D = vec3(1.0) - fresnel;
-        k_D *= 1.0 - metallic;
+    //     float NdotL = saturate(dot(N, L));
+    //     float NdotH = saturate(dot(N, H));
+    //     float VdotH = saturate(dot(H, view));
+    //     vec3 fresnel = f_schlick(f0, VdotH);
+    //     vec3 k_D = vec3(1.0) - fresnel;
+    //     k_D *= 1.0 - metallic;
 
-        vec3 specular = d_ggx(NdotH, a) * clamp(v_smithschlick(NdotL, NdotV, a), 0.0, 1.0) * fresnel;
-        specular /= max(4.0 * NdotV * NdotL, 0.001);
+    //     vec3 specular = d_ggx(NdotH, a) * clamp(v_smithschlick(NdotL, NdotV, a), 0.0, 1.0) * fresnel;
+    //     specular /= max(4.0 * NdotV * NdotL, 0.001);
 
-        vec3 diffuse = main_color.rgb / 3.1415926535 * k_D;
-        light_acc += NdotL; //(diffuse + specular) * NdotL * l_contrib;
-    }
+    //     vec3 diffuse = main_color.rgb / 3.1415926535 * k_D;
+    //     light_acc += (diffuse + specular) * NdotL * l_contrib;
+    // }
 
-    // TODO: calculate attenuation.
-    for (int i=0; i < int(light_num.y) && i < MAX_LIGHTS; ++i) {
-        PointLight light = get_point_light(i);
-        vec3 light_dir = normalize(light.position.xyz - i_position.xyz);
-        float dot_product =  max(0.0, dot(normal, light_dir));
-        light_acc += dot_product * light.color.xyz;
-    }
+    // // TODO: calculate attenuation.
+    // for (int i=0; i < int(light_num.y) && i < MAX_LIGHTS; ++i) {
+    //     PointLight light = get_point_light(i);
+    //     vec3 light_dir = normalize(light.position.xyz - i_position.xyz);
+    //     float dot_product =  max(0.0, dot(normal, light_dir));
+    //     light_acc += dot_product * light.color.xyz;
+    // }
 
-    outColor = vec4(i_normal, main_color.w);
+    outColor = vec4(N, main_color.w);
 }

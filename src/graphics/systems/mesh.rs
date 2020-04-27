@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         pipelines::{LightingUniform, PointLight, DirectionalLight, GlobalUniform, MAX_LIGHTS}, resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material,
+        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture,
     },
     scene::components,
     AssetManager,
@@ -20,6 +20,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
+        .read_resource::<DepthTexture>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<(Read<components::DirectionalLightData>,)>::query())
         .with_query(<(Read<components::PointLightData>, Read<components::Transform>)>::query())
@@ -28,7 +29,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              mut world,
-             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager),
+             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
              (
                 camera_data,
                 directional_lights,
@@ -181,7 +182,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Load,
+                            load_op: wgpu::LoadOp::Clear,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {
                                 r: 0.0,
@@ -190,7 +191,15 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 1.0,
                             },
                         }],
-                        depth_stencil_attachment: None,
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                            attachment: &depth_texture.0,
+                            depth_load_op: wgpu::LoadOp::Clear,
+                            depth_store_op: wgpu::StoreOp::Store,
+                            stencil_load_op: wgpu::LoadOp::Clear,
+                            stencil_store_op: wgpu::StoreOp::Store,
+                            clear_depth: 1.0,
+                            clear_stencil: 0,
+                        }),
                     });
 
                     // Collect materials in to their groups.

@@ -6,6 +6,9 @@ pub struct CameraData {
     pub projection: Mat4,
     pub view: Mat4,
 
+    pub yaw: f32,
+    pub pitch: f32,
+
     fov: f32,
     z_near: f32,
     z_far: f32,
@@ -18,6 +21,8 @@ impl Default for CameraData {
             position: Vec3::zeros(),
             projection: Mat4::identity(),
             view: Mat4::identity(),
+            yaw: 0.0,
+            pitch: 0.0,
             fov: 70.0,
             z_near: 0.1,
             z_far: 100.0,
@@ -32,6 +37,8 @@ impl CameraData {
             projection: nalgebra_glm::perspective_fov_lh_no(fov, width, height, z_near, z_far),
             view: Mat4::identity(),
             active: true,
+            yaw: 0.0,
+            pitch: 0.0,
             fov,
             z_near,
             z_far,

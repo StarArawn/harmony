@@ -5,7 +5,7 @@ use crate::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
         resources::{GPUResourceManager, RenderTarget},
-        // renderer::DEPTH_FORMAT,
+        renderer::DEPTH_FORMAT,
         SimplePipeline,
         SimplePipelineDesc,
     },
@@ -178,16 +178,15 @@ impl SimplePipelineDesc for PBRPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: true,
-        //     depth_compare: wgpu::CompareFunction::Greater,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
@@ -200,28 +199,29 @@ impl SimplePipelineDesc for PBRPipelineDesc {
             .new_buffer_descriptor(
                 vertex_size as wgpu::BufferAddress,
                 wgpu::InputStepMode::Vertex,
-                vec![
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float3,
-                        offset: 0,
-                        shader_location: 0,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float3,
-                        offset: 4 * 3,
-                        shader_location: 1,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float2,
-                        offset: 4 * (3 + 3),
-                        shader_location: 2,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float4,
-                        offset: 4 * (3 + 3 + 2),
-                        shader_location: 3,
-                    },
-                ],
+                // vec![
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float3,
+                //         offset: 0,
+                //         shader_location: 0,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float3,
+                //         offset: 4 * 3,
+                //         shader_location: 1,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float2,
+                //         offset: 4 * (3 + 3),
+                //         shader_location: 2,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float4,
+                //         offset: 4 * (3 + 3 + 2),
+                //         shader_location: 3,
+                //     },
+                // ],
+                wgpu::vertex_attr_array![0 => Float3, 1 => Float3, 2 => Float2, 3 => Float4].to_vec(),
             );
 
         vertex_state_builder

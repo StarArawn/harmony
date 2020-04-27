@@ -4,6 +4,7 @@ use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
 use std::ffi::OsStr;
 use std::path::Path;
+use log::warn;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -110,6 +111,7 @@ impl Mesh {
                 }
             } else {
                 // TODO: Calculate tangents if we don't have them.
+                warn!("Don't have tangents for mesh.");
             }
 
             let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
@@ -186,9 +188,7 @@ impl Mesh {
                 material_index,
             });
         }
-
-        dbg!(&sub_meshes);
-
+        
         (Mesh { sub_meshes }, materials)
     }
 

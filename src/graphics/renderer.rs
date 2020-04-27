@@ -3,13 +3,14 @@ use legion::systems::resource::Resources;
 
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
+pub struct DepthTexture(pub wgpu::TextureView);
+
 pub struct Renderer {
     pub(crate) surface: wgpu::Surface,
     pub size: winit::dpi::PhysicalSize<u32>,
     adapter: wgpu::Adapter,
     pub(crate) swap_chain: wgpu::SwapChain,
     pub(crate) window: winit::window::Window,
-    pub(crate) forward_depth: wgpu::TextureView,
 }
 
 impl Renderer {
@@ -65,6 +66,7 @@ impl Renderer {
         resources.insert(sc_desc);
         resources.insert(queue);
         resources.insert(device);
+        resources.insert(DepthTexture(depth_texture.create_default_view()));
 
         Self {
             surface,
@@ -72,7 +74,6 @@ impl Renderer {
             adapter,
             swap_chain,
             window,
-            forward_depth: depth_texture.create_default_view(),
         }
     }
 
