@@ -42,9 +42,10 @@ void main() {
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
 
-    vec3 N = normalize(i_normal);
-    vec3 T = normalize(i_tangent.xyz - N * dot(N, i_tangent.xyz));
-    vec3 B = normalize(cross(N, T)) * i_tbn_handedness;
+    vec3 N = i_normal;
+    //vec3 T = normalize(i_tangent.xyz - N * dot(N, i_tangent.xyz));
+    vec3 T = i_tangent;
+    vec3 B = cross(N, T) * i_tbn_handedness;
     mat3 TBN = mat3(T, B, N);
 
     N = normalize(TBN * normal);;
@@ -97,5 +98,5 @@ void main() {
     //     light_acc += dot_product * light.color.xyz;
     // }
 
-    outColor = vec4(ambient_spec_fres, 1.0);
+    outColor = vec4(ambient, 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
 }

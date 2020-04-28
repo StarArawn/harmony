@@ -94,7 +94,7 @@ impl harmony::AppState for AppState {
         let mut transform = Transform::new(app);
         transform.scale = Vec3::new(50.0, 50.0, 50.0);
         transform.position = Vec3::new(0.0, -1.0, 0.0);
-        transform.rotate_on_y(180.0);
+        //transform.rotate_on_y(180.0);
         app.current_scene.world.insert(
             (),
             vec![(

@@ -209,7 +209,6 @@ impl AssetManager {
                 }
             }
             if current_bind_group.is_some() {
-                dbg!(&current_index);
                 resource_manager.add_multi_bind_group(
                     "pbr",
                     current_bind_group.take().unwrap(),
