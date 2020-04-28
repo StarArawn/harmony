@@ -128,7 +128,7 @@ impl harmony::AppState for AppState {
         // We can't render anything without a camera. Add one here.
         // Thankfully we have a method to help that makes it easy!
         let mut camera_data = CameraData::new_perspective(
-            70.0,
+            70f32.to_radians(),
             actual_window_size.width,
             actual_window_size.height,
             0.01,
