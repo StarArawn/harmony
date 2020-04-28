@@ -42,12 +42,12 @@ vec4 toLinear(vec4 sRGB)
 void main() {
     vec4 main_color = texture(sampler2D(main_map, tex_sampler), i_uv);
     
-    vec3 normal = toLinear(texture(sampler2D(normal_map, tex_sampler), i_uv)).rgb;
+    vec3 normal = texture(sampler2D(normal_map, tex_sampler), i_uv).rgb;
     vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).bg;
     float metallic = metallic_roughness.x;
     float roughness = metallic_roughness.y;
 
-    normal = 2.0 * normal - 1.0;
+    normal = normal * 2.0 + 1.0;
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
     
@@ -61,12 +61,12 @@ void main() {
     // t = normalize(t - N * dot(N, t));
     
     //vec3 T = normalize(i_tangent); // - N * dot(N, i_tangent));
-    vec3 T = normalize(i_tangent); //normalize(i_tangent - N * dot(N, i_tangent));
-    vec3 B = normalize(cross(N, T) * i_tbn_handedness);
-    T = cross(B, N);
-    mat3 TBN = mat3(T, B, N);
+    // T = normalize(cross(B, N));
 
-    N = TBN * normal;
+    vec3 T = normalize(i_tangent - N * dot(N, i_tangent));
+    vec3 B = normalize(cross(N, T) * i_tbn_handedness);
+    mat3 TBN = mat3(T, B, N);
+    N = normalize(TBN * normal);
 
     vec3 R = reflect(-view, N);
     float NdotV = abs(dot(N, view)) + 0.00001;
@@ -117,5 +117,5 @@ void main() {
     // }
 
     //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
-    outColor = vec4(0.5 * (TBN[2] + 1.0),1.0); //vec4(main_color.xyz * dot(normalize(N), vec3(0.0, 1.0, 0.75)), 1.0);
+    outColor = vec4(ambient_spec, 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
 }
