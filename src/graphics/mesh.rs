@@ -44,6 +44,40 @@ pub struct SubMesh {
     pub(crate) material_index: u32,
 }
 
+fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
+    &sub_mesh.vertices[sub_mesh.indices[(face * 3) + vert] as usize]
+}
+
+fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData{
+    &mut sub_mesh.vertices[sub_mesh.indices[(face * 3) + vert] as usize]
+}
+
+impl mikktspace::Geometry for SubMesh {
+    fn num_faces(&self) -> usize {
+        self.indices.len() / 3
+    }
+
+    fn num_vertices_of_face(&self, _face: usize) -> usize {
+        3
+    }
+
+    fn position(&self, face: usize, vert: usize) -> [f32; 3] {
+        vertex(self, face, vert).position.into()
+    }
+
+    fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
+        vertex(self, face, vert).normal.into()
+    }
+
+    fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
+        vertex(self, face, vert).uv.into()
+    }
+
+    fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
+        vertex_mut(self, face, vert).tangent = tangent.into();
+    }
+}
+
 pub struct Mesh {
     pub sub_meshes: Vec<SubMesh>,
 }
@@ -180,7 +214,7 @@ impl Mesh {
                 .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
 
-            sub_meshes.push(SubMesh {
+            let mut sub_mesh = SubMesh {
                 vertices,
                 indices,
                 index_count,
@@ -189,7 +223,11 @@ impl Mesh {
                 vertex_buffer,
                 index_buffer,
                 material_index,
-            });
+            };
+            
+            mikktspace::generate_tangents(&mut sub_mesh);
+
+            sub_meshes.push(sub_mesh);
         }
         
         (Mesh { sub_meshes }, materials)

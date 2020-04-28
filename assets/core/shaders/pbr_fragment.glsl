@@ -30,10 +30,19 @@ layout(set = 3, binding = 2) uniform texture2D spec_brdf_map;
 #include "library/lighting.glsl"
 #include "library/pbr.glsl"
 
+vec4 toLinear(vec4 sRGB)
+{
+    bvec4 cutoff = lessThan(sRGB, vec4(0.04045));
+    vec4 higher = pow((sRGB + vec4(0.055))/vec4(1.055), vec4(2.4));
+    vec4 lower = sRGB/vec4(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
 void main() {
     vec4 main_color = texture(sampler2D(main_map, tex_sampler), i_uv);
     
-    vec3 normal = texture(sampler2D(normal_map, tex_sampler), i_uv).rgb;
+    vec3 normal = toLinear(texture(sampler2D(normal_map, tex_sampler), i_uv)).rgb;
     vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).bg;
     float metallic = metallic_roughness.x;
     float roughness = metallic_roughness.y;
@@ -106,5 +115,6 @@ void main() {
     //     light_acc += dot_product * light.color.xyz;
     // }
 
-    outColor = vec4(main_color.xyz * normalize(i_tangent), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
+    outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
+    outColor = vec4(main_color.xyz * dot(camera_pos.xyz, normal).xxx, 1.0);
 }

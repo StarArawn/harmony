@@ -23,11 +23,11 @@ layout(set = 0, binding = 0) uniform Locals {
 void main() {
     v_TexCoord = i_uv;
     mat3 normalMatrix = transpose(inverse(mat3(world)));
-    o_normal = normalize(world * vec4(i_normal, 0.0)).xyz;
+    o_normal = (world * vec4(i_normal, 0.0)).xyz;
     o_position = world * vec4(i_Pos, 1.0);
     o_tangent = normalize(world * vec4(i_tangent.xyz, 0.0)).xyz;
-    vec3 bitangentW = cross(o_normal, o_tangent) * i_tangent.w;
-    o_TBN = mat3(o_tangent, bitangentW, o_normal);
+    vec3 bitangentW = cross(o_normal, o_tangent.xyz) * i_tangent.w;
+    o_TBN = mat3(vec3(o_tangent.z, o_tangent.x, o_tangent.y), bitangentW, o_normal);
     // o_tbn_handedness = i_tangent.w;
 
     gl_Position = view_projection * o_position;
