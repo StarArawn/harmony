@@ -225,7 +225,9 @@ impl Mesh {
                 material_index,
             };
             
-            mikktspace::generate_tangents(&mut sub_mesh);
+            //mikktspace::generate_tangents(&mut sub_mesh);
+
+            //dbg!(&sub_mesh.vertices.iter().map(|x| (x.normal, x.tangent)).collect::<Vec::<(Vec3, Vec4)>>());
 
             sub_meshes.push(sub_mesh);
         }

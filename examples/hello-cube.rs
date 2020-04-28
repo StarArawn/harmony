@@ -98,7 +98,7 @@ impl harmony::AppState for AppState {
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("tangent.gltf"),
+                Mesh::new("cube.gltf"),
                 Material::new(0), // Need to be an index to the material
                 transform,        // Transform
             )],

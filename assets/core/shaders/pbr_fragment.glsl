@@ -8,10 +8,10 @@ layout(set = 1, binding = 0) uniform Globals {
 
 layout(location = 0) in vec2 i_uv;
 layout(location = 1) in vec3 i_normal;
-layout(location = 2) in vec4 i_position;
+layout(location = 2) in vec3 i_position;
 layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
-layout(location = 5) in mat3 i_TBN;
+// layout(location = 5) in mat3 i_TBN;
 layout(location = 0) out vec4 outColor;
 
 layout(set = 2, binding = 0) uniform Locals {
@@ -60,12 +60,13 @@ void main() {
     // vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
     // t = normalize(t - N * dot(N, t));
     
-    vec3 T = normalize(i_tangent - N * dot(N, i_tangent));
-    // vec3 T = normalize(i_tangent);
-    vec3 B = normalize(cross(N, T)) * i_tbn_handedness;
+    //vec3 T = normalize(i_tangent); // - N * dot(N, i_tangent));
+    vec3 T = normalize(i_tangent); //normalize(i_tangent - N * dot(N, i_tangent));
+    vec3 B = normalize(cross(N, T) * i_tbn_handedness);
+    T = cross(B, N);
     mat3 TBN = mat3(T, B, N);
 
-    N = normalize(i_TBN * normal);;
+    N = TBN * normal;
 
     vec3 R = reflect(-view, N);
     float NdotV = abs(dot(N, view)) + 0.00001;
@@ -115,6 +116,6 @@ void main() {
     //     light_acc += dot_product * light.color.xyz;
     // }
 
-    outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
-    outColor = vec4(main_color.xyz * dot(camera_pos.xyz, normal).xxx, 1.0);
+    //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
+    outColor = vec4(0.5 * (TBN[2] + 1.0),1.0); //vec4(main_color.xyz * dot(normalize(N), vec3(0.0, 1.0, 0.75)), 1.0);
 }
