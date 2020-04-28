@@ -182,7 +182,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Clear,
+                            load_op: wgpu::LoadOp::Load,
                             store_op: wgpu::StoreOp::Store,
                             clear_color: wgpu::Color {
                                 r: 0.0,
@@ -193,9 +193,9 @@ pub fn create() -> Box<dyn Schedulable> {
                         }],
                         depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                             attachment: &depth_texture.0,
-                            depth_load_op: wgpu::LoadOp::Clear,
+                            depth_load_op: wgpu::LoadOp::Load,
                             depth_store_op: wgpu::StoreOp::Store,
-                            stencil_load_op: wgpu::LoadOp::Clear,
+                            stencil_load_op: wgpu::LoadOp::Load,
                             stencil_store_op: wgpu::StoreOp::Store,
                             clear_depth: 1.0,
                             clear_stencil: 0,

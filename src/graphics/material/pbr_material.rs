@@ -8,6 +8,7 @@ use std::{collections::HashMap, mem};
 #[derive(Debug, Clone, Copy)]
 pub struct PBRMaterialUniform {
     pub color: Vec4,
+    pub info: Vec4,
 }
 
 unsafe impl Zeroable for PBRMaterialUniform {}
@@ -19,6 +20,8 @@ pub struct PBRMaterial {
     pub main_texture: String,
     pub roughness_texture: String,
     pub normal_texture: String,
+    pub roughness: f32,
+    pub metallic: f32,
     pub color: Vec4,
     pub uniform_buf: Option<wgpu::Buffer>,
 }
@@ -34,6 +37,8 @@ impl PBRMaterial {
             roughness_texture: roughness_texture.into(),
             normal_texture: normal_texture.into(),
             color,
+            roughness: 0.0,
+            metallic: 0.0,
             uniform_buf: None,
         }
     }
@@ -44,12 +49,14 @@ impl PBRMaterial {
         device: &wgpu::Device,
         pipeline_layout: &'a wgpu::BindGroupLayout,
     ) -> BindGroup {
+
+        let uniform = PBRMaterialUniform {
+            color: self.color,
+            info: Vec4::new(self.metallic, self.roughness, 0.0, 0.0),
+        };
+
         let material_uniform_size = mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
-        let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
-            size: material_uniform_size,
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-            label: None,
-        });
+        let uniform_buf = device.create_buffer_with_data(bytemuck::bytes_of(&uniform), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
         self.uniform_buf = Some(uniform_buf);
 
         // Asset manager will panic if image doesn't exist, but we don't want that.

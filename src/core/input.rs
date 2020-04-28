@@ -103,5 +103,6 @@ impl Input {
         self.mouse_buttons_pressed.clear();
         self.mouse_buttons_released.clear();
         self.mouse_wheel_movement = Vec2::zeros();
+        self.mouse_delta = Vec2::zeros();
     }
 }

@@ -74,7 +74,7 @@ impl Application {
         let asset_manager = AssetManager::new(asset_path.into());
 
         let mut render_schedule_builder = Schedule::builder()
-            //.add_system(graphics::systems::skybox::create())
+            .add_system(graphics::systems::skybox::create())
             .add_system(graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {

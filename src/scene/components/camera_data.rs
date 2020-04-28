@@ -39,7 +39,7 @@ impl CameraData {
             active: true,
             yaw: 0.0,
             pitch: 0.0,
-            fov,
+            fov: fov * std::f32::consts::PI / 180.0, // Convert fov to radians.
             z_near,
             z_far,
         }

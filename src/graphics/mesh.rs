@@ -111,7 +111,7 @@ impl Mesh {
                 }
             } else {
                 // TODO: Calculate tangents if we don't have them.
-                warn!("Don't have tangents for mesh.");
+                //warn!("Don't have tangents for mesh.");
             }
 
             let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
@@ -133,21 +133,24 @@ impl Mesh {
 
             let main_info = pbr.base_color_texture();
             let mut normal_texture= None;
-            let normal_source = gltf_material.normal_texture().unwrap().texture().source().source();
-            match normal_source {
-                gltf::image::Source::Uri { uri, .. } => {
-                    let texture_file_name = Some(
-                        Path::new(&uri)
-                            .file_name()
-                            .and_then(OsStr::to_str)
-                            .unwrap()
-                            .to_string(),
-                    );
-                    if texture_file_name.is_some() {
-                        normal_texture = Some(texture_file_name.unwrap());
+            let normals_texture = gltf_material.normal_texture();
+            if normals_texture.is_some() {
+                let normal_source = normals_texture.unwrap().texture().source().source();
+                match normal_source {
+                    gltf::image::Source::Uri { uri, .. } => {
+                        let texture_file_name = Some(
+                            Path::new(&uri)
+                                .file_name()
+                                .and_then(OsStr::to_str)
+                                .unwrap()
+                                .to_string(),
+                        );
+                        if texture_file_name.is_some() {
+                            normal_texture = Some(texture_file_name.unwrap());
+                        }
                     }
+                    _ => (),
                 }
-                _ => (),
             }
             let roughness_info = pbr.metallic_roughness_texture();
 

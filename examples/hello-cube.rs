@@ -59,7 +59,10 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
         | {
             for mut camera in camera_query.iter_mut(&mut world) {
                 camera.yaw += input.mouse_delta.x * 0.5 * delta_time.0;
-                camera.pitch += -input.mouse_delta.y * 0.5 * delta_time.0;
+                camera.pitch += input.mouse_delta.y * 0.5 * delta_time.0;
+                camera.pitch = camera.pitch
+                    .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
+                    .min(std::f32::consts::FRAC_PI_2 - 0.0001);
                 let eye = Vec3::new(0.0, 0.0, 0.0)
                 + (5.0
                     * nalgebra::Vector3::new(
@@ -96,7 +99,7 @@ impl harmony::AppState for AppState {
             (),
             vec![(
                 Mesh::new("corset.gltf"),
-                Material::new(1), // Need to be an index to the material
+                Material::new(0), // Need to be an index to the material
                 transform,        // Transform
             )],
         );
