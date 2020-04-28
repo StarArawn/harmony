@@ -92,13 +92,13 @@ impl harmony::AppState for AppState {
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
         let mut transform = Transform::new(app);
-        transform.scale = Vec3::new(50.0, 50.0, 50.0);
-        transform.position = Vec3::new(0.0, -1.0, 0.0);
+        // transform.scale = Vec3::new(50.0, 50.0, 50.0);
+        // transform.position = Vec3::new(0.0, -1.0, 0.0);
         //transform.rotate_on_y(180.0);
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("corset.gltf"),
+                Mesh::new("tangent.gltf"),
                 Material::new(0), // Need to be an index to the material
                 transform,        // Transform
             )],
