@@ -65,7 +65,7 @@ void main() {
 
     vec3 T = normalize(i_tangent - N * dot(N, i_tangent));
     vec3 B = normalize(cross(N, T) * i_tbn_handedness);
-    mat3 TBN = mat3(T, B, N);
+    mat3 TBN = transpose(mat3(T, B, N));
     N = normalize(TBN * normal);
 
     vec3 R = reflect(-view, N);
@@ -117,5 +117,6 @@ void main() {
     // }
 
     //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
-    outColor = vec4(ambient_spec, 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
+    //outColor = vec4(0.5 * (N + 1), 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
+    outColor = vec4(N, 1.0);
 }
