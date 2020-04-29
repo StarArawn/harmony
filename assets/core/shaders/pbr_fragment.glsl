@@ -48,7 +48,7 @@ void main() {
     float roughness = metallic_roughness.y;
 
     normal = (normal * 2.0 + 1.0) * 1.5;
-    // normal.xy *= vec2(1.0, 1.0) * 2.0;
+    normal.xy *= vec2(1.0, 1.0);
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
     
@@ -125,5 +125,8 @@ void main() {
     //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
     //outColor = vec4(0.5 * (N + 1), 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
     // outColor = vec4(0.5 * (N + 1.0), 1.0);
-    outColor = vec4(main_color.xyz * ambient_spec, 1.0); //(max(dot(vec3(0.5, 1.0, 0.5), N), 0.0)).xxx, 1.0);
+    outColor = vec4(0.5 * (N + 1.0), 1.0); //(max(dot(vec3(0.5, 1.0, 0.5), N), 0.0)).xxx, 1.0);
+    //outColor = vec4(i_uv.yy, 0.0, 1.0);
+    outColor = vec4(dot(N, vec3(0.0, 1.0, 0.0)).xxx, 1.0);
+    outColor = vec4(ambient_spec, 1.0);
 }

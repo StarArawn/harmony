@@ -91,7 +91,7 @@ impl Skybox {
             true,
         );
 
-        let specular_size = 512;
+        let specular_size = 128;
         // Add in a pass per mip level.
         for i in 0..SPEC_CUBEMAP_MIP_LEVELS {
             let res = (specular_size / 2u32.pow(i)) as f32;

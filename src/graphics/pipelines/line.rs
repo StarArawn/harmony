@@ -77,7 +77,7 @@ impl SimplePipelineDesc for LinePipelineDesc {
         vertex_state_builder.new_buffer_descriptor(
             vertex_size as wgpu::BufferAddress,
             wgpu::InputStepMode::Vertex,
-            wgpu::vertex_attr_array![0 => Float3].to_vec(),
+            wgpu::vertex_attr_array![0 => Float3, 1 => Float3].to_vec(),
         );
 
         vertex_state_builder

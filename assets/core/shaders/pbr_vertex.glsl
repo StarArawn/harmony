@@ -28,20 +28,21 @@ mat4 rotationZ( in float angle ) {
 }
 
 void main() {
-    v_TexCoord = vec2(i_uv.x, 1.0-i_uv.y);
+    v_TexCoord = vec2(i_uv.x, i_uv.y);
     mat3 normalMatrix = transpose(inverse(mat3(world)));
-    o_normal = normalize(vec3(i_normal.x, i_normal.y, i_normal.z)); //(world * vec4(i_normal, 0.0)).xyz;
+    o_normal = normalize(vec3(i_normal)); //(world * vec4(i_normal, 0.0)).xyz;
     o_position = i_Pos;
-    o_tangent = normalize(vec3(i_tangent.x, i_tangent.y, i_tangent.z)); //normalize(world * vec4(i_tangent.xyz, 0.0)).xyz;
+    o_tangent = normalize(vec3(i_tangent.xyz)); //normalize(world * vec4(i_tangent.xyz, 0.0)).xyz;
     // vec3 bitangentW = cross(o_normal, o_tangent.xyz) * i_tangent.w;
     // o_TBN = mat3(o_tangent, bitangentW, o_normal);
     o_tbn_handedness = i_tangent.w;
 
-    vec3 ta = i_tangent.xyz * vec3(1.0, 1.0, 1.0);
-    ta = (vec4(ta, 1.0) * rotationZ(3.145)).xyz;
-    vec3 n = normalize( ( world * vec4( i_normal, 0.0 ) ).xyz );
-    vec3 t = normalize( ( world * vec4( ta, 0.0 ) ).xyz );
-    vec3 b = normalize( ( world * vec4( ( cross( i_normal, i_tangent.xyz ) * i_tangent.w ), 0.0 ) ).xyz );
+    //vec3 ta = i_tangent.xyz * vec3(1.0, 1.0, 1.0);
+    //ta = (vec4(ta, 1.0) * rotationZ(3.145)).xyz;
+    vec3 n = normalize(normalMatrix * o_normal);
+    vec3 t = normalize(normalMatrix * vec3(-i_tangent.x, i_tangent.y, i_tangent.z));
+    t = normalize(t - o_normal * dot(o_normal, t));
+    vec3 b = normalize( cross( n, i_tangent.xyz ) * i_tangent.w );
     o_TBN = mat3( t, b, n );
 
     gl_Position = view_projection * vec4(o_position, 1.0);

@@ -23,6 +23,7 @@ unsafe impl Pod for MeshVertexData {}
 #[derive(Debug, Clone, Copy)]
 pub struct MeshTangentLine {
     pub pos: Vec3,   
+    pub color: Vec3,
 }
 
 unsafe impl Zeroable for MeshTangentLine {}
@@ -217,13 +218,19 @@ impl Mesh {
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-            let tangents: Vec<Vec4> = vertices.iter().map(|data| data.tangent).collect();
+            let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
             let mut tangent_lines = Vec::new();
-            for tangent in tangents.iter() {
-                let vec3_tangent = Vec3::new(tangent.x, tangent.y, tangent.z);
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent });
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 1.5 });
+            for (tangent, position) in tangents.iter() {
+                let vec3_tangent = Vec3::new(position.x + tangent.x, position.y + tangent.y, position.z + tangent.z);
+                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: Vec3::new(1.0, 1.0, 0.0) });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 1.5, color: Vec3::new(1.0, 1.0, 0.0) });
             }
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 5.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(5.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
             let tangent_line_buffer = device.create_buffer_with_data(
                 &bytemuck::cast_slice(&tangent_lines),
                 wgpu::BufferUsage::VERTEX,
