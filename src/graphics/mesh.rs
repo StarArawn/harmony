@@ -221,9 +221,12 @@ impl Mesh {
             let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
             let mut tangent_lines = Vec::new();
             for (tangent, position) in tangents.iter() {
-                let vec3_tangent = Vec3::new(position.x + tangent.x, position.y + tangent.y, position.z + tangent.z);
-                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: Vec3::new(1.0, 1.0, 0.0) });
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 1.5, color: Vec3::new(1.0, 1.0, 0.0) });
+                let position: Vec3 = position.clone();
+                let tangent: Vec3 = tangent.clone();
+                let scale: f32 = 1.1;
+                let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
+                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
             }
             tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
             tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
