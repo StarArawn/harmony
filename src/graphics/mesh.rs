@@ -19,6 +19,15 @@ pub struct MeshVertexData {
 unsafe impl Zeroable for MeshVertexData {}
 unsafe impl Pod for MeshVertexData {}
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct MeshTangentLine {
+    pub pos: Vec3,   
+}
+
+unsafe impl Zeroable for MeshTangentLine {}
+unsafe impl Pod for MeshTangentLine {}
+
 impl Default for MeshVertexData {
     fn default() -> Self {
         Self {
@@ -32,12 +41,14 @@ impl Default for MeshVertexData {
 
 #[derive(Debug)]
 pub struct SubMesh {
-    vertices: Vec<MeshVertexData>,
+    pub vertices: Vec<MeshVertexData>,
+    pub tangent_lines: Vec<MeshTangentLine>,
     indices: Vec<u32>,
     pub(crate) index_count: usize,
     mode: wgpu::PrimitiveTopology,
     material_id: Option<usize>,
     pub(crate) vertex_buffer: wgpu::Buffer,
+    pub(crate) tangent_line_buffer: wgpu::Buffer,
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
@@ -206,6 +217,18 @@ impl Mesh {
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
+            let tangents: Vec<Vec4> = vertices.iter().map(|data| data.tangent).collect();
+            let mut tangent_lines = Vec::new();
+            for tangent in tangents.iter() {
+                let vec3_tangent = Vec3::new(tangent.x, tangent.y, tangent.z);
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 5.0 });
+            }
+            let tangent_line_buffer = device.create_buffer_with_data(
+                &bytemuck::cast_slice(&tangent_lines),
+                wgpu::BufferUsage::VERTEX,
+            );
+
             let vertex_buffer = device.create_buffer_with_data(
                 &bytemuck::cast_slice(&vertices),
                 wgpu::BufferUsage::VERTEX,
@@ -216,11 +239,13 @@ impl Mesh {
 
             let mut sub_mesh = SubMesh {
                 vertices,
+                tangent_lines,
                 indices,
                 index_count,
                 mode: primitive_topology,
                 material_id: primitive.material().index(),
                 vertex_buffer,
+                tangent_line_buffer,
                 index_buffer,
                 material_index,
             };

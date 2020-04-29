@@ -11,7 +11,7 @@ layout(location = 1) in vec3 i_normal;
 layout(location = 2) in vec3 i_position;
 layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
-// layout(location = 5) in mat3 i_TBN;
+layout(location = 5) in mat3 i_TBN;
 layout(location = 0) out vec4 outColor;
 
 layout(set = 2, binding = 0) uniform Locals {
@@ -47,7 +47,8 @@ void main() {
     float metallic = metallic_roughness.x;
     float roughness = metallic_roughness.y;
 
-    normal = normal * 2.0 + 1.0;
+    normal = (normal * 2.0 + 1.0) * 1.5;
+    // normal.xy *= vec2(1.0, 1.0) * 2.0;
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
     
@@ -63,10 +64,15 @@ void main() {
     //vec3 T = normalize(i_tangent); // - N * dot(N, i_tangent));
     // T = normalize(cross(B, N));
 
-    vec3 T = normalize(i_tangent - N * dot(N, i_tangent));
-    vec3 B = normalize(cross(N, T) * i_tbn_handedness);
-    mat3 TBN = transpose(mat3(T, B, N));
-    N = normalize(TBN * normal);
+    vec3 T = i_tangent * vec3(-1.0, 1.0, 1.0);
+    T = normalize(T - N * dot(N, T));
+    vec3 B = cross(T, N) * i_tbn_handedness;
+    // if(dot(cross(N.xyz, T.xyz), B.xyz) < 0.0) {
+    //   T = T * -1;
+    // }
+    // B = cross(T, N) * i_tbn_handedness;
+    mat3 TBN = mat3(T, B, N);
+    N = i_TBN * normalize(normal);
 
     vec3 R = reflect(-view, N);
     float NdotV = abs(dot(N, view)) + 0.00001;
@@ -118,5 +124,6 @@ void main() {
 
     //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
     //outColor = vec4(0.5 * (N + 1), 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
-    outColor = vec4(N, 1.0);
+    // outColor = vec4(0.5 * (N + 1.0), 1.0);
+    outColor = vec4(main_color.xyz * ambient_spec, 1.0); //(max(dot(vec3(0.5, 1.0, 0.5), N), 0.0)).xxx, 1.0);
 }

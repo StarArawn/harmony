@@ -7,6 +7,9 @@ pub(crate) use unlit::UnlitPipelineDesc;
 mod pbr;
 pub(crate) use pbr::PBRPipelineDesc;
 
+mod line;
+pub(crate) use line::LinePipelineDesc;
+
 mod skybox;
 pub(crate) use skybox::{SkyboxPipelineDesc, SkyboxUniforms};
 

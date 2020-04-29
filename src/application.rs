@@ -17,7 +17,7 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::resources::GPUResourceManager;
+use graphics::{pipelines::LinePipelineDesc, resources::GPUResourceManager};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -188,6 +188,21 @@ impl Application {
                 &mut resource_manager,
                 "pbr",
                 pbr_pipeline_desc,
+                vec!["skybox"],
+                true,
+                None,
+                false,
+            );
+
+            // PBR pipeline
+            let line_pipeline_desc = LinePipelineDesc::default();
+            render_graph.add(
+                &asset_manager,
+                &device,
+                &sc_desc,
+                &mut resource_manager,
+                "line",
+                line_pipeline_desc,
                 vec!["skybox"],
                 true,
                 None,
