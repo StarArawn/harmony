@@ -75,6 +75,7 @@ impl Application {
 
         let mut render_schedule_builder = Schedule::builder()
             .add_system(graphics::systems::skybox::create())
+            .add_system(graphics::systems::line::create())
             .add_system(graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
@@ -204,7 +205,7 @@ impl Application {
                 "line",
                 line_pipeline_desc,
                 vec!["skybox"],
-                true,
+                false,
                 None,
                 false,
             );

@@ -62,7 +62,7 @@ impl SimplePipelineDesc for LinePipelineDesc {
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
         Some(wgpu::DepthStencilStateDescriptor {
             format: DEPTH_FORMAT,
-            depth_write_enabled: false,
+            depth_write_enabled: true,
             depth_compare: wgpu::CompareFunction::LessEqual,
             stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
             stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,

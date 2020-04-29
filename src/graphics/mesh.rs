@@ -222,7 +222,7 @@ impl Mesh {
             for tangent in tangents.iter() {
                 let vec3_tangent = Vec3::new(tangent.x, tangent.y, tangent.z);
                 tangent_lines.push(MeshTangentLine { pos: vec3_tangent });
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 5.0 });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent * 1.5 });
             }
             let tangent_line_buffer = device.create_buffer_with_data(
                 &bytemuck::cast_slice(&tangent_lines),
@@ -237,7 +237,7 @@ impl Mesh {
                 .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
 
-            let mut sub_mesh = SubMesh {
+            let sub_mesh = SubMesh {
                 vertices,
                 tangent_lines,
                 indices,
