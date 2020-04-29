@@ -64,7 +64,7 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
                     .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
                     .min(std::f32::consts::FRAC_PI_2 - 0.0001);
                 let eye = Vec3::new(0.0, 0.0, 0.0)
-                + (5.0
+                + (3.0
                     * nalgebra::Vector3::new(
                         camera.yaw.sin() * camera.pitch.cos(),
                         camera.pitch.sin(),
@@ -98,7 +98,7 @@ impl harmony::AppState for AppState {
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("cube.gltf"),
+                Mesh::new("tangent.gltf"),
                 Material::new(0), // Need to be an index to the material
                 transform,        // Transform
             )],

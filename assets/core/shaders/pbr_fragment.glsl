@@ -47,8 +47,8 @@ void main() {
     float metallic = metallic_roughness.x;
     float roughness = metallic_roughness.y;
 
-    normal = (normal * 2.0 + 1.0) * 1.5;
-    normal.xy *= vec2(1.0, 1.0);
+    normal = (2.0 * normal - 1.0);
+    // normal.xyz *= vec3(-1.0, 1.0, -1.0);
 
     vec3 view = normalize(camera_pos.xyz - i_position.xyz);
     
@@ -64,7 +64,7 @@ void main() {
     //vec3 T = normalize(i_tangent); // - N * dot(N, i_tangent));
     // T = normalize(cross(B, N));
 
-    vec3 T = i_tangent * vec3(-1.0, 1.0, 1.0);
+    vec3 T = normalize(i_tangent) * i_tbn_handedness;
     T = normalize(T - N * dot(N, T));
     vec3 B = cross(T, N) * i_tbn_handedness;
     // if(dot(cross(N.xyz, T.xyz), B.xyz) < 0.0) {
@@ -72,14 +72,14 @@ void main() {
     // }
     // B = cross(T, N) * i_tbn_handedness;
     mat3 TBN = mat3(T, B, N);
-    N = i_TBN * normalize(normal);
+    // N = TBN * normalize(normal);
 
-    vec3 R = reflect(-view, N);
+    vec3 R = reflect(-view, N);//vec3(i_TBN[1]));
     float NdotV = abs(dot(N, view)) + 0.00001;
 
     vec3 f0 = mix(vec3(0.04), main_color.rgb, metallic);
 
-    vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, tex_sampler), N).rgb;
+    vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, tex_sampler), vec3(i_normal)).rgb;
     vec3 ambient_spec = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
     vec2 env_brdf = texture(sampler2D(spec_brdf_map, tex_sampler), vec2(NdotV, roughness)).rg;
 
@@ -125,8 +125,9 @@ void main() {
     //outColor = vec4(main_color.xyz * (0.5 * normalize(N) + vec3(1.0, 1.0, 1.0)), 1.0); //vec4(dot(normalize(N), vec3(0.0, 1.0, 0.5)).xxx, 1.0);
     //outColor = vec4(0.5 * (N + 1), 1.0); // * (max(dot(vec3(0.0, 1.0, 0.0), N), 0.0)), 1.0);
     // outColor = vec4(0.5 * (N + 1.0), 1.0);
-    outColor = vec4(0.5 * (N + 1.0), 1.0); //(max(dot(vec3(0.5, 1.0, 0.5), N), 0.0)).xxx, 1.0);
+    //outColor = vec4(0.5 * (i_TBN[1] + 1.0), 1.0); //(max(dot(vec3(0.5, 1.0, 0.5), N), 0.0)).xxx, 1.0);
     //outColor = vec4(i_uv.yy, 0.0, 1.0);
-    outColor = vec4(dot(N, vec3(0.0, 1.0, 0.0)).xxx, 1.0);
-    outColor = vec4(1.0, 1.0, 1.0, 1.0);
+    //outColor = vec4(dot(N, vec3(0.0, 1.0, 0.0)).xxx, 1.0);
+    outColor = vec4(main_color.xyz * ambient_spec, 1.0);
+    // outColor = vec4(0.5 * (N + 1.0), 1.0);
 }

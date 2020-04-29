@@ -58,6 +58,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     let uniforms = GlobalUniform {
                         view_projection: camera_matrix,
                         camera_pos: Vec4::new(camera_data.position.x, camera_data.position.y, camera_data.position.z, 0.0),
+                        view: camera_data.view,
                     };
 
                     let constants_buffer = device.create_buffer_with_data(

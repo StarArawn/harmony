@@ -153,12 +153,15 @@ impl Mesh {
             // Load tangents if we have them.
             if let Some(tangents) = reader.read_tangents() {
                 for (i, tangent) in tangents.enumerate() {
-                    vertices[i].tangent = Vec4::from(tangent.clone());
+                    vertices[i].tangent = Vec4::new(tangent[0], tangent[1], tangent[2], tangent[3]);
                 }
             } else {
                 // TODO: Calculate tangents if we don't have them.
                 //warn!("Don't have tangents for mesh.");
             }
+
+
+            log::info!("vertex_data: {:?}", vertices);
 
             let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
                 index_enum.into_u32().collect()
@@ -221,9 +224,9 @@ impl Mesh {
             let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
             let mut tangent_lines = Vec::new();
             for (tangent, position) in tangents.iter() {
-                let position: Vec3 = position.clone();
+                let position: Vec3 = position.clone();// * 50.0;
                 let tangent: Vec3 = tangent.clone();
-                let scale: f32 = 1.1;
+                let scale: f32 = 0.1;
                 let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
                 tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
                 tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
@@ -247,7 +250,7 @@ impl Mesh {
                 .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
 
-            let sub_mesh = SubMesh {
+            let mut sub_mesh = SubMesh {
                 vertices,
                 tangent_lines,
                 indices,
@@ -260,9 +263,9 @@ impl Mesh {
                 material_index,
             };
             
-            //mikktspace::generate_tangents(&mut sub_mesh);
+            // mikktspace::generate_tangents(&mut sub_mesh);
 
-            //dbg!(&sub_mesh.vertices.iter().map(|x| (x.normal, x.tangent)).collect::<Vec::<(Vec3, Vec4)>>());
+            // dbg!(&sub_mesh.vertices.iter().map(|x| (x.normal, x.tangent)).collect::<Vec::<(Vec3, Vec4)>>());
 
             sub_meshes.push(sub_mesh);
         }

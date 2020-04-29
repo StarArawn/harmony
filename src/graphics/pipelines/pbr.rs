@@ -199,7 +199,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
             .new_buffer_descriptor(
                 vertex_size as wgpu::BufferAddress,
                 wgpu::InputStepMode::Vertex,
-                // vec![
+                //vec![
                 //     wgpu::VertexAttributeDescriptor {
                 //         format: wgpu::VertexFormat::Float3,
                 //         offset: 0,
@@ -221,6 +221,12 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 //         shader_location: 3,
                 //     },
                 // ],
+                // pub struct MeshVertexData {
+                //     pub position: Vec3,
+                //     pub normal: Vec3,
+                //     pub uv: Vec2,
+                //     pub tangent: Vec4,
+                // }
                 wgpu::vertex_attr_array![0 => Float3, 1 => Float3, 2 => Float2, 3 => Float4].to_vec(),
             );
 
