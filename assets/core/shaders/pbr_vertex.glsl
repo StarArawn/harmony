@@ -1,5 +1,7 @@
 #version 450
 
+#include "library/common.glsl"
+
 layout(location = 0) in vec3 i_Pos;
 layout(location = 1) in vec3 i_normal;
 layout(location = 2) in vec2 i_uv;
@@ -10,13 +12,7 @@ layout(location = 2) out vec3 o_position;
 layout(location = 3) out vec3 o_tangent;
 layout(location = 4) out float o_tbn_handedness;
 
-layout(set = 1, binding = 0) uniform VertGlobals {
-    mat4 view_projection;
-    mat4 camera_pos;
-    mat4 view;
-};
-
-layout(set = 0, binding = 0) uniform VertLocals {
+layout(set = 0, binding = 0) uniform Locals {
     mat4 world;
 };
 

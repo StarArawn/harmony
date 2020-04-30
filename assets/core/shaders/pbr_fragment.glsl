@@ -1,22 +1,15 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
-layout(set = 1, binding = 0) uniform VertGlobals {
-    mat4 view_projection;
-    vec4 camera_pos;
-};
+#include "library/lighting.glsl"
+#include "library/pbr.glsl"
+#include "library/common.glsl"
 
-layout(location = 0) in vec2 i_uv;
-layout(location = 1) in vec3 i_normal;
-layout(location = 2) in vec3 i_position;
-layout(location = 3) in vec3 i_tangent;
-layout(location = 4) in float i_tbn_handedness;
-layout(location = 0) out vec4 outColor;
-
-layout(set = 2, binding = 0) uniform VertLocals {
+layout(set = 2, binding = 0) uniform Material {
     vec4 color;
     vec4 pbr_info;
 };
+
 layout(set = 2, binding = 1) uniform sampler tex_sampler;
 layout(set = 2, binding = 2) uniform texture2D main_map;
 layout(set = 2, binding = 3) uniform texture2D normal_map;
@@ -26,8 +19,12 @@ layout(set = 3, binding = 0) uniform textureCube irradiance_cube_map;
 layout(set = 3, binding = 1) uniform textureCube spec_cube_map;
 layout(set = 3, binding = 2) uniform texture2D spec_brdf_map;
 
-#include "library/lighting.glsl"
-#include "library/pbr.glsl"
+layout(location = 0) in vec2 i_uv;
+layout(location = 1) in vec3 i_normal;
+layout(location = 2) in vec3 i_position;
+layout(location = 3) in vec3 i_tangent;
+layout(location = 4) in float i_tbn_handedness;
+layout(location = 0) out vec4 outColor;
 
 void main() {
     vec4 main_color = texture(sampler2D(main_map, tex_sampler), i_uv);
