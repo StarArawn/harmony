@@ -79,7 +79,7 @@ void main() {
         float d2 = dot(light.direction.xyz, light.direction.xyz);
         vec3 L = normalize(light.direction.xyz);
         vec3 H = normalize(V + L);
-        vec3 l_contrib = light.color.xyz * 2.0 / d2;
+        vec3 l_contrib = light.color.xyz * 5.0 / d2;
 
         float NdotL = saturate(dot(N, L));
         float NdotH = saturate(dot(N, H));

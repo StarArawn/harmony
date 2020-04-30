@@ -83,6 +83,9 @@ impl harmony::AppState for AppState {
             .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
         
+        // We need to find the material index for the material that automatically gets created when loading in the GLTF.
+        // It's easy enough:
+        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("cube.gltf").sub_meshes[0].material_index;
 
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
@@ -91,23 +94,20 @@ impl harmony::AppState for AppState {
         // in a friendly way. For now we only have 1 GLTF file and 1 material in the file so our material index is 0.
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
-        let mut transform = Transform::new(app);
-        // transform.scale = Vec3::new(50.0, 50.0, 50.0);
-        // transform.position = Vec3::new(0.0, -1.0, 0.0);
-        //transform.rotate_on_y(180.0);
+        let transform = Transform::new(app);
         app.current_scene.world.insert(
             (),
             vec![(
                 Mesh::new("cube.gltf"),
-                Material::new(0), // Need to be an index to the material
-                transform,        // Transform
+                Material::new(cube_material_index),
+                transform,
             )],
         );
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
-        // Skybox needs to be added as a resource in specs. (we only should have one).
+        // Skybox needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(skybox,)]);
 
         // Add directional light to our scene.
@@ -115,7 +115,7 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::light::create(
             &mut app.current_scene.world,
             LightType::Directional(DirectionalLightData {
-                direction: Vec3::new(0.0, 1.0, 0.75),
+                direction: Vec3::new(0.0, 1.0, 0.0),
                 color: Vec3::new(1.0, 1.0, 1.0),
             }),
             light_transform,
@@ -123,6 +123,7 @@ impl harmony::AppState for AppState {
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
+        // Point lights currently don't work.
         // let mut transform = Transform::new(app);
         // transform.position = Vec3::new(-5.0, 0.0, 0.0);
         // harmony::scene::entities::light::create(

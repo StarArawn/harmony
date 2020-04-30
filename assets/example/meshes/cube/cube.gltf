@@ -132,7 +132,7 @@
          "uri" : "Cube_MetallicRoughness.png"
       },
       {
-         "uri" : "Cube_Normals.png"
+         "uri" : "Cube_normal.png"
       }
    ],
    "materials" : [

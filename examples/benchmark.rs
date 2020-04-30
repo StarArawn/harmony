@@ -81,7 +81,7 @@ impl harmony::AppState for AppState {
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
-        // Skybox needs to be added as a resource in specs. (we only should have one).
+        // Skybox needs to be added as an entity in legion. (we only should have one).
         app.current_scene.world.insert((), vec![(skybox,)]);
 
         // Add directional light to our scene.

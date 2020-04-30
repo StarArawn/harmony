@@ -4,7 +4,6 @@ use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
 use std::ffi::OsStr;
 use std::path::Path;
-use log::warn;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -53,7 +52,7 @@ pub struct SubMesh {
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
-    pub(crate) material_index: u32,
+    pub material_index: u32,
 }
 
 fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
@@ -150,11 +149,13 @@ impl Mesh {
                 }
             }
 
+            let mut had_tangents = false;
             // Load tangents if we have them.
             if let Some(tangents) = reader.read_tangents() {
                 for (i, tangent) in tangents.enumerate() {
                     vertices[i].tangent = Vec4::new(tangent[0], tangent[1], tangent[2], tangent[3]);
                 }
+                had_tangents = true;
             } else {
                 // TODO: Calculate tangents if we don't have them.
                 //warn!("Don't have tangents for mesh.");
@@ -214,11 +215,9 @@ impl Mesh {
             );
             materials.push(Material::PBR(material));
 
-            // mesh.calculate_tangents();
-
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-            let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
+            // let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
             let mut tangent_lines = Vec::new();
             // for (tangent, position) in tangents.iter() {
             //     let position: Vec3 = position.clone();// * 50.0;
@@ -260,7 +259,9 @@ impl Mesh {
                 material_index,
             };
             
-            mikktspace::generate_tangents(&mut sub_mesh);
+            if !had_tangents {
+                mikktspace::generate_tangents(&mut sub_mesh);
+            }
 
             sub_meshes.push(sub_mesh);
         }

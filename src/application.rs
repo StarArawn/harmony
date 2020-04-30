@@ -75,7 +75,7 @@ impl Application {
 
         let mut render_schedule_builder = Schedule::builder()
             .add_system(graphics::systems::skybox::create())
-            .add_system(graphics::systems::line::create())
+            //.add_system(graphics::systems::line::create())
             .add_system(graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
@@ -106,7 +106,7 @@ impl Application {
         }
     }
 
-    /// Set's the current scene that harmony will use for rendering. Consider this a connivent place to store our specs world.
+    /// Set's the current scene that harmony will use for rendering.
     /// # Arguments
     ///
     /// * `current_scene` - The current scene.

@@ -27,7 +27,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .with_query(<Read<components::Mesh>>::query())
         .build(
             |_,
-                mut world,
+                world,
                 (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
                 (camera_data, mesh_query),
             |{
