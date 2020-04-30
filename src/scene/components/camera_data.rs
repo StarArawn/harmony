@@ -34,7 +34,7 @@ impl CameraData {
     pub fn new_perspective(fov: f32, width: f32, height: f32, z_near: f32, z_far: f32) -> Self {
         Self {
             position: Vec3::zeros(),
-            projection: nalgebra_glm::perspective_fov_rh_no(fov, width, height, z_near, z_far),
+            projection: nalgebra_glm::perspective_fov_rh_zo(fov, width, height, z_near, z_far),
             view: Mat4::identity(),
             active: true,
             yaw: 0.0,
@@ -47,7 +47,7 @@ impl CameraData {
 
     pub fn resize(&mut self, width: f32, height: f32) {
         self.projection =
-            nalgebra_glm::perspective_fov_rh_no(self.fov, width, height, self.z_near, self.z_far);
+            nalgebra_glm::perspective_fov_rh_zo(self.fov, width, height, self.z_near, self.z_far);
     }
 
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {

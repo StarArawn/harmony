@@ -115,7 +115,7 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::light::create(
             &mut app.current_scene.world,
             LightType::Directional(DirectionalLightData {
-                direction: Vec3::new(0.0, 1.0, -0.75),
+                direction: Vec3::new(0.0, 1.0, 0.75),
                 color: Vec3::new(1.0, 1.0, 1.0),
             }),
             light_transform,

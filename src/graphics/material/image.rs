@@ -43,7 +43,7 @@ impl Image {
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
                 offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb {
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb || format == wgpu::TextureFormat::Rgba8Unorm {
                     4 * texture_extent.width
                 } else {
                     (4 * 4) * texture_extent.width
@@ -99,7 +99,7 @@ impl Image {
         (
             image_bytes,
             texture_extent,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
+            wgpu::TextureFormat::Rgba8Unorm, //Rgba8UnormSrgb,
         )
     }
 

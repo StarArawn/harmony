@@ -86,6 +86,7 @@ impl mikktspace::Geometry for SubMesh {
     }
 
     fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
+        dbg!(&tangent);
         vertex_mut(self, face, vert).tangent = tangent.into();
     }
 }
@@ -159,9 +160,6 @@ impl Mesh {
                 // TODO: Calculate tangents if we don't have them.
                 //warn!("Don't have tangents for mesh.");
             }
-
-
-            log::info!("vertex_data: {:?}", vertices);
 
             let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
                 index_enum.into_u32().collect()
@@ -263,9 +261,7 @@ impl Mesh {
                 material_index,
             };
             
-            // mikktspace::generate_tangents(&mut sub_mesh);
-
-            // dbg!(&sub_mesh.vertices.iter().map(|x| (x.normal, x.tangent)).collect::<Vec::<(Vec3, Vec4)>>());
+            mikktspace::generate_tangents(&mut sub_mesh);
 
             sub_meshes.push(sub_mesh);
         }
