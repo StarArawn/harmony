@@ -1,7 +1,7 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
-layout(set = 1, binding = 0) uniform Globals {
+layout(set = 1, binding = 0) uniform VertGlobals {
     mat4 view_projection;
     vec4 camera_pos;
 };
@@ -13,9 +13,9 @@ layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
 layout(location = 0) out vec4 outColor;
 
-layout(set = 2, binding = 0) uniform Locals {
+layout(set = 2, binding = 0) uniform VertLocals {
     vec4 color;
-    // vec4 pbr_info;
+    vec4 pbr_info;
 };
 layout(set = 2, binding = 1) uniform sampler tex_sampler;
 layout(set = 2, binding = 2) uniform texture2D main_map;
@@ -29,21 +29,12 @@ layout(set = 3, binding = 2) uniform texture2D spec_brdf_map;
 #include "library/lighting.glsl"
 #include "library/pbr.glsl"
 
-vec4 toLinear(vec4 sRGB)
-{
-    bvec4 cutoff = lessThan(sRGB, vec4(0.04045));
-    vec4 higher = pow((sRGB + vec4(0.055))/vec4(1.055), vec4(2.4));
-    vec4 lower = sRGB/vec4(12.92);
-
-    return mix(higher, lower, cutoff);
-}
-
 void main() {
     vec4 main_color = texture(sampler2D(main_map, tex_sampler), i_uv);
     
     vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).bg;
-    float metallic = metallic_roughness.x;
-    float roughness = metallic_roughness.y;
+    float metallic = metallic_roughness.x * pbr_info.x;
+    float roughness = metallic_roughness.y * pbr_info.y;
     
     vec3 normal = texture(sampler2D(normal_map, tex_sampler), i_uv).rgb;
     normal = normal * 2.0 - 1.0;

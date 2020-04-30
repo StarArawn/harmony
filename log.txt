@@ -1,0 +1,2094 @@
+warning: Patch `wgpu-core v0.5.0 (https://github.com/gfx-rs/wgpu?rev=bc065e4abc24e82a2c92403740ffe8d7e6643243#bc065e4a)` was not used in the crate graph.
+Check that the patched package version and available features are compatible
+with the dependency requirements. If the patch has a different version from
+what is locked in the Cargo.lock file, run `cargo update` to use the new
+version. This may also occur with an optional dependency that is not enabled.
+    Finished release [optimized] target(s) in 0.63s
+     Running `target/release/examples/hello-cube`
+[2020-04-30T18:56:42Z INFO  gfx_backend_metal::window] build swapchain SwapchainConfig { present_mode: FIFO, composite_alpha_mode: OPAQUE, format: Bgra8Srgb, extent: Extent2D { width: 2048, height: 1536 }, image_count: 3, image_layers: 1, image_usage: COLOR_ATTACHMENT }
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_image D2(2048, 1536, 1, 1) with 1 mips of D32Sfloat Optimal and usage DEPTH_STENCIL_ATTACHMENT
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 12582912
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_buffer of size 144 and usage TRANSFER_DST | UNIFORM
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 131072
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed798a20
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] map_memory of size 131072 at 0..131072
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 144 at offset 0
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	range 0..256
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_buffer of size 416 and usage TRANSFER_DST | UNIFORM
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 262144
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaefb14de0
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] map_memory of size 262144 at 0..262144
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 416 at offset 0
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaefb14de0
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	range 0..512
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::native] pool: allocate_set
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::native] 	total ResourceData { buffers: 2, textures: 0, samplers: 0 }
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] write_descriptor_sets
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/core/empty_normal.png"
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_image D2(256, 256, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 262144
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_buffer of size 262144 and usage TRANSFER_SRC
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaefb1bb30
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 262144 at offset 0
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaefb1bb30
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Loaded image: empty_normal.png
+[src/graphics/material/image.rs:31] "SRGB: " = "SRGB: "
+[src/graphics/material/image.rs:32] &path = "/Users/jmitchell/rust/harmony/assets/core/brdf_texture.png"
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_image D2(128, 128, 1, 1) with 1 mips of Rgba8Srgb Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 65536
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_buffer of size 65536 and usage TRANSFER_SRC
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 65536 at offset 262144
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaefb1bb30
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Loaded image: brdf_texture.png
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: pbr.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: gui_quad.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: specular_brdf.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: hdr_to_cubemap.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: irradiance.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: specular.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: skybox.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: line.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Compiled shader: unlit.shader
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Loaded font: fantasque.ttf
+[src/graphics/material/image.rs:31] "SRGB: " = "SRGB: "
+[src/graphics/material/image.rs:32] &path = "/Users/jmitchell/rust/harmony/assets/core/white.png"
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_image D2(1, 1, 1, 1) with 1 mips of Rgba8Srgb Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 131072
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] create_buffer of size 4 and usage TRANSFER_SRC
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 4 at offset 327680
+[2020-04-30T18:56:42Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaefb1bb30
+[2020-04-30T18:56:42Z INFO  harmony::assets::asset_manager] Loaded image: white.png
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(4096, 2048, 1, 1) with 1 mips of Rgba32Sfloat Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 134217728
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 134217728 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z WARN  gfx_memory::heaps] Unable to allocate 134217728 with Linear: TooManyObjects
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 134217728
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaef912070
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 134217728 at 0..134217728
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 134217728 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaef912070
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: venice_sunrise_4k.hdr
+[src/graphics/material/image.rs:31] "SRGB: " = "SRGB: "
+[src/graphics/material/image.rs:32] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/cube/Cube_BaseColor.png"
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(640, 640, 1, 1) with 1 mips of Rgba8Srgb Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 1638400
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 1638400 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z WARN  gfx_memory::heaps] Unable to allocate 1638400 with Linear: TooManyObjects
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1638400
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed799e40
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 1638400 at 0..1638400
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1638400 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed799e40
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: Cube_BaseColor.png
+[src/graphics/material/image.rs:31] "SRGB: " = "SRGB: "
+[src/graphics/material/image.rs:32] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/cube/Cube_BaseColor3.png"
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(512, 512, 1, 1) with 1 mips of Rgba8Srgb Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 1048576 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79a2e0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1048576 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79a2e0
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: Cube_BaseColor3.png
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/cube/Cube_normal.png"
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(512, 512, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 2097152
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 1048576 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faacd4190f0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1048576 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faacd4190f0
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: Cube_normal.png
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/cube/Cube_MetallicRoughness.png"
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(512, 512, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 1048576 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79a7e0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1048576 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79a7e0
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: Cube_MetallicRoughness.png
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 144 and usage VERTEX
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 144 at offset 256
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	range 256..512
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 1728 and usage VERTEX
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 65536
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79b5a0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 65536 at 0..65536
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1728 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79b5a0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	range 0..1792
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 144 and usage INDEX
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 144 at offset 512
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	range 512..768
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded mesh: cube.gltf
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/corset/Corset_occlusionRoughnessMetallic.png"
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_image D2(2048, 2048, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 16777216
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] create_buffer of size 16777216 and usage TRANSFER_SRC
+[2020-04-30T18:56:43Z WARN  gfx_memory::heaps] Unable to allocate 16777216 with Linear: TooManyObjects
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 16777216
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed799160
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] map_memory of size 16777216 at 0..16777216
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 16777216 at offset 0
+[2020-04-30T18:56:43Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed799160
+[2020-04-30T18:56:43Z INFO  harmony::assets::asset_manager] Loaded image: Corset_occlusionRoughnessMetallic.png
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/corset/Corset_normal.png"
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_image D2(2048, 2048, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 33554432
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 16777216 and usage TRANSFER_SRC
+[2020-04-30T18:56:44Z WARN  gfx_memory::heaps] Unable to allocate 16777216 with Linear: TooManyObjects
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79ad60
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 16777216 at 0..16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 16777216 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79ad60
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded image: Corset_normal.png
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 144 and usage VERTEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 144 at offset 768
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 768..1024
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 552240 and usage VERTEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 552448
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faacd40cc10
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 552448 at 0..552448
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 552240 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faacd40cc10
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 0..552448
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 219888 and usage INDEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 219904
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faacd405af0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 219904 at 0..219904
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 219888 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faacd405af0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 0..219904
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded mesh: corset.gltf
+[src/graphics/material/image.rs:31] "SRGB: " = "SRGB: "
+[src/graphics/material/image.rs:32] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/corset/Corset_baseColor.png"
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_image D2(2048, 2048, 1, 1) with 1 mips of Rgba8Srgb Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 16777216 and usage TRANSFER_SRC
+[2020-04-30T18:56:44Z WARN  gfx_memory::heaps] Unable to allocate 16777216 with Linear: TooManyObjects
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79b9f0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 16777216 at 0..16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 16777216 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79b9f0
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded image: Corset_baseColor.png
+[2020-04-30T18:56:44Z WARN  harmony::graphics::mesh] Currently we only support 1 mesh per gltf object. If you have more than one it will not be rendered.
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 144 and usage VERTEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 144 at offset 1024
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 1024..1280
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 220704 and usage VERTEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 220928
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed6198d0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 220928 at 0..220928
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 220704 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed6198d0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 0..220928
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 101376 and usage INDEX
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(2) of size 101376
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed614940
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 101376 at 0..101376
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 101376 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed614940
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 0..101376
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded mesh: pbr.gltf
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/pbr/roughness_metallic_0.jpg"
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_image D2(512, 512, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(0) of size 4194304
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 1048576 and usage TRANSFER_SRC
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed40e3f0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1048576 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed40e3f0
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded image: roughness_metallic_0.jpg
+[src/graphics/material/image.rs:27] "Normal Map/Metallic: " = "Normal Map/Metallic: "
+[src/graphics/material/image.rs:28] &path = "/Users/jmitchell/rust/harmony/assets/example/meshes/pbr/roughness_metallic_1.jpg"
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_image D2(512, 512, 1, 1) with 1 mips of Rgba8Unorm Optimal and usage TRANSFER_DST | SAMPLED
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 1048576 and usage TRANSFER_SRC
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] allocate_memory type MemoryTypeId(1) of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79bbb0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] map_memory of size 1048576 at 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 1048576 at offset 0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed79bbb0
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Loaded image: roughness_metallic_1.jpg
+[2020-04-30T18:56:44Z INFO  harmony::assets::asset_manager] Compiled shader: triangle.shader
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] Creating fence ptr 0x7ffee9b0d4d0 with signal=false
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::command] submitting with fence Some(Fence(RefCell { value: Idle { signaled: false } }))
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::command] 	marking fence ptr 0x7ffee9b0e198 as pending
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::command] 	2 immediate, 0 deferred, and 0 remote command buffers
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_graphics_pipeline GraphicsPipelineDesc {
+        shaders: GraphicsShaderSet {
+            vertex: EntryPoint {
+                entry: "main",
+                module: ShaderModule::Raw(length = 414),
+                specialization: Specialization {
+                    constants: [],
+                    data: [],
+                },
+            },
+            hull: None,
+            domain: None,
+            geometry: None,
+            fragment: Some(
+                EntryPoint {
+                    entry: "main",
+                    module: ShaderModule::Raw(length = 146),
+                    specialization: Specialization {
+                        constants: [],
+                        data: [],
+                    },
+                },
+            ),
+        },
+        rasterizer: Rasterizer {
+            polygon_mode: Fill,
+            cull_face: NONE,
+            front_face: Clockwise,
+            depth_clamping: false,
+            depth_bias: None,
+            conservative: false,
+            line_width: Static(
+                1.0,
+            ),
+        },
+        vertex_buffers: [],
+        attributes: [],
+        input_assembler: InputAssemblerDesc {
+            primitive: TriangleList,
+            with_adjacency: false,
+            restart_index: None,
+        },
+        blender: BlendDesc {
+            logic_op: None,
+            targets: [
+                ColorBlendDesc {
+                    mask: RED | GREEN | BLUE | ALPHA | COLOR | ALL,
+                    blend: None,
+                },
+            ],
+        },
+        depth_stencil: DepthStencilDesc {
+            depth: Some(
+                DepthTest {
+                    fun: LessEqual,
+                    write: false,
+                },
+            ),
+            depth_bounds: false,
+            stencil: Some(
+                StencilTest {
+                    faces: Sided {
+                        front: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                        back: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                    },
+                    read_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    write_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    reference_values: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                },
+            ),
+        },
+        multisampling: None,
+        baked_states: BakedStates {
+            viewport: None,
+            scissor: None,
+            blend_color: None,
+            depth_bounds: None,
+        },
+        layout: PipelineLayout {
+            shader_compiler_options: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: false,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            shader_compiler_options_point: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: true,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            infos: [
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 1,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+            ],
+            total: MultiStageData {
+                vs: ResourceData {
+                    buffers: 1,
+                    textures: 0,
+                    samplers: 0,
+                },
+                ps: ResourceData {
+                    buffers: 0,
+                    textures: 1,
+                    samplers: 1,
+                },
+                cs: ResourceData {
+                    buffers: 0,
+                    textures: 0,
+                    samplers: 0,
+                },
+            },
+            push_constants: MultiStageData {
+                vs: None,
+                ps: None,
+                cs: None,
+            },
+            total_push_constants: 0,
+        },
+        subpass: Subpass {
+            index: 0,
+            main_pass: RenderPass {
+                attachments: [
+                    Attachment {
+                        format: Some(
+                            Bgra8Srgb,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: DontCare,
+                            store: DontCare,
+                        },
+                        layouts: General..General,
+                    },
+                    Attachment {
+                        format: Some(
+                            D32Sfloat,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        layouts: General..General,
+                    },
+                ],
+                subpasses: [
+                    Subpass {
+                        colors: [
+                            (
+                                0,
+                                STORE,
+                                None,
+                            ),
+                        ],
+                        depth_stencil: Some(
+                            (
+                                1,
+                                STORE,
+                            ),
+                        ),
+                        inputs: [],
+                        target_formats: SubpassFormats {
+                            colors: [
+                                (
+                                    BGRA8Unorm_sRGB,
+                                    Float,
+                                ),
+                            ],
+                            depth_stencil: Some(
+                                Depth32Float,
+                            ),
+                        },
+                    },
+                ],
+                name: "",
+            },
+        },
+        flags: (empty),
+        parent: None,
+    }
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Vertex, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #pragma clang diagnostic ignored "-Wmissing-prototypes"
+    
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct _35
+    {
+        float4x4 _m0;
+        float4x4 _m1;
+    };
+    
+    struct main0_out
+    {
+        float3 m_60 [[user(locn0)]];
+        float4 gl_Position [[position]];
+    };
+    
+    // Returns the determinant of a 2x2 matrix.
+    static inline __attribute__((always_inline))
+    float spvDet2x2(float a1, float a2, float b1, float b2)
+    {
+        return a1 * b2 - b1 * a2;
+    }
+    
+    // Returns the determinant of a 3x3 matrix.
+    static inline __attribute__((always_inline))
+    float spvDet3x3(float a1, float a2, float a3, float b1, float b2, float b3, float c1, float c2, float c3)
+    {
+        return a1 * spvDet2x2(b2, b3, c2, c3) - b1 * spvDet2x2(a2, a3, c2, c3) + c1 * spvDet2x2(a2, a3, b2, b3);
+    }
+    
+    // Returns the inverse of a matrix, by using the algorithm of calculating the classical
+    // adjoint and dividing by the determinant. The contents of the matrix are changed.
+    static inline __attribute__((always_inline))
+    float4x4 spvInverse4x4(float4x4 m)
+    {
+        float4x4 adj;	// The adjoint matrix (inverse after dividing by determinant)
+    
+        // Create the transpose of the cofactors, as the classical adjoint of the matrix.
+        adj[0][0] =  spvDet3x3(m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3]);
+        adj[0][1] = -spvDet3x3(m[0][1], m[0][2], m[0][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3]);
+        adj[0][2] =  spvDet3x3(m[0][1], m[0][2], m[0][3], m[1][1], m[1][2], m[1][3], m[3][1], m[3][2], m[3][3]);
+        adj[0][3] = -spvDet3x3(m[0][1], m[0][2], m[0][3], m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3]);
+    
+        adj[1][0] = -spvDet3x3(m[1][0], m[1][2], m[1][3], m[2][0], m[2][2], m[2][3], m[3][0], m[3][2], m[3][3]);
+        adj[1][1] =  spvDet3x3(m[0][0], m[0][2], m[0][3], m[2][0], m[2][2], m[2][3], m[3][0], m[3][2], m[3][3]);
+        adj[1][2] = -spvDet3x3(m[0][0], m[0][2], m[0][3], m[1][0], m[1][2], m[1][3], m[3][0], m[3][2], m[3][3]);
+        adj[1][3] =  spvDet3x3(m[0][0], m[0][2], m[0][3], m[1][0], m[1][2], m[1][3], m[2][0], m[2][2], m[2][3]);
+    
+        adj[2][0] =  spvDet3x3(m[1][0], m[1][1], m[1][3], m[2][0], m[2][1], m[2][3], m[3][0], m[3][1], m[3][3]);
+        adj[2][1] = -spvDet3x3(m[0][0], m[0][1], m[0][3], m[2][0], m[2][1], m[2][3], m[3][0], m[3][1], m[3][3]);
+        adj[2][2] =  spvDet3x3(m[0][0], m[0][1], m[0][3], m[1][0], m[1][1], m[1][3], m[3][0], m[3][1], m[3][3]);
+        adj[2][3] = -spvDet3x3(m[0][0], m[0][1], m[0][3], m[1][0], m[1][1], m[1][3], m[2][0], m[2][1], m[2][3]);
+    
+        adj[3][0] = -spvDet3x3(m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2]);
+        adj[3][1] =  spvDet3x3(m[0][0], m[0][1], m[0][2], m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2]);
+        adj[3][2] = -spvDet3x3(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[3][0], m[3][1], m[3][2]);
+        adj[3][3] =  spvDet3x3(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2]);
+    
+        // Calculate the determinant as a combination of the cofactors of the first row.
+        float det = (adj[0][0] * m[0][0]) + (adj[0][1] * m[1][0]) + (adj[0][2] * m[2][0]) + (adj[0][3] * m[3][0]);
+    
+        // Divide the classical adjoint matrix by the determinant.
+        // If determinant is zero, matrix is not invertable, so leave it unchanged.
+        return (det != 0.0f) ? (adj * (1.0f / det)) : m;
+    }
+    
+    vertex main0_out main0(constant _35& _37 [[buffer(0)]], uint gl_VertexIndex [[vertex_id]])
+    {
+        main0_out out = {};
+        float4 _79;
+        switch (int(gl_VertexIndex))
+        {
+            case 0:
+            {
+                _79 = float4(-1.0, -1.0, 0.0, 1.0);
+                break;
+            }
+            case 1:
+            {
+                _79 = float4(3.0, -1.0, 0.0, 1.0);
+                break;
+            }
+            case 2:
+            {
+                _79 = float4(-1.0, 3.0, 0.0, 1.0);
+                break;
+            }
+            default:
+            {
+                _79 = float4(0.0);
+                break;
+            }
+        }
+        out.m_60 = transpose(float3x3(_37._m1[0].xyz, _37._m1[1].xyz, _37._m1[2].xyz)) * (spvInverse4x4(_37._m0) * _79).xyz;
+        out.gl_Position = _79;
+        out.gl_Position.z *= (-1.0);
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Fragment, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct main0_out
+    {
+        float4 m_9 [[color(0)]];
+    };
+    
+    struct main0_in
+    {
+        float3 m_22 [[user(locn0)]];
+    };
+    
+    fragment main0_out main0(main0_in in [[stage_in]], texturecube<float> _12 [[texture(0)]], sampler _16 [[sampler(0)]])
+    {
+        main0_out out = {};
+        out.m_9 = _12.sample(_16, in.m_22);
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_buffer of size 128 and usage TRANSFER_DST | UNIFORM
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] bind_buffer_memory of size 128 at offset 1280
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	mapped to public heap with address 0x7faaed798a20
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] flush_mapped_memory_ranges
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	range 1280..1536
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] pool: allocate_set
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] 	total ResourceData { buffers: 1, textures: 0, samplers: 0 }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] write_descriptor_sets
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_graphics_pipeline GraphicsPipelineDesc {
+        shaders: GraphicsShaderSet {
+            vertex: EntryPoint {
+                entry: "main",
+                module: ShaderModule::Raw(length = 326),
+                specialization: Specialization {
+                    constants: [],
+                    data: [],
+                },
+            },
+            hull: None,
+            domain: None,
+            geometry: None,
+            fragment: Some(
+                EntryPoint {
+                    entry: "main",
+                    module: ShaderModule::Raw(length = 146),
+                    specialization: Specialization {
+                        constants: [],
+                        data: [],
+                    },
+                },
+            ),
+        },
+        rasterizer: Rasterizer {
+            polygon_mode: Fill,
+            cull_face: BACK,
+            front_face: Clockwise,
+            depth_clamping: false,
+            depth_bias: None,
+            conservative: false,
+            line_width: Static(
+                1.0,
+            ),
+        },
+        vertex_buffers: [
+            VertexBufferDesc {
+                binding: 0,
+                stride: 48,
+                rate: Vertex,
+            },
+        ],
+        attributes: [
+            AttributeDesc {
+                location: 0,
+                binding: 0,
+                element: Element {
+                    format: Rgb32Sfloat,
+                    offset: 0,
+                },
+            },
+            AttributeDesc {
+                location: 1,
+                binding: 0,
+                element: Element {
+                    format: Rgb32Sfloat,
+                    offset: 12,
+                },
+            },
+            AttributeDesc {
+                location: 2,
+                binding: 0,
+                element: Element {
+                    format: Rg32Sfloat,
+                    offset: 24,
+                },
+            },
+            AttributeDesc {
+                location: 3,
+                binding: 0,
+                element: Element {
+                    format: Rgba32Sfloat,
+                    offset: 32,
+                },
+            },
+        ],
+        input_assembler: InputAssemblerDesc {
+            primitive: TriangleList,
+            with_adjacency: false,
+            restart_index: None,
+        },
+        blender: BlendDesc {
+            logic_op: None,
+            targets: [
+                ColorBlendDesc {
+                    mask: RED | GREEN | BLUE | ALPHA | COLOR | ALL,
+                    blend: None,
+                },
+            ],
+        },
+        depth_stencil: DepthStencilDesc {
+            depth: Some(
+                DepthTest {
+                    fun: Greater,
+                    write: true,
+                },
+            ),
+            depth_bounds: false,
+            stencil: Some(
+                StencilTest {
+                    faces: Sided {
+                        front: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                        back: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                    },
+                    read_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    write_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    reference_values: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                },
+            ),
+        },
+        multisampling: None,
+        baked_states: BakedStates {
+            viewport: None,
+            scissor: None,
+            blend_color: None,
+            depth_bounds: None,
+        },
+        layout: PipelineLayout {
+            shader_compiler_options: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: false,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 2,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 2,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 3,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            shader_compiler_options_point: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: true,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 2,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 2,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 3,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            infos: [
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 1,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 3,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 2,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+            ],
+            total: MultiStageData {
+                vs: ResourceData {
+                    buffers: 4,
+                    textures: 0,
+                    samplers: 0,
+                },
+                ps: ResourceData {
+                    buffers: 2,
+                    textures: 1,
+                    samplers: 1,
+                },
+                cs: ResourceData {
+                    buffers: 0,
+                    textures: 0,
+                    samplers: 0,
+                },
+            },
+            push_constants: MultiStageData {
+                vs: None,
+                ps: None,
+                cs: None,
+            },
+            total_push_constants: 0,
+        },
+        subpass: Subpass {
+            index: 0,
+            main_pass: RenderPass {
+                attachments: [
+                    Attachment {
+                        format: Some(
+                            Bgra8Srgb,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: DontCare,
+                            store: DontCare,
+                        },
+                        layouts: General..General,
+                    },
+                    Attachment {
+                        format: Some(
+                            D32Sfloat,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        layouts: General..General,
+                    },
+                ],
+                subpasses: [
+                    Subpass {
+                        colors: [
+                            (
+                                0,
+                                STORE,
+                                None,
+                            ),
+                        ],
+                        depth_stencil: Some(
+                            (
+                                1,
+                                STORE,
+                            ),
+                        ),
+                        inputs: [],
+                        target_formats: SubpassFormats {
+                            colors: [
+                                (
+                                    BGRA8Unorm_sRGB,
+                                    Float,
+                                ),
+                            ],
+                            depth_stencil: Some(
+                                Depth32Float,
+                            ),
+                        },
+                    },
+                ],
+                name: "",
+            },
+        },
+        flags: (empty),
+        parent: None,
+    }
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Vertex, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct _23
+    {
+        float4x4 _m0;
+    };
+    
+    struct _29
+    {
+        float4x4 _m0;
+    };
+    
+    struct main0_out
+    {
+        float2 m_9 [[user(locn0)]];
+        float4 gl_Position [[position]];
+    };
+    
+    struct main0_in
+    {
+        float3 m_37 [[attribute(0)]];
+        float2 m_11 [[attribute(2)]];
+    };
+    
+    vertex main0_out main0(main0_in in [[stage_in]], constant _29& _31 [[buffer(0)]], constant _23& _25 [[buffer(1)]])
+    {
+        main0_out out = {};
+        out.m_9 = in.m_11;
+        out.gl_Position = (_25._m0 * _31._m0) * float4(in.m_37, 1.0);
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Fragment, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct main0_out
+    {
+        float4 m_26 [[color(0)]];
+    };
+    
+    struct main0_in
+    {
+        float2 m_22 [[user(locn0)]];
+    };
+    
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> _12 [[texture(0)]], sampler _16 [[sampler(0)]])
+    {
+        main0_out out = {};
+        out.m_26 = _12.sample(_16, in.m_22);
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] create_graphics_pipeline GraphicsPipelineDesc {
+        shaders: GraphicsShaderSet {
+            vertex: EntryPoint {
+                entry: "main",
+                module: ShaderModule::Raw(length = 559),
+                specialization: Specialization {
+                    constants: [],
+                    data: [],
+                },
+            },
+            hull: None,
+            domain: None,
+            geometry: None,
+            fragment: Some(
+                EntryPoint {
+                    entry: "main",
+                    module: ShaderModule::Raw(length = 1348),
+                    specialization: Specialization {
+                        constants: [],
+                        data: [],
+                    },
+                },
+            ),
+        },
+        rasterizer: Rasterizer {
+            polygon_mode: Fill,
+            cull_face: NONE,
+            front_face: CounterClockwise,
+            depth_clamping: false,
+            depth_bias: None,
+            conservative: false,
+            line_width: Static(
+                1.0,
+            ),
+        },
+        vertex_buffers: [
+            VertexBufferDesc {
+                binding: 0,
+                stride: 48,
+                rate: Vertex,
+            },
+        ],
+        attributes: [
+            AttributeDesc {
+                location: 0,
+                binding: 0,
+                element: Element {
+                    format: Rgb32Sfloat,
+                    offset: 0,
+                },
+            },
+            AttributeDesc {
+                location: 1,
+                binding: 0,
+                element: Element {
+                    format: Rgb32Sfloat,
+                    offset: 12,
+                },
+            },
+            AttributeDesc {
+                location: 2,
+                binding: 0,
+                element: Element {
+                    format: Rg32Sfloat,
+                    offset: 24,
+                },
+            },
+            AttributeDesc {
+                location: 3,
+                binding: 0,
+                element: Element {
+                    format: Rgba32Sfloat,
+                    offset: 32,
+                },
+            },
+        ],
+        input_assembler: InputAssemblerDesc {
+            primitive: TriangleList,
+            with_adjacency: false,
+            restart_index: None,
+        },
+        blender: BlendDesc {
+            logic_op: None,
+            targets: [
+                ColorBlendDesc {
+                    mask: RED | GREEN | BLUE | ALPHA | COLOR | ALL,
+                    blend: None,
+                },
+            ],
+        },
+        depth_stencil: DepthStencilDesc {
+            depth: Some(
+                DepthTest {
+                    fun: Less,
+                    write: true,
+                },
+            ),
+            depth_bounds: false,
+            stencil: Some(
+                StencilTest {
+                    faces: Sided {
+                        front: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                        back: StencilFace {
+                            fun: Always,
+                            op_fail: Keep,
+                            op_depth_fail: Keep,
+                            op_pass: Keep,
+                        },
+                    },
+                    read_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    write_masks: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                    reference_values: Static(
+                        Sided {
+                            front: 0,
+                            back: 0,
+                        },
+                    ),
+                },
+            ),
+        },
+        multisampling: None,
+        baked_states: BakedStates {
+            viewport: None,
+            scissor: None,
+            blend_color: None,
+            depth_bounds: None,
+        },
+        layout: PipelineLayout {
+            shader_compiler_options: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: false,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 2,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 2,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 3,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 3,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 1,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 4,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 2,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 3,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 5,
+                        sampler_id: 4294967295,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            shader_compiler_options_point: CompilerOptions {
+                platform: macOS,
+                version: V2_2,
+                vertex: CompilerVertexOptions {
+                    invert_y: false,
+                    transform_clip_space: false,
+                },
+                swizzle_buffer_index: 30,
+                indirect_params_buffer_index: 29,
+                output_buffer_index: 28,
+                patch_output_buffer_index: 27,
+                tessellation_factor_buffer_index: 26,
+                buffer_size_buffer_index: 25,
+                enable_point_size_builtin: true,
+                enable_rasterization: true,
+                capture_output_to_buffer: false,
+                swizzle_texture_samples: false,
+                tessellation_domain_origin_lower_left: false,
+                enable_argument_buffers: false,
+                pad_fragment_output_components: false,
+                resource_binding_overrides: {
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 0,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 2,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Vertex,
+                        desc_set: 2,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 3,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 0,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 1,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 1,
+                        texture_id: 4294967295,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4294967295,
+                        sampler_id: 0,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 0,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 3,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 1,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 2,
+                        binding: 4,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 2,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 0,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 3,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 1,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 4,
+                        sampler_id: 4294967295,
+                    },
+                    ResourceBindingLocation {
+                        stage: Fragment,
+                        desc_set: 3,
+                        binding: 2,
+                    }: ResourceBinding {
+                        buffer_id: 4294967295,
+                        texture_id: 5,
+                        sampler_id: 4294967295,
+                    },
+                },
+                vertex_attribute_overrides: {},
+                const_samplers: {},
+            },
+            infos: [
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 1,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 3,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 2,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+                DescriptorSetInfo {
+                    offsets: MultiStageData {
+                        vs: ResourceData {
+                            buffers: 4,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                        ps: ResourceData {
+                            buffers: 2,
+                            textures: 3,
+                            samplers: 1,
+                        },
+                        cs: ResourceData {
+                            buffers: 0,
+                            textures: 0,
+                            samplers: 0,
+                        },
+                    },
+                    dynamic_buffers: [],
+                },
+            ],
+            total: MultiStageData {
+                vs: ResourceData {
+                    buffers: 4,
+                    textures: 0,
+                    samplers: 0,
+                },
+                ps: ResourceData {
+                    buffers: 2,
+                    textures: 6,
+                    samplers: 1,
+                },
+                cs: ResourceData {
+                    buffers: 0,
+                    textures: 0,
+                    samplers: 0,
+                },
+            },
+            push_constants: MultiStageData {
+                vs: None,
+                ps: None,
+                cs: None,
+            },
+            total_push_constants: 0,
+        },
+        subpass: Subpass {
+            index: 0,
+            main_pass: RenderPass {
+                attachments: [
+                    Attachment {
+                        format: Some(
+                            Bgra8Srgb,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: DontCare,
+                            store: DontCare,
+                        },
+                        layouts: General..General,
+                    },
+                    Attachment {
+                        format: Some(
+                            D32Sfloat,
+                        ),
+                        samples: 1,
+                        ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        stencil_ops: AttachmentOps {
+                            load: Load,
+                            store: Store,
+                        },
+                        layouts: General..General,
+                    },
+                ],
+                subpasses: [
+                    Subpass {
+                        colors: [
+                            (
+                                0,
+                                STORE,
+                                None,
+                            ),
+                        ],
+                        depth_stencil: Some(
+                            (
+                                1,
+                                STORE,
+                            ),
+                        ),
+                        inputs: [],
+                        target_formats: SubpassFormats {
+                            colors: [
+                                (
+                                    BGRA8Unorm_sRGB,
+                                    Float,
+                                ),
+                            ],
+                            depth_stencil: Some(
+                                Depth32Float,
+                            ),
+                        },
+                    },
+                ],
+                name: "",
+            },
+        },
+        flags: (empty),
+        parent: None,
+    }
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Vertex, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct _27
+    {
+        float4x4 _m0;
+    };
+    
+    struct _94
+    {
+        float4x4 _m0;
+        float4x4 _m1;
+        float4x4 _m2;
+    };
+    
+    struct main0_out
+    {
+        float2 m_9 [[user(locn0)]];
+        float3 m_58 [[user(locn1)]];
+        float3 m_45 [[user(locn2)]];
+        float3 m_71 [[user(locn3)]];
+        float m_86 [[user(locn4)]];
+        float4 gl_Position [[position]];
+    };
+    
+    struct main0_in
+    {
+        float3 m_49 [[attribute(0)]];
+        float3 m_61 [[attribute(1)]];
+        float2 m_11 [[attribute(2)]];
+        float4 m_75 [[attribute(3)]];
+    };
+    
+    vertex main0_out main0(main0_in in [[stage_in]], constant _27& _29 [[buffer(0)]], constant _94& _96 [[buffer(1)]])
+    {
+        main0_out out = {};
+        out.m_9 = float2(in.m_11.x, in.m_11.y);
+        float4 _55 = float4(in.m_49, 1.0);
+        out.m_45 = (_29._m0 * _55).xyz;
+        out.m_58 = normalize(_29._m0 * float4(in.m_61, 0.0)).xyz;
+        out.m_71 = normalize(_29._m0 * float4(in.m_75.xyz, 0.0)).xyz;
+        out.m_86 = in.m_75.w;
+        out.gl_Position = (_96._m0 * _29._m0) * _55;
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z INFO  gfx_backend_metal::device] Entry point EntryPoint { name: "main", execution_model: Fragment, work_group_size: WorkGroupSize { x: 0, y: 0, z: 0 } }
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] SPIRV-Cross generated shader:
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct _37
+    {
+        float4 _m0;
+        float4 _m1;
+    };
+    
+    struct _41
+    {
+        float4 _m0;
+        float4 _m1;
+        float4 _m2;
+    };
+    
+    struct _43
+    {
+        float4 _m0;
+        _37 _m1[5];
+        _41 _m2[5];
+    };
+    
+    struct _136
+    {
+        float4 _m0;
+        float4 _m1;
+    };
+    
+    struct _165
+    {
+        float4x4 _m0;
+        float4 _m1;
+    };
+    
+    struct main0_out
+    {
+        float4 m_421 [[color(0)]];
+    };
+    
+    struct main0_in
+    {
+        float2 m_120 [[user(locn0)]];
+        float3 m_178 [[user(locn1)]];
+        float3 m_173 [[user(locn2)]];
+        float3 m_182 [[user(locn3)]];
+        float m_190 [[user(locn4)]];
+    };
+    
+    fragment main0_out main0(main0_in in [[stage_in]], constant _165& _167 [[buffer(0)]], constant _136& _138 [[buffer(0)]], constant _43& _45 [[buffer(1)]], texture2d<float> _110 [[texture(0)]], texture2d<float> _152 [[texture(1)]], texture2d<float> _125 [[texture(2)]], texturecube<float> _231 [[texture(3)]], texturecube<float> _240 [[texture(4)]], texture2d<float> _251 [[texture(5)]], sampler _114 [[sampler(0)]])
+    {
+        main0_out out = {};
+        float4 _130 = _125.sample(_114, in.m_120);
+        float _142 = _130.z * _138._m1.x;
+        float _149 = _130.y * _138._m1.y;
+        float3 _176 = normalize(_167._m1.xyz - in.m_173);
+        float3 _180 = normalize(in.m_178);
+        float3 _184 = normalize(in.m_182);
+        float3 _215 = float3x3(_184, cross(_180, _184) * in.m_190, _180) * normalize((_152.sample(_114, in.m_120).xyz * 2.0) - float3(1.0));
+        float _222 = abs(dot(_215, _176)) + 9.9999997473787516355514526367188e-06;
+        float4 _258 = _251.sample(_114, float2(_222, _149));
+        float3 _264 = _110.sample(_114, in.m_120).xyz;
+        float3 _267 = mix(float3(0.039999999105930328369140625), _264, float3(_142));
+        float3 _431 = float3(1.0) - _267;
+        float3 _437 = _267 + (_431 * exp2((((-5.554729938507080078125) * _222) - 6.9831600189208984375) * _222));
+        float _277 = 1.0 - _142;
+        float _301 = _149 * _149;
+        float3 _503;
+        _503 = float3(0.0);
+        for (int _502 = 0; (_502 < int(_45._m0.x)) && (_502 < 10); )
+        {
+            float3 _336 = normalize(_45._m1[_502]._m0.xyz);
+            float3 _341 = normalize(_176 + _336);
+            float _450 = fast::clamp(dot(_215, _336), 0.0, 1.0);
+            float _453 = fast::clamp(dot(_215, _341), 0.0, 1.0);
+            float _456 = fast::clamp(dot(_341, _176), 0.0, 1.0);
+            float3 _465 = _267 + (_431 * exp2((((-5.554729938507080078125) * _456) - 6.9831600189208984375) * _456));
+            float _469 = _301 * _301;
+            float _481 = 1.0 - _301;
+            _503 += (((((_264 * float3(0.3183098733425140380859375)) * ((float3(1.0) - _465) * _277)) + ((_465 * (((_469 * 0.3183098733425140380859375) / pow(((_453 * _453) * (_469 - 1.0)) + 1.0, 2.0)) * fast::clamp(1.0 / (((_450 * _481) + _301) * ((_222 * _481) + _301)), 0.0, 1.0))) / float3(fast::max((4.0 * _222) * _450, 0.001000000047497451305389404296875)))) * _450) * ((_45._m1[_502]._m1.xyz * 5.0) / float3(dot(_45._m1[_502]._m0.xyz, _45._m1[_502]._m0.xyz))));
+            _502++;
+            continue;
+        }
+        out.m_421 = float4((((_231.sample(_114, _215).xyz * _264) * ((float3(1.0) - _437) * _277)) + (_240.sample(_114, reflect(-_176, _215), level(_149 * 4.0)).xyz * ((_437 * _258.x) + float3(_258.y)))) + _503, 1.0);
+        return out;
+    }
+    
+    
+[2020-04-30T18:56:44Z ERROR gfx_backend_metal::device] Error compiling the shader CompilationFailed("Compilation failed: \n\nprogram_source:52:102: error: cannot reserve \'buffer\' resource location at index 0\nfragment main0_out main0(main0_in in [[stage_in]], constant _165& _167 [[buffer(0)]], constant _136& _138 [[buffer(0)]], constant _43& _45 [[buffer(1)]], texture2d<float> _110 [[texture(0)]], texture2d<float> _152 [[texture(1)]], texture2d<float> _125 [[texture(2)]], texturecube<float> _231 [[texture(3)]], texturecube<float> _240 [[texture(4)]], texture2d<float> _251 [[texture(5)]], sampler _114 [[sampler(0)]])\n                                                                                                     ^\n")
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Other', /Users/jmitchell/.cargo/git/checkouts/wgpu-53e70f8674b08dd4/49dbe08/wgpu-core/src/device/mod.rs:1788:17
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] wait_for_fence Fence(RefCell { value: PendingSubmission(<MTLIGAccelCommandBuffer: 0x7faaed7a14a0>
+        label = signal 
+        device = <MTLIGAccelDevice: 0x7faaf0008000>
+            name = Intel(R) UHD Graphics 630 
+        commandQueue = <MTLIGAccelCommandQueue: 0x7faaed530df0>
+            label = <none> 
+            device = <MTLIGAccelDevice: 0x7faaf0008000>
+                name = Intel(R) UHD Graphics 630 
+        retainedReferences = 0) }) for 0 ms
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed798a20 occupying memory 0..144
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaefb14de0 occupying memory 0..416
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 262144
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 262144
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaefb14de0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed798a20 occupying memory 1280..1408
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed40e3f0 occupying memory 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed799160 occupying memory 0..16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed799160
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed79a2e0 occupying memory 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaefb1bb30 occupying memory 327680..327684
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed79bbb0 occupying memory 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed79ad60 occupying memory 0..16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79ad60
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faacd4190f0 occupying memory 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaef912070 occupying memory 0..134217728
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 134217728
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 134217728
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaef912070
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaefb1bb30 occupying memory 0..262144
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed79b9f0 occupying memory 0..16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 16777216
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79b9f0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed79a7e0 occupying memory 0..1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaed799e40 occupying memory 0..1638400
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1638400
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1638400
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed799e40
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] destroy_buffer 0x7faaefb1bb30 occupying memory 262144..327680
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaefb1bb30
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79a2e0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faacd4190f0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed79a7e0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] unmap_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] free_memory of size 1048576
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::device] 	backed by cpu buffer 0x7faaed40e3f0
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] pool: free_sets
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] 	ResourceData { buffers: 0..2, textures: 0..0, samplers: 0..0 } resources
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] pool: free_sets
+[2020-04-30T18:56:44Z DEBUG gfx_backend_metal::native] 	ResourceData { buffers: 0..1, textures: 0..0, samplers: 0..0 } resources

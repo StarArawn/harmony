@@ -10,29 +10,15 @@ layout(location = 2) out vec3 o_position;
 layout(location = 3) out vec3 o_tangent;
 layout(location = 4) out float o_tbn_handedness;
 
-layout(set = 1, binding = 0) uniform Globals {
+layout(set = 1, binding = 0) uniform VertGlobals {
     mat4 view_projection;
     mat4 camera_pos;
     mat4 view;
 };
 
-layout(set = 0, binding = 0) uniform Locals {
+layout(set = 0, binding = 0) uniform VertLocals {
     mat4 world;
 };
-
-mat4 rotationZ( in float angle ) {
-	return mat4(	cos(angle),		-sin(angle),	0,	0,
-			 		sin(angle),		cos(angle),		0,	0,
-							0,				0,		1,	0,
-							0,				0,		0,	1);
-}
-
-mat4 rotationX( in float angle ) {
-	return mat4(	1.0,		0,			0,			0,
-			 		0, 	cos(angle),	-sin(angle),		0,
-					0, 	sin(angle),	 cos(angle),		0,
-					0, 			0,			  0, 		1);
-}
 
 void main() {
     v_TexCoord = vec2(i_uv.x, i_uv.y);

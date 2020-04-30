@@ -121,7 +121,7 @@ impl Skybox {
         }
 
         // Specular BRDF
-        let specular_brdf_size = 128.0;
+        let specular_brdf_size = 256.0;
         let spec_brdf_texture = RenderTarget::new(
             &device,
             specular_brdf_size,
