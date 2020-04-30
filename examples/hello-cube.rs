@@ -41,8 +41,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
             transform_query,
         | {
             for mut transform in transform_query.iter_mut(&mut world) {
-                //transform.rotate_on_y(-2.0 * delta_time.0);
-                // transform.rotate_on_x(-1.0 * delta_time.0);
+                transform.rotate_on_y(-2.0 * delta_time.0);
+                transform.rotate_on_x(-1.0 * delta_time.0);
             }
     })
 }
@@ -64,7 +64,7 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
                     .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
                     .min(std::f32::consts::FRAC_PI_2 - 0.0001);
                 let eye = Vec3::new(0.0, 0.0, 0.0)
-                + (3.0
+                + (5.0
                     * nalgebra::Vector3::new(
                         camera.yaw.sin() * camera.pitch.cos(),
                         camera.pitch.sin(),
@@ -98,7 +98,7 @@ impl harmony::AppState for AppState {
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("tangent.gltf"),
+                Mesh::new("cube.gltf"),
                 Material::new(0), // Need to be an index to the material
                 transform,        // Transform
             )],

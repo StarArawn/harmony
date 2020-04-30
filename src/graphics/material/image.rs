@@ -96,6 +96,8 @@ impl Image {
 
         let image_bytes: Vec<u8> = img.into_raw();
 
+        // TODO: Fix loading of images. We should use SRGB for textures and Unorm for roughness/normal maps/etc.
+        // Should be done with a material loader perhaps?
         (
             image_bytes,
             texture_extent,
