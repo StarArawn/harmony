@@ -47,8 +47,8 @@ pub struct SubMesh {
     pub(crate) index_count: usize,
     mode: wgpu::PrimitiveTopology,
     material_id: Option<usize>,
-    pub(crate) vertex_buffer: wgpu::Buffer,
-    pub(crate) tangent_line_buffer: wgpu::Buffer,
+    pub(crate) vertex_buffer: Option<wgpu::Buffer>,
+    pub(crate) tangent_line_buffer: Option<wgpu::Buffer>,
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
@@ -56,11 +56,11 @@ pub struct SubMesh {
 }
 
 fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
-    &sub_mesh.vertices[sub_mesh.indices[(face * 3) + vert] as usize]
+    &sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
 fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData{
-    &mut sub_mesh.vertices[sub_mesh.indices[(face * 3) + vert] as usize]
+    &mut sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
 impl mikktspace::Geometry for SubMesh {
@@ -104,9 +104,9 @@ impl Mesh {
         T: Into<String>,
     {
         let mut materials = Vec::new();
-        let cloned_path = path.into().clone();
+        let path = path.into();
         let (document, data, _) =
-            gltf::import(cloned_path).expect("Loaded the gltf file successfully!");
+            gltf::import(path.clone()).expect("Loaded the gltf file successfully!");
         let get_buffer_data = |buffer: gltf::Buffer<'_>| data.get(buffer.index()).map(|x| &*x.0);
 
         // let mut meshes = Vec::new();
@@ -208,7 +208,7 @@ impl Mesh {
             let material_index = material_start_index + materials.len() as u32;
             let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
-                normal_texture.unwrap_or("white.png".to_string()),
+                normal_texture.unwrap_or("empty_normal.png".to_string()),
                 roughness_texture.unwrap_or("white.png".to_string()),
                 color,
                 material_index,
@@ -217,16 +217,39 @@ impl Mesh {
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-            // let tangents: Vec<(Vec3, Vec3)> = vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
+            let index_buffer = device
+            .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+            let index_count = indices.len();
+
+
+            let mut sub_mesh = SubMesh {
+                vertices,
+                tangent_lines: Vec::new(),
+                indices,
+                index_count,
+                mode: primitive_topology,
+                material_id: primitive.material().index(),
+                vertex_buffer: None,
+                tangent_line_buffer: None,
+                index_buffer,
+                material_index,
+            };
+            
+            if !had_tangents {
+                log::info!("No tangents found for: {} generating tangents instead!", &path);
+                mikktspace::generate_tangents(&mut sub_mesh);
+            }
+
+            let tangents: Vec<(Vec3, Vec3)> = sub_mesh.vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
             let mut tangent_lines = Vec::new();
-            // for (tangent, position) in tangents.iter() {
-            //     let position: Vec3 = position.clone();// * 50.0;
-            //     let tangent: Vec3 = tangent.clone();
-            //     let scale: f32 = 0.1;
-            //     let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
-            //     tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
-            //     tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
-            // }
+            for (tangent, position) in tangents.iter() {
+                let position: Vec3 = position.clone();// * 50.0;
+                let tangent: Vec3 = tangent.clone();
+                let scale: f32 = 0.1;
+                let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
+                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+            }
             tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
             tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
             tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
@@ -239,29 +262,12 @@ impl Mesh {
             );
 
             let vertex_buffer = device.create_buffer_with_data(
-                &bytemuck::cast_slice(&vertices),
+                &bytemuck::cast_slice(&sub_mesh.vertices),
                 wgpu::BufferUsage::VERTEX,
             );
-            let index_buffer = device
-                .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
-            let index_count = indices.len();
-
-            let mut sub_mesh = SubMesh {
-                vertices,
-                tangent_lines,
-                indices,
-                index_count,
-                mode: primitive_topology,
-                material_id: primitive.material().index(),
-                vertex_buffer,
-                tangent_line_buffer,
-                index_buffer,
-                material_index,
-            };
             
-            if !had_tangents {
-                mikktspace::generate_tangents(&mut sub_mesh);
-            }
+            sub_mesh.tangent_line_buffer = Some(tangent_line_buffer);
+            sub_mesh.vertex_buffer = Some(vertex_buffer);
 
             sub_meshes.push(sub_mesh);
         }

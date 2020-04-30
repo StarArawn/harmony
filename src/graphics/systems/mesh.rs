@@ -227,7 +227,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
                                     for sub_mesh in asset_mesh.sub_meshes.iter() {
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                        render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+                                        render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                                     }
                                 }
@@ -253,7 +253,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
                                     for sub_mesh in asset_mesh.sub_meshes.iter() {
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                        render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+                                        render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                                     }
                                 }

@@ -20,8 +20,8 @@ void main() {
     v_TexCoord = vec2(i_uv.x, i_uv.y);
     mat3 normalMatrix = mat3(transpose(inverse(world)));
     o_position = (world * vec4(i_Pos, 1.0)).xyz;
-    o_normal = normalize(world * vec4(i_normal.xyz, 0.0)).xyz;
-    o_tangent = normalize(world * vec4(i_tangent.xyz, 0.0)).xyz;
+    o_normal = normalMatrix * i_normal.xyz;
+    o_tangent = normalMatrix * i_tangent.xyz;
     o_tbn_handedness = i_tangent.w;
     gl_Position = view_projection * world * vec4(i_Pos, 1.0);
 }

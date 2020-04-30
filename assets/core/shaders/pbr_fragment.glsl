@@ -27,7 +27,7 @@ layout(location = 4) in float i_tbn_handedness;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    vec4 main_color = texture(sampler2D(main_map, tex_sampler), i_uv);
+    vec3 main_color = texture(sampler2D(main_map, tex_sampler), i_uv).rgb * color.rgb;
     
     vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).bg;
     float metallic = metallic_roughness.x * pbr_info.x;
@@ -83,6 +83,7 @@ void main() {
         light_acc += (diffuse + specular) * NdotL * l_contrib;
     }
 
+    // TODO: Point-lights?
 
     outColor = vec4(ambient + light_acc, 1.0);
 }
