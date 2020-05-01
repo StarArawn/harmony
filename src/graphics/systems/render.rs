@@ -6,7 +6,8 @@ pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
     let thread = Box::new(|_world: &mut World, resources: &mut Resources| {
         let mut command_buffers = Vec::new();
 
-        let _swap_chain_output = resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
+        // Moved this out into application run loop.
+        //let _swap_chain_output = resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
         let queue = resources.get::<wgpu::Queue>().unwrap();
         let render_graph = resources.get::<RenderGraph>().unwrap();
         let mut command_queue = resources.get_mut::<CommandBufferQueue>().unwrap();

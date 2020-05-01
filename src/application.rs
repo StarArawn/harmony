@@ -17,7 +17,7 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::{pipelines::LinePipelineDesc, resources::GPUResourceManager};
+use graphics::{pipelines::LinePipelineDesc, resources::{CurrentRenderTarget, GPUResourceManager, RenderTargetDepth}, systems::create_render_schedule_builder};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -39,6 +39,7 @@ pub struct Application {
     pub current_scene: Scene,
     pub render_schedule: Schedule,
     pub resources: Resources,
+    pub probe: crate::graphics::resources::Probe,
 }
 
 impl Application {
@@ -72,10 +73,7 @@ impl Application {
 
         let asset_manager = AssetManager::new(asset_path.into());
 
-        let mut render_schedule_builder = Schedule::builder()
-            .add_system(graphics::systems::skybox::create())
-            .add_system(graphics::systems::line::create())
-            .add_system(graphics::systems::mesh::create());
+        let mut render_schedule_builder = create_render_schedule_builder();
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -89,8 +87,15 @@ impl Application {
         resources.insert(asset_manager);
 
         resources.insert(TransformCount(0));
+        resources.insert(CurrentRenderTarget(None));
+        resources.insert(RenderTargetDepth(0));
 
         resources.insert(Input::new());
+
+        let mut probe = {
+            let device = resources.get::<wgpu::Device>().unwrap();
+            crate::graphics::resources::Probe::new(nalgebra_glm::Vec3::zeros(), &device, None, crate::graphics::resources::ProbeQuality::Low, crate::graphics::resources::ProbeFormat::RGBA32)
+        };
 
         Application {
             renderer,
@@ -102,6 +107,7 @@ impl Application {
             current_scene: scene,
             resources,
             render_schedule,
+            probe,
         }
     }
 
@@ -261,6 +267,7 @@ impl Application {
             let mut input = self.resources.get_mut::<Input>().unwrap();
             input.update_events(event);
         }
+
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
@@ -286,9 +293,13 @@ impl Application {
                     self.resources.insert(output);
                 }
 
+                self.probe.render(&mut self.resources, &mut self.current_scene);
+
                 // Render's the scene.
-                self.render_schedule
-                    .execute(&mut self.current_scene.world, &mut self.resources);
+                self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
+
+                // We need to let the swap drop so the frame renderers.
+                let _swap_chain_output = self.resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
 
                 self.renderer.window.request_redraw();
             }

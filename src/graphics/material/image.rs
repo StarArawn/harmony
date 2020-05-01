@@ -24,12 +24,8 @@ impl Image {
         let (image_bytes, texture_extent, format) = if path.ends_with(".hdr") {
             Self::create_hdr_image(path)
         } else if path.to_lowercase().contains("_normal") || path.to_lowercase().contains("metallic") {
-            dbg!("Normal Map/Metallic: ");
-            dbg!(&path);
             Self::create_normal_image(path)
         } else {
-            dbg!("SRGB: ");
-            dbg!(&path);
             Self::create_color_image(path)
         };
 

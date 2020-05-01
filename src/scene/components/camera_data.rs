@@ -34,6 +34,8 @@ pub struct CameraData {
     pub view: Mat4,
     pub yaw: f32,
     pub pitch: f32,
+    pub width: f32,
+    pub height: f32,
     projection_data: ProjectionData,
 }
 
@@ -51,6 +53,8 @@ impl Default for CameraData {
             },
             view: Mat4::identity(),
             yaw: 0.0,
+            width: 0.0,
+            height: 0.0,
         }
     }
 }
@@ -69,11 +73,13 @@ impl CameraData {
         let projection_data = ProjectionData::Perspective { fov, z_near, z_far };
         Self {
             active: true,
+            height,
             pitch: 0.0,
             position: Vec3::zeros(),
             projection: projection_data.get_projection(width, height),
             projection_data,
             view: Mat4::identity(),
+            width,
             yaw: 0.0,
         }
     }
@@ -92,11 +98,13 @@ impl CameraData {
         let projection_data = ProjectionData::Orthographic { world_height, z_near, z_far };
         Self {
             active: true,
+            height,
             pitch: 0.0,
             position: Vec3::zeros(),
             projection: projection_data.get_projection(width, height),
             projection_data,
             view: Mat4::identity(),
+            width,
             yaw: 0.0,
         }
     }

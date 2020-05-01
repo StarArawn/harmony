@@ -30,7 +30,7 @@ impl RenderTarget {
         let mut texture_view = texture.create_default_view();
         if depth == 6 {
             texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
-                format: wgpu::TextureFormat::Rgba32Float,
+                format,
                 dimension: wgpu::TextureViewDimension::Cube,
                 aspect: wgpu::TextureAspect::default(),
                 base_mip_level: 0,
