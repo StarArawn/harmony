@@ -56,7 +56,6 @@ pub fn create() -> Box<dyn Schedulable> {
                 }
 
                 let render_target_view = if current_render_target.0.is_some() {
-                    dbg!(render_target_depth.0);
                     Some(current_render_target.0.as_ref().unwrap().texture.create_view(&wgpu::TextureViewDescriptor {
                         format: wgpu::TextureFormat::Bgra8UnormSrgb,
                         dimension: wgpu::TextureViewDimension::D2,
@@ -68,12 +67,19 @@ pub fn create() -> Box<dyn Schedulable> {
                     }))
                 } else { None };
 
+                let view_attachment = if current_render_target.0.is_some() {
+                    render_target_view.as_ref().unwrap()
+                } else {
+                    &output.view
+                };
+
+                let depth_attachment = if current_render_target.0.is_some() {
+                    current_render_target.0.as_ref().unwrap().depth_texture_view.as_ref().unwrap()
+                } else {
+                    &depth_texture.0
+                };
+
                 for (skybox,) in skyboxes.iter(&world) {
-                    let view_attachment = if current_render_target.0.is_some() {
-                        render_target_view.as_ref().unwrap()
-                    } else {
-                        &output.view
-                    };
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -88,16 +94,15 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 1.0,
                             },
                         }],
-                        depth_stencil_attachment: None, 
-                        // Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                        //     attachment: &depth_texture.0,
-                        //     depth_load_op: wgpu::LoadOp::Clear,
-                        //     depth_store_op: wgpu::StoreOp::Store,
-                        //     stencil_load_op: wgpu::LoadOp::Clear,
-                        //     stencil_store_op: wgpu::StoreOp::Store,
-                        //     clear_depth: 1.0,
-                        //     clear_stencil: 0,
-                        // }),
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                            attachment: depth_attachment,
+                            depth_load_op: wgpu::LoadOp::Clear,
+                            depth_store_op: wgpu::StoreOp::Store,
+                            stencil_load_op: wgpu::LoadOp::Clear,
+                            stencil_store_op: wgpu::StoreOp::Store,
+                            clear_depth: 1.0,
+                            clear_stencil: 0,
+                        }),
                     });
 
                     render_pass.set_pipeline(&node.pipeline);

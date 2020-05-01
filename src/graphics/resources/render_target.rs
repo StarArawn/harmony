@@ -1,7 +1,16 @@
+use crate::graphics::renderer::DEPTH_FORMAT;
+
 pub struct RenderTarget {
     pub texture: wgpu::Texture,
     pub texture_view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
+
+    // Depth stuff
+    pub depth_texture: Option<wgpu::Texture>,
+    pub depth_texture_view: Option<wgpu::TextureView>,
+
+    pub width: u32,
+    pub height: u32,
 }
 
 impl RenderTarget {
@@ -53,7 +62,29 @@ impl RenderTarget {
                 lod_max_clamp: 100.0,
                 compare: wgpu::CompareFunction::Undefined,
             }),
+            depth_texture: None,
+            depth_texture_view: None,
+            width: width as u32,
+            height: height as u32,
         }
+    }
+
+    pub fn with_depth(&mut self, device: &wgpu::Device) {
+        self.depth_texture = Some(device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            label: None,
+        }));
+
+        self.depth_texture_view = Some(self.depth_texture.as_ref().unwrap().create_default_view());
     }
 
     pub fn complete(self) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {

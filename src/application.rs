@@ -17,7 +17,7 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::{pipelines::LinePipelineDesc, resources::{CurrentRenderTarget, GPUResourceManager, RenderTargetDepth}, systems::create_render_schedule_builder};
+use graphics::{pipelines::LinePipelineDesc, resources::{CurrentRenderTarget, GPUResourceManager, RenderTargetDepth, ProbeManager}, systems::create_render_schedule_builder};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -39,7 +39,7 @@ pub struct Application {
     pub current_scene: Scene,
     pub render_schedule: Schedule,
     pub resources: Resources,
-    pub probe: crate::graphics::resources::Probe,
+    pub probe_manager: ProbeManager,
 }
 
 impl Application {
@@ -92,11 +92,6 @@ impl Application {
 
         resources.insert(Input::new());
 
-        let mut probe = {
-            let device = resources.get::<wgpu::Device>().unwrap();
-            crate::graphics::resources::Probe::new(nalgebra_glm::Vec3::zeros(), &device, None, crate::graphics::resources::ProbeQuality::Low, crate::graphics::resources::ProbeFormat::RGBA32)
-        };
-
         Application {
             renderer,
             clock: Instant::now(),
@@ -107,7 +102,7 @@ impl Application {
             current_scene: scene,
             resources,
             render_schedule,
-            probe,
+            probe_manager: ProbeManager::new(),
         }
     }
 
@@ -293,9 +288,12 @@ impl Application {
                     self.resources.insert(output);
                 }
 
-                self.probe.render(&mut self.resources, &mut self.current_scene);
+                // First update our probes if we need to.
+                {
+                    self.probe_manager.render(&mut self.resources, &mut self.current_scene);
+                }
 
-                // Render's the scene.
+                // Next render's our scene.
                 self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
 
                 // We need to let the swap drop so the frame renderers.

@@ -11,7 +11,7 @@ use winit::{
 use harmony::scene::{resources::DeltaTime, components::{
     CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
 }, Scene};
-use harmony::{core::input::Input, WinitState};
+use harmony::{core::input::Input, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
 
 struct WindowSize {
     width: u32,
@@ -111,6 +111,9 @@ impl harmony::AppState for AppState {
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
         // Skybox needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(skybox,)]);
+
+        // Setup probe for PBR
+        harmony::scene::entities::probe::create(app, Vec3::zeros(), ProbeQuality::Low, ProbeFormat::RGBA32);
 
         // Add directional light to our scene.
         let light_transform = Transform::new(app);

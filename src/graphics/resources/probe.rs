@@ -66,24 +66,25 @@ impl ProbeQuality {
 }
 
 pub struct Probe {
+    pub id: u32,
     pub position: Vec3,
     pub quality: ProbeQuality,
     pub format: ProbeFormat,
     sample_offset: u32,
     samples_per_frame: u32,
     sample_count: u32,
+    samples_remaining: u32,
     scale: f32,
     irradiance_resoultion: u32,
     specular_resoultion: u32,
     probe_cube: Arc<RenderTarget>,
     irradiance_target: RenderTarget,
     specular_target: RenderTarget,
-    reference_texture: Option<wgpu::Texture>,
-    has_rendered: bool,
+    pub(crate) has_rendered: bool,
 }
 
 impl Probe {
-    pub fn new(position: Vec3, device: &wgpu::Device, reference_texture: Option<wgpu::Texture>, quality: ProbeQuality, format: ProbeFormat) -> Self {
+    pub(crate) fn new(id: u32, position: Vec3, device: &wgpu::Device, quality: ProbeQuality, format: ProbeFormat) -> Self {
         let sample_offset = 0;
         let samples_per_frame = 512;
         let sample_count = 1024;
@@ -93,11 +94,14 @@ impl Probe {
         let specular_resoultion = quality.get_specular_resoultion();
 
         let wgpu_format: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb; //format.into();
-        let probe_cube = RenderTarget::new(device, probe_resoultion as f32, probe_resoultion as f32, 6, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
+        let mut probe_cube = RenderTarget::new(device, probe_resoultion as f32, probe_resoultion as f32, 6, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
+        // Probe cube needs depth buffer as we are rendering the scene to it.
+        probe_cube.with_depth(device);
         let irradiance_target = RenderTarget::new(device, irradiance_resoultion as f32, irradiance_resoultion as f32, 6, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
         let specular_target = RenderTarget::new(device, specular_resoultion as f32, specular_resoultion as f32, 6, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
 
         Self {
+            id, 
             position,
             format,
             has_rendered: false,
@@ -105,10 +109,10 @@ impl Probe {
             irradiance_target,
             probe_cube: Arc::new(probe_cube),
             quality,
-            reference_texture,
             sample_count,
             sample_offset,
             samples_per_frame,
+            samples_remaining: 0,
             scale,
             specular_resoultion,
             specular_target,
@@ -118,9 +122,12 @@ impl Probe {
     // Render's scene to the cube
     // This is considered a very "HEAVY" operation, and shouldn't be treated lightly
     // TODO: If wgpu ever adds multi-view's use that instead..
-    pub(crate) fn render(&mut self, resources: &mut Resources, scene: &mut crate::scene::Scene) {
+    pub(crate) fn render_scene(&mut self, resources: &mut Resources, scene: &mut crate::scene::Scene) {
         // If we already rendered don't do it again.
-        //if self.has_rendered { return; }
+        if self.has_rendered { return; }
+
+        self.samples_remaining = self.sample_count;
+        self.sample_offset = 0;
 
         // Insert the cube as the current render target.
         resources.insert(CurrentRenderTarget(Some(self.probe_cube.clone())));
@@ -192,8 +199,23 @@ impl Probe {
         }
 
         resources.insert(CurrentRenderTarget(None));
+    }
 
-        self.has_rendered = true;
+    pub(crate) fn render_brdf(&mut self, _resources: &mut Resources, _scene: &mut crate::scene::Scene) {
+        // If we already processed brdf do nothing.
+        if self.samples_remaining > 0 {
+            self.sample_offset += 1;
+        } else {
+            return;
+        }
+
+        // TODO: Setup render graph.
+
+        // TODO: Calculate irradiance
+
+        // TODO: Calculate specular
+
+        // TODO: Throw results into cube map.
     }
 
     fn update_camera(position: Vec3, camera: &mut CameraData, face_id: u32) {

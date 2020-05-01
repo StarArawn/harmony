@@ -46,7 +46,6 @@ impl AssetManager {
                 file_name,
                 "",
             );
-            //let full_path = format!("{}{}", full_file_path, file_name);
             if file_name.ends_with(".shader") {
                 let shader =
                     Shader::new(&device, full_file_path.to_string(), file_name.to_string());

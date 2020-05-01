@@ -149,16 +149,15 @@ impl SimplePipelineDesc for SkyboxPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: false,
-        //     depth_compare: wgpu::CompareFunction::LessEqual,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: false,
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
