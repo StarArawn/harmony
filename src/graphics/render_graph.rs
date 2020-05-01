@@ -220,11 +220,11 @@ impl RenderGraph {
         let ordering = self.get_order();
 
         for order in ordering {
-            let queue_item_index = queue_items
+            while let Some(queue_item_index) = queue_items
                 .iter()
-                .position(|queue_item| queue_item.name == order);
-            if queue_item_index.is_some() {
-                let queue_item = queue_items.remove(queue_item_index.unwrap());
+                .position(|queue_item| queue_item.name == order) {
+
+                let queue_item = queue_items.remove(queue_item_index);
                 command_buffers.push(queue_item.buffer);
             }
         }
