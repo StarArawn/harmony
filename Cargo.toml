@@ -26,11 +26,8 @@ shaderc = "0.6"
 stretch = "0.3.2"
 solvent = "0.8.1"
 walkdir = "2"
-wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="0fb47262eaf8a7fe13c3175de599ec1014811381" }
-wgpu_glyph = { git = "https://github.com/StarArawn/wgpu_glyph", rev="b6ffde1bc1b5f6a5f0e8401d540ff01abd351883" }
+wgpu = { git = "https://github.com/StarArawn/wgpu-rs", rev="0a012c30780946532f9b2d711e98f7b75e184b5d" }
+wgpu_glyph = { git = "https://github.com/StarArawn/wgpu_glyph", rev="390d1894dd8d7ee88b40eb30fcea7fd0d2e78056" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
-
-[patch.crates-io]
-wgpu-core = { git = "https://github.com/gfx-rs/wgpu", rev = "bc065e4abc24e82a2c92403740ffe8d7e6643243" }

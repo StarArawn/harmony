@@ -13,7 +13,6 @@ pub use self::unlit_material::*;
 pub(crate) mod pbr_material;
 pub use self::pbr_material::*;
 
-#[derive(Debug)]
 pub enum Material {
     Unlit(UnlitMaterial),
     PBR(PBRMaterial),

@@ -16,18 +16,20 @@ impl Renderer {
     pub(crate) async fn new(
         window: winit::window::Window,
         size: winit::dpi::PhysicalSize<u32>,
-        surface: wgpu::Surface,
         resources: &mut Resources,
     ) -> Self {
-        let adapter = wgpu::Adapter::request(
-            &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::Default,
-                compatible_surface: Some(&surface),
-            },
-            wgpu::BackendBit::PRIMARY,
-        )
-        .await
-        .unwrap();
+        let instance = wgpu::Instance::new();
+        let surface = unsafe { instance.create_surface(&window) };
+        let adapter =  instance
+            .request_adapter(
+                &wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::Default,
+                    compatible_surface: Some(&surface),
+                },
+                wgpu::BackendBit::PRIMARY,
+            )
+            .await
+            .unwrap();
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -36,7 +38,8 @@ impl Renderer {
                 },
                 limits: wgpu::Limits::default(),
             })
-            .await;
+            .await
+            .unwrap();
 
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
