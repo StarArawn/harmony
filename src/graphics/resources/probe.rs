@@ -120,7 +120,7 @@ impl Probe {
     // TODO: If wgpu ever adds multi-view's use that instead..
     pub(crate) fn render(&mut self, resources: &mut Resources, scene: &mut crate::scene::Scene) {
         // If we already rendered don't do it again.
-        if self.has_rendered { return; }
+        //if self.has_rendered { return; }
 
         // Insert the cube as the current render target.
         resources.insert(CurrentRenderTarget(Some(self.probe_cube.clone())));

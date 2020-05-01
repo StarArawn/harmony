@@ -56,6 +56,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 }
 
                 let render_target_view = if current_render_target.0.is_some() {
+                    dbg!(render_target_depth.0);
                     Some(current_render_target.0.as_ref().unwrap().texture.create_view(&wgpu::TextureViewDescriptor {
                         format: wgpu::TextureFormat::Bgra8UnormSrgb,
                         dimension: wgpu::TextureViewDimension::D2,
