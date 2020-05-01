@@ -18,9 +18,9 @@ impl ProjectionData {
     fn get_projection(&self, width: f32, height: f32) -> Mat4{
         match self{
             ProjectionData::Perspective { fov, z_near, z_far } => 
-                nalgebra_glm::perspective_fov_lh_no( fov.to_radians(), width, height, *z_near, *z_far),
+                nalgebra_glm::perspective_fov_rh_no( fov.to_radians(), width, height, *z_near, *z_far),
             ProjectionData::Orthographic { world_height, z_near, z_far } => 
-                nalgebra_glm::ortho_lh_no(-0.5*world_height*width/height,0.5*world_height*width/height, -0.5*world_height, 0.5*world_height, *z_near, *z_far)
+                nalgebra_glm::ortho_rh_no(-0.5*world_height*width/height,0.5*world_height*width/height, -0.5*world_height, 0.5*world_height, *z_near, *z_far)
         }
     }
 }
@@ -71,8 +71,8 @@ impl CameraData {
             active: true,
             pitch: 0.0,
             position: Vec3::zeros(),
-            projection_data,
             projection: projection_data.get_projection(width, height),
+            projection_data,
             view: Mat4::identity(),
             yaw: 0.0,
         }
@@ -94,8 +94,8 @@ impl CameraData {
             active: true,
             pitch: 0.0,
             position: Vec3::zeros(),
-            projection_data,
             projection: projection_data.get_projection(width, height),
+            projection_data,
             view: Mat4::identity(),
             yaw: 0.0,
         }
@@ -127,7 +127,7 @@ mod tests{
         let (width,height) = (800f32,600f32);
         let (z_near, z_far) = (0.01f32,10f32);
         let camera_data = CameraData::new_perspective(fov, width, height, z_near, z_far);
-        assert_eq!(camera_data.projection,nalgebra_glm::perspective_fov_lh_no(fov, width, height, z_near, z_far));
+        assert_eq!(camera_data.projection,nalgebra_glm::perspective_fov_rh_no(fov, width, height, z_near, z_far));
     }
     ///just tests for projection matrix calculation
     #[test]
@@ -138,6 +138,6 @@ mod tests{
         let (z_near, z_far) = (0.01f32,10f32);
         let camera_data = CameraData::new_orthographic(world_height, width, height, z_near, z_far);
         print!("{:#?}",camera_data.projection);
-        assert_eq!(camera_data.projection,nalgebra_glm::ortho_lh_no(-world_width/2f32, world_width/2f32, -world_height/2f32,world_height/2f32, z_near, z_far));
+        assert_eq!(camera_data.projection,nalgebra_glm::ortho_rh_no(-world_width/2f32, world_width/2f32, -world_height/2f32,world_height/2f32, z_near, z_far));
     }
 }

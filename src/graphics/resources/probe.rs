@@ -56,7 +56,6 @@ impl ProbeQuality {
     }
 }
 
-#[derive(Debug)]
 pub struct Probe {
     pub quality: ProbeQuality,
     pub format: ProbeFormat,
