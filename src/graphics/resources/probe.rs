@@ -206,6 +206,9 @@ impl Probe {
             5 => { camera.pitch = 0.0; camera.yaw = 0.0; }, // Z-
             _ => (),
         }
+        // Because pitch and yaw are in radians..
+        camera.pitch = camera.pitch.to_radians();
+        camera.yaw = camera.yaw.to_radians();
         let eye = position
         + nalgebra::Vector3::new(
                 camera.yaw.sin() * camera.pitch.cos(),
