@@ -13,7 +13,6 @@ pub struct UnlitUniform {
 unsafe impl Zeroable for UnlitUniform {}
 unsafe impl Pod for UnlitUniform {}
 
-#[derive(Debug)]
 pub struct UnlitMaterial {
     pub index: u32,
     pub main_texture: String,

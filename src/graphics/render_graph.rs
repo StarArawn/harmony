@@ -16,8 +16,6 @@ pub struct CommandQueueItem {
 
 pub type CommandBufferQueue = ArrayQueue<CommandQueueItem>;
 
-// TODO: handle node dependencies somehow.
-#[derive(Debug)]
 pub struct RenderGraphNode {
     pub name: String,
     pub pipeline: wgpu::RenderPipeline,

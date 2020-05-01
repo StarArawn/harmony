@@ -90,7 +90,7 @@ impl AssetManager {
                 info!("Loaded image: {}", file_name);
             }
         }
-        queue.submit(&[init_encoder.finish()]);
+        queue.submit(Some(init_encoder.finish()));
     }
 
     pub fn get_shader<'a, T>(&'a self, key: T) -> &'a Shader

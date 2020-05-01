@@ -7,7 +7,6 @@ use crate::{
     AssetManager,
 };
 
-#[derive(Debug)]
 pub struct CubeProjectionPipeline {
     texture: String,
     size: f32,

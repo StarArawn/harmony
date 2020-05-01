@@ -28,7 +28,6 @@ impl Default for Uniforms {
 unsafe impl Zeroable for Uniforms {}
 unsafe impl Pod for Uniforms {}
 
-#[derive(Debug)]
 pub struct SpecularPipeline {
     constants_buffer: wgpu::Buffer,
     resoultion: f32,

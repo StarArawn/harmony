@@ -29,7 +29,6 @@ impl Default for MeshVertexData {
     }
 }
 
-#[derive(Debug)]
 pub struct SubMesh {
     vertices: Vec<MeshVertexData>,
     indices: Vec<u32>,

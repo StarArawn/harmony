@@ -13,7 +13,6 @@ pub struct PBRMaterialUniform {
 unsafe impl Zeroable for PBRMaterialUniform {}
 unsafe impl Pod for PBRMaterialUniform {}
 
-#[derive(Debug)]
 pub struct PBRMaterial {
     pub index: u32,
     pub main_texture: String,
