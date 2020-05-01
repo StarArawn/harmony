@@ -39,7 +39,6 @@ impl Default for MeshVertexData {
     }
 }
 
-#[derive(Debug)]
 pub struct SubMesh {
     pub vertices: Vec<MeshVertexData>,
     pub tangent_lines: Vec<MeshTangentLine>,

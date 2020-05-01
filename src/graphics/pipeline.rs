@@ -4,13 +4,12 @@ use super::{
 };
 use crate::AssetManager;
 
-#[derive(Debug)]
 pub struct BindGroupWithData {
     pub(crate) uniform_buf: wgpu::Buffer,
     pub(crate) bind_group: wgpu::BindGroup,
 }
 
-pub trait SimplePipeline: std::fmt::Debug + Send + Sync + 'static {
+pub trait SimplePipeline: Send + Sync + 'static {
     fn prepare(
         &mut self,
         _asset_manager: &AssetManager,

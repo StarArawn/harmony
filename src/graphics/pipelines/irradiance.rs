@@ -7,7 +7,6 @@ use crate::{
     AssetManager,
 };
 
-#[derive(Debug)]
 pub struct IrradiancePipeline {
     size: f32,
     bind_group: Option<wgpu::BindGroup>,

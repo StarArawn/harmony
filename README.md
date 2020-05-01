@@ -61,7 +61,7 @@ If more help is needed or you feel as though the issue you encountered is direct
 
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
-- Iced GUI: https://github.com/hecrj/iced
+- Floatingmountain: https://github.com/floatingmountain for helping out a ton!
 
 ### Help?
 You can find me on the rust game development discord server here:

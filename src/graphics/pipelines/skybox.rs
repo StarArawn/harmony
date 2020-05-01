@@ -11,7 +11,6 @@ use crate::{
     AssetManager,
 };
 
-#[derive(Debug)]
 pub struct SkyboxPipeline {
     constants_buffer: wgpu::Buffer,
     global_bind_group: wgpu::BindGroup,

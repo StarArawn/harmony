@@ -62,14 +62,13 @@ impl Application {
         let scene = Scene::new(None, None);
         let window = window_builder.build(event_loop).unwrap();
         let size = window.inner_size();
-        let surface = wgpu::Surface::create(&window);
 
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
 
         let renderer =
-            futures::executor::block_on(Renderer::new(window, size, surface, &mut resources));
+            futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 

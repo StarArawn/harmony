@@ -5,11 +5,9 @@ use crate::{
     },
     Application, AssetManager,
 };
-use std::fs::File;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
-#[derive(Debug)]
 pub struct Skybox {
     pub size: f32,
     pub(crate) color_texture: wgpu::Texture,
@@ -236,7 +234,7 @@ impl Skybox {
 
         // Push to all command buffers to the queue
         let queue = app.resources.get::<wgpu::Queue>().unwrap();
-        queue.submit(&vec![command_buffer, encoder.finish()]);
+        queue.submit(vec![command_buffer, encoder.finish()]);
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);
@@ -331,22 +329,22 @@ impl Skybox {
         self.cubemap_bind_group = Some(bind_group);
     }
 
-    async fn save(
-        buffer_future: impl futures::Future<
-            Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>,
-        >,
-    ) {
-        if let Ok(mapping) = buffer_future.await {
-            let mut png_encoder = png::Encoder::new(File::create("save.png").unwrap(), 128, 128);
-            png_encoder.set_depth(png::BitDepth::Eight);
-            png_encoder.set_color(png::ColorType::RGBA);
-            png_encoder
-                .write_header()
-                .unwrap()
-                .write_image_data(mapping.as_slice())
-                .unwrap();
-        }
-    }
+    // async fn save(
+    //     buffer_future: impl futures::Future<
+    //         Output = Result<wgpu::BufferReadMapping, wgpu::BufferAsyncErr>,
+    //     >,
+    // ) {
+    //     if let Ok(mapping) = buffer_future.await {
+    //         let mut png_encoder = png::Encoder::new(File::create("save.png").unwrap(), 128, 128);
+    //         png_encoder.set_depth(png::BitDepth::Eight);
+    //         png_encoder.set_color(png::ColorType::RGBA);
+    //         png_encoder
+    //             .write_header()
+    //             .unwrap()
+    //             .write_image_data(mapping.as_slice())
+    //             .unwrap();
+    //     }
+    // }
 
     pub fn create_bind_group<'a>(
         &self,
