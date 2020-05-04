@@ -59,7 +59,7 @@ If more help is needed or you feel as though the issue you encountered is direct
 
 ## Screenshots
 ![Hello Cube](/screenshots/screen2.jpg?raw=true "Hello cube!")
-![PBR](/screenshots/screen2.jpg?raw=true "PBR")
+![PBR](/screenshots/screen3.jpg?raw=true "PBR")
 
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
