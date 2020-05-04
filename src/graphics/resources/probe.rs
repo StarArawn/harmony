@@ -188,19 +188,16 @@ impl Probe {
         }
         
         {
-            let mut width = 0.0;
-            let mut height = 0.0;
             let camera_query = <(Write<CameraData>, )>::query();
             for (mut camera_data, ) in camera_query.iter_mut(&mut scene.world) {
                 if camera_data.active {
-                    width = camera_data.width;
-                    height = camera_data.height;
                     camera_data.active = false;
                 }
             }
                 
             // Add our special camera to the scene.
-            let camera = CameraData::new_perspective(90.0, width, height, 0.01, 1000.0);
+            let probe_resoultion = self.quality.get_probe_resoultion();
+            let camera = CameraData::new_perspective(90.0, probe_resoultion as f32, probe_resoultion as f32, 0.01, 1000.0);
             scene.world.insert((), vec![(camera, )]);
             
             // Order of faces: X+ X- Y+ Y- Z+ Z-
@@ -560,26 +557,18 @@ impl Probe {
     }
 
     fn update_camera(position: Vec3, camera: &mut CameraData, face_id: u32) {
+        let mut eye = Vec3::zeros();
+        let mut up = Vec3::new(0.0, -1.0, 0.0);
         match face_id {
-            0 => { camera.pitch = 0.0; camera.yaw = -90.0; }, // X+
-            1 => { camera.pitch = 0.0; camera.yaw = 90.0; }, // X-
-            2 => { camera.pitch = -90.0; camera.yaw = 0.0; }, // Y+
-            3 => { camera.pitch = 90.0; camera.yaw = 0.0; }, // Y-
-            4 => { camera.pitch = 0.0; camera.yaw = 180.0; }, // Z+
-            5 => { camera.pitch = 0.0; camera.yaw = 0.0; }, // Z-
+            0 => { eye = Vec3::new(1.0, 0.0, 0.0); }, // X+
+            1 => { eye = Vec3::new(-1.0, 0.0, 0.0); }, // X-
+            2 => { eye = Vec3::new(0.0, -1.0, 0.0); up = Vec3::new(0.0, 0.0, -1.0); }, // Y+
+            3 => { eye = Vec3::new(0.0, 1.0, 0.0); up = Vec3::new(0.0, 0.0, 1.0); }, // Y-
+            4 => { eye = Vec3::new(0.0, 0.0, 1.0); }, // Z+
+            5 => { eye = Vec3::new(0.0, 0.0, -1.0); }, // Z-
             _ => (),
         }
-        // Because pitch and yaw are in radians..
-        camera.pitch = camera.pitch.to_radians();
-        camera.yaw = camera.yaw.to_radians();
-        let eye = position
-        + nalgebra::Vector3::new(
-                camera.yaw.sin() * camera.pitch.cos(),
-                camera.pitch.sin(),
-                camera.yaw.cos() * camera.pitch.cos(),
-            );
-            camera.position = eye;
-            camera.update_view(eye, position, Vec3::new(0.0, -1.0, 0.0));
+        camera.update_view(eye, position, up);
     }
 
 }
