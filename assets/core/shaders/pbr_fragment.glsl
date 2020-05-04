@@ -85,6 +85,6 @@ void main() {
 
     // TODO: Point-lights?
 
-    outColor = vec4(ambient_spec, 1.0);
-    // outColor = vec4(ambient + light_acc, 1.0);
+    // outColor = vec4(ambient_irradiance, 1.0);
+    outColor = vec4(ambient + light_acc, 1.0);
 }
