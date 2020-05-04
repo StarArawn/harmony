@@ -41,8 +41,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
             transform_query,
         | {
             for mut transform in transform_query.iter_mut(&mut world) {
-                // transform.rotate_on_y(-2.0 * delta_time.0);
-                // transform.rotate_on_x(-1.0 * delta_time.0);
+                transform.rotate_on_y(-2.0 * delta_time.0);
+                transform.rotate_on_x(-1.0 * delta_time.0);
             }
     })
 }
@@ -85,7 +85,7 @@ impl harmony::AppState for AppState {
         
         // We need to find the material index for the material that automatically gets created when loading in the GLTF.
         // It's easy enough:
-        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("corset.gltf").sub_meshes[0].material_index;
+        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("cube.gltf").sub_meshes[0].material_index;
 
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
@@ -94,13 +94,11 @@ impl harmony::AppState for AppState {
         // in a friendly way. For now we only have 1 GLTF file and 1 material in the file so our material index is 0.
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
-        let mut transform = Transform::new(app);
-        transform.scale = Vec3::new(50.0, 50.0, 50.0);
-        transform.position = Vec3::new(0.0, -1.0, 0.0);
+        let transform = Transform::new(app);
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("corset.gltf"),
+                Mesh::new("cube.gltf"),
                 Material::new(cube_material_index),
                 transform,
             )],
@@ -120,8 +118,8 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::light::create(
             &mut app.current_scene.world,
             LightType::Directional(DirectionalLightData {
-                direction: Vec3::new(0.0, 1.0, 0.0),
-                color: Vec3::new(1.0, 1.0, 1.0),
+                direction: Vec3::new(1.0, 0.0, 1.0),
+                color: Vec3::new(0.9, 0.55, 0.42),
             }),
             light_transform,
         );

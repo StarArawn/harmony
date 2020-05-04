@@ -27,25 +27,12 @@ pub struct RenderGraph {
     pub(crate) nodes: HashMap<String, RenderGraphNode>,
     pub(crate) outputs: HashMap<String, Option<RenderTarget>>,
     dep_graph: DepGraph<String>,
-    pub(crate) local_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl RenderGraph {
     pub(crate) fn new(resources: &mut Resources, create_command_queue: bool) -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());
-
-        let local_bind_group_layout = {
-            let device = resources.get::<wgpu::Device>().unwrap();
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                }],
-                label: None,
-            })
-        };
 
         if create_command_queue {
             let command_queue = CommandBufferQueue::new(50);
@@ -56,7 +43,6 @@ impl RenderGraph {
             nodes: HashMap::new(),
             outputs: HashMap::new(),
             dep_graph,
-            local_bind_group_layout,
         }
     }
 
@@ -71,7 +57,7 @@ impl RenderGraph {
         name: T2,
         mut pipeline_desc: T,
         dependency: Vec<&str>,
-        include_local_bindings: bool,
+        _include_local_bindings: bool,
         output: Option<RenderTarget>,
         use_output_from_dependency: bool,
     ) {
@@ -81,11 +67,7 @@ impl RenderGraph {
             device,
             sc_desc,
             resource_manager,
-            if include_local_bindings {
-                Some(&self.local_bind_group_layout)
-            } else {
-                None
-            },
+            None,
         );
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&device, resource_manager));

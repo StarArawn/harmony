@@ -51,7 +51,7 @@ impl GPUResourceManager {
                         ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     },
                 ],
-                label: None,
+                label: Some("Globals"),
             });
 
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -72,10 +72,22 @@ impl GPUResourceManager {
                     },
                 },
             ],
-            label: None,
+            label: Some("Globals"),
         });
 
         bind_group_layouts.insert("globals".to_string(), global_bind_group_layout);
+
+        // Local bind group layout
+        let local_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            bindings: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::VERTEX,
+                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+            }],
+            label: Some("Locals"),
+        });
+        bind_group_layouts.insert("locals".to_string(), local_bind_group_layout);
+
 
         Self {
             bind_group_layouts,

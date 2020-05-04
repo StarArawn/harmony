@@ -1,4 +1,4 @@
-const float MAX_SPEC_LOD = 4.0;
+const float MAX_SPEC_LOD = 9.0;
 
 vec3 f_schlick(const vec3 f0, const float vh) {
 	return f0 + (1.0 - f0) * exp2((-5.55473 * vh - 6.98316) * vh);

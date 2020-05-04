@@ -19,7 +19,7 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::pipelines::{PBRPipelineDesc, UnlitPipelineDesc, LinePipelineDesc};
+use graphics::pipelines::{UnlitPipelineDesc, LinePipelineDesc};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -157,21 +157,7 @@ impl Application {
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
             crate::graphics::pipelines::skybox::create(&self.resources);
-            
-            // // Skybox pipeline
-            // let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-            // render_graph.add(
-            //     &asset_manager,
-            //     &device,
-            //     &sc_desc,
-            //     &mut resource_manager,
-            //     "skybox",
-            //     skybox_pipeline_desc,
-            //     vec![],
-            //     false,
-            //     None,
-            //     false,
-            // );
+
             // Unlit pipeline
             let unlit_pipeline_desc = UnlitPipelineDesc::default();
             render_graph.add(
@@ -186,20 +172,9 @@ impl Application {
                 None,
                 false,
             );
+
             // PBR pipeline
-            let pbr_pipeline_desc = PBRPipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "pbr",
-                pbr_pipeline_desc,
-                vec!["skybox"],
-                true,
-                None,
-                false,
-            );
+            super::graphics::pipelines::pbr::create(&self.resources);
 
             // PBR pipeline
             let line_pipeline_desc = LinePipelineDesc::default();
@@ -228,7 +203,7 @@ impl Application {
         }
         
         {
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 let device = self.resources.get::<wgpu::Device>().unwrap();
