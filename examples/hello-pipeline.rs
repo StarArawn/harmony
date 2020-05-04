@@ -9,9 +9,6 @@ use harmony::{
     graphics::{resources::{BindGroup, GPUResourceManager}, CommandBufferQueue, CommandQueueItem, pipeline_manager::{PipelineDesc, PipelineManager}},
     WinitState, AssetManager,
 };
-
-mod helpers;
-pub use helpers::*;
 use std::sync::Arc;
 
 struct WindowSize {
@@ -72,9 +69,6 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                 }
 
                 // Name here should match node name.
-                // Note: Rendering behind the scenes happens in a threaded way.
-                // meaning that multiple "render" systems can be ran at the same
-                // time to increase performance on the CPU.
                 command_buffer_queue
                     .push(CommandQueueItem {
                         buffer: encoder.finish(),
@@ -95,18 +89,24 @@ impl harmony::AppState for AppState {
         let mut pipeline_manager = app.resources.get_mut::<PipelineManager>().unwrap();
         
         // Setup our bind groups and layouts
-        let layout = gpu_resource_manager.get_bind_group_layout("triangle_layout").unwrap();
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout,
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
             label: None,
         });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            bindings: &[],
+            label: Some("triangle"),
+        });
         gpu_resource_manager.add_single_bind_group("triangle", BindGroup::new(0, bind_group));
+        gpu_resource_manager.add_bind_group_layout("triangle_layout", bind_group_layout);
 
         // Setup our custom pipeline
         let mut triangle_desc = PipelineDesc::default();
         triangle_desc.shader = "triangle.shader".to_string(); // Make sure we reference the right shader!
         triangle_desc.layouts = vec!["triangle_layout".to_string()];
+        triangle_desc.vertex_state.set_index_format(wgpu::IndexFormat::Uint16);
+        triangle_desc.cull_mode = wgpu::CullMode::None;
 
         // The pipeline manager helps manage pipelines. It's somewhat smart and will cache your pipeline.
         // Remember that adding new pipelines is expensive and should be avoided at runtime.
