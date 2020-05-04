@@ -1,5 +1,4 @@
-use std::{fs, io};
-
+use std::{fs, io, hash::Hash, sync::Arc, path::PathBuf, error::Error, borrow::Borrow};
 pub struct Image {
     pub(crate) name: String,
     pub(crate) texture: wgpu::Texture,
@@ -9,18 +8,37 @@ pub struct Image {
     pub(crate) format: wgpu::TextureFormat,
 }
 
+impl Eq for Image {
+    fn assert_receiver_is_total_eq(&self) {self.name.assert_receiver_is_total_eq()}
+}
+
+impl PartialEq for Image {
+    fn eq(&self, other: &Image) -> bool {
+        self.name.eq(&other.name)
+    }
+}
+
+impl Hash for Image {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state)
+    }
+}
+
+
 impl Image {
     pub fn new_hdr(
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        path: &str,
-    ) -> Self {
+        path: PathBuf,
+    ) -> Result<Arc<Self>,Box<dyn Error>> {
+        
+        let name = String::from(path.file_name().map_or("no_filename", |f| f.to_str().unwrap()));
+
         // Load the image
         let decoder =
-            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(path).unwrap())) //TODO: make unfailable
-                .unwrap();
+            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(path)?))?;
         let metadata = decoder.metadata();
-        let decoded = decoder.read_image_hdr().unwrap();
+        let decoded = decoder.read_image_hdr()?;
 
         let (w, h) = (metadata.width, metadata.height);
 
@@ -37,18 +55,20 @@ impl Image {
 
         let image_bytes = unsafe {
             std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
-        }
-        .to_vec();
+        }.to_vec();
+
         let format = wgpu::TextureFormat::Rgba32Float;
 
-        Self::new(path.into(), device, encoder, image_bytes, size, format)
+        Ok(Arc::new(Self::new(name, device, encoder, image_bytes, size, format)))
     }
 
     pub fn new_normal(
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        path: &str,
-    ) -> Self {
+        path: PathBuf,
+    ) -> Result<Arc<Self>,Box<dyn Error>>{
+        let name = String::from(path.file_name().map_or("no_filename", |f| f.to_str().unwrap()));
+
         let img = image::open(path)
             .unwrap_or_else(|_| panic!("Image: Unable to open the file: {:?}", path)) //TODO: make unfailable
             .to_rgba();
@@ -62,17 +82,16 @@ impl Image {
 
         let format = wgpu::TextureFormat::Rgba8Unorm;
 
-        Self::new(path.into(), device, encoder, image_bytes, size, format)
+        Ok(Arc::new(Self::new(name, device, encoder, image_bytes, size, format)))
     }
 
     pub fn new_color(
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        path: &str,
-    ) -> Self {
-        let img = image::open(path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {:?}", path)) //TODO: make unfailable
-            .to_rgba();
+        path: PathBuf,
+    ) -> Result<Arc<Self>,Box<dyn Error>>{
+        let name = String::from(path.file_name().map_or("no_filename", |f| f.to_str().unwrap()));
+        let img = image::open(&path)?.to_rgba();
         let (width, height) = img.dimensions();
         let size = wgpu::Extent3d {
             width,
@@ -84,7 +103,7 @@ impl Image {
 
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
-        Self::new(path.into(), device, encoder, image_bytes, size, format)
+        Ok(Arc::new(Self::new(name, device, encoder, image_bytes, size, format)))
     }
 
     // creates a default white 1x1 texture Should be automatically added to the Image Assets
@@ -124,6 +143,11 @@ impl Image {
             compare: wgpu::CompareFunction::Undefined,
         });
 
+        //chop off the first part of the name if too long
+        let mut label = name.chars().rev().collect::<String>();
+        label.truncate(69);
+        label = name.chars().rev().collect::<String>();
+
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             size,
             mip_level_count: 1,
@@ -131,7 +155,7 @@ impl Image {
             dimension: wgpu::TextureDimension::D2,
             format,
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-            label: None,
+            label: Some(&label),
         });
 
         let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);

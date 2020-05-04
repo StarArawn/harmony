@@ -1,5 +1,5 @@
 use log::*;
-use std::collections::HashMap;
+use std::{sync::Arc, collections::{HashSet, HashMap}, hash::Hash};
 use walkdir::WalkDir;
 
 use crate::core::Font;
@@ -13,8 +13,11 @@ pub struct AssetManager {
     shaders: HashMap<String, Shader>,
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
-    pub(crate) images: HashMap<String, Image>,
     pub(crate) materials: HashMap<u32, Material>,
+
+    pub(crate) images: HashSet<Arc<Image>>,
+
+    //TODO: store samplers
 }
 
 impl AssetManager {
@@ -24,8 +27,8 @@ impl AssetManager {
             shaders: HashMap::new(),
             fonts: HashMap::new(),
             meshes: HashMap::new(),
-            images: HashMap::new(),
             materials: HashMap::new(),
+            images: HashSet::new(),
         }
     }
 
@@ -82,24 +85,24 @@ impl AssetManager {
                     image = Image::new_normal(
                         &device,
                         &mut init_encoder,
-                    &format!("{}{}", full_file_path, file_name),
-                    );
+                        entry.into_path(),
+                    ).unwrap();
                 } else {
                     image = Image::new_color(
                         &device,
                         &mut init_encoder,
-                        &format!("{}{}", full_file_path, file_name),
-                    );
+                        entry.into_path(),
+                    ).unwrap();
                 }
-                self.images.insert(file_name.to_string(), image);
+                self.images.insert( image);
                 info!("Loaded image: {}", file_name);
             } else if file_name.ends_with(".hdr") {
                 let image = Image::new_hdr(
                     &device,
                     &mut init_encoder,
-                    &format!("{}{}", full_file_path, file_name),
-                );
-                self.images.insert(file_name.to_string(), image);
+                    entry.into_path(),
+                ).unwrap();
+                self.images.insert(image);
                 info!("Loaded skybox: {}", file_name);
             }
         }
@@ -150,15 +153,12 @@ impl AssetManager {
         self.materials.values().collect()
     }
 
-    pub fn get_image<T>(&self, key: T) -> &Image
-    where
-        T: Into<String>,
+    fn get_image(&self, key: &String) -> Option<Arc<Image>> 
     {
-        let key = key.into();
-        self.images.get(&key).expect(&format!(
-            "Asset Error: Could not find {} image asset!",
-            &key
-        ))
+        let t = self.images.get(&key);//{
+            //Some(arc) => Some(arc.clone()),
+            //None => None,
+        //}
     }
 
     pub fn get_image_option<T>(&self, key: T) -> Option<&Image>
