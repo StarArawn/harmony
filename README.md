@@ -58,7 +58,8 @@ https://github.com/google/shaderc-rs
 If more help is needed or you feel as though the issue you encountered is directly related to shaderc's usage in harmony feel free to open an issue.
 
 ## Screenshots
-![Hello Cube](/screenshots/screen2.png?raw=true "Hello cube!")
+![Hello Cube](/screenshots/screen2.jpg?raw=true "Hello cube!")
+![PBR](/screenshots/screen2.jpg?raw=true "PBR")
 
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
