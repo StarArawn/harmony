@@ -126,6 +126,13 @@ impl RenderGraph {
         self.nodes.get(&name.into()).unwrap()
     }
 
+    pub fn get_safe<T>(&self, name: T) -> Option<&RenderGraphNode>
+    where
+        T: Into<String>,
+    {
+        self.nodes.get(&name.into())
+    }
+
     fn get_order(&self) -> Vec<String> {
         let mut order = Vec::new();
         for (name, _) in self.nodes.iter() {

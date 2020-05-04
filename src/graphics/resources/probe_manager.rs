@@ -18,9 +18,9 @@ impl ProbeManager {
         }
     } 
 
-    pub fn create(&mut self, position: Vec3, device: &wgpu::Device, quality: ProbeQuality, format: ProbeFormat) -> u32 {
+    pub fn create(&mut self, position: Vec3, resources: &Resources, quality: ProbeQuality, format: ProbeFormat) -> u32 {
         let id = self.probes.len() as u32;
-        self.probes.push(Probe::new(id, position, device, quality, format));
+        self.probes.push(Probe::new(id, position, resources, quality, format));
         id
     }
 

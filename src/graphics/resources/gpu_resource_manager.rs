@@ -11,6 +11,8 @@ pub struct GPUResourceManager {
     multi_bind_groups: HashMap<String, HashMap<u32, HashMap<u32, BindGroup>>>,
     multi_buffer: HashMap<String, HashMap<u32, wgpu::Buffer>>,
 
+    buffers: HashMap<String, wgpu::Buffer>,
+
     pub global_uniform_buffer: wgpu::Buffer,
     pub global_lighting_buffer: wgpu::Buffer,
     pub global_bind_group: wgpu::BindGroup,
@@ -77,6 +79,7 @@ impl GPUResourceManager {
 
         Self {
             bind_group_layouts,
+            buffers: HashMap::new(),
             single_bind_groups: HashMap::new(),
             multi_bind_groups: HashMap::new(),
             multi_buffer: HashMap::new(),
@@ -185,7 +188,7 @@ impl GPUResourceManager {
         &self,
         pipeline_name: T,
         binding_index: u32,
-    ) -> &BindGroup {
+    ) -> Option<&BindGroup> {
         let pipeline_name = pipeline_name.into();
         if !self.single_bind_groups.contains_key(&pipeline_name) {
             panic!("Resource Manager: Couldn't find any bind groups!");
@@ -196,7 +199,7 @@ impl GPUResourceManager {
             panic!("Resource Manager: Couldn't find any bind groups!");
         }
 
-        bind_group.as_ref().unwrap()
+        bind_group
     }
 
     pub fn set_bind_group<'a, T: Into<String>>(
@@ -205,7 +208,7 @@ impl GPUResourceManager {
         pipeline_name: T,
         binding_index: u32,
     ) {
-        let bind_group = self.get_bind_group(pipeline_name, binding_index);
+        let bind_group = self.get_bind_group(pipeline_name, binding_index).unwrap();
         render_pass.set_bind_group(bind_group.index, &bind_group.group, &[]);
     }
 
@@ -235,7 +238,21 @@ impl GPUResourceManager {
         self.bind_group_layouts.insert(name, bind_group_layout);
     }
 
-    pub fn get_bind_group_layout<T: Into<String>>(&self, name: T) -> &wgpu::BindGroupLayout {
-        self.bind_group_layouts.get(&name.into()).unwrap()
+    pub fn get_bind_group_layout<T: Into<String>>(&self, name: T) -> Option<&wgpu::BindGroupLayout> {
+        self.bind_group_layouts.get(&name.into())
+    }
+
+    pub fn add_buffer<T: Into<String>>(&mut self, name: T, buffer: wgpu::Buffer) {
+        let name = name.into();
+        if self.bind_group_layouts.contains_key(&name) {
+            panic!(
+                "Buffer already exists use `get_buffer` or use a different key."
+            );
+        }
+        self.buffers.insert(name, buffer);
+    }
+
+    pub fn get_buffer<T: Into<String>>(&self, name: T) -> &wgpu::Buffer {
+        self.buffers.get(&name.into()).unwrap()
     }
 }

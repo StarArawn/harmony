@@ -108,9 +108,9 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
             });
 
         resource_manager.add_bind_group_layout("unlit_material", material_bind_group_layout);
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
 
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals");
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals").unwrap();
 
         vec![global_bind_group_layout, material_bind_group_layout]
     }

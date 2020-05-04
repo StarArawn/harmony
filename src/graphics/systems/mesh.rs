@@ -241,7 +241,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     let pbr_node = render_graph.get("pbr");
                     render_pass.set_pipeline(&pbr_node.pipeline);
                     render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
-                    resource_manager.set_bind_group(&mut render_pass, "skybox_pbr_material", 3);
+                    resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
                     for material in pbr_materials.iter() {
                         match material {
                             Material::PBR(data) => {

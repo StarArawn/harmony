@@ -59,7 +59,7 @@ impl SimplePipeline for SpecularPipeline {
         resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         let global_bind_group_layout =
-            resource_manager.get_bind_group_layout(format!("specular_globals_{}", self.mip_level));
+            resource_manager.get_bind_group_layout(format!("specular_globals_{}", self.mip_level)).unwrap();
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: global_bind_group_layout,
@@ -168,7 +168,7 @@ impl SimplePipelineDesc for SpecularPipelineDesc {
         resource_manager
             .add_bind_group_layout(binding_layout_name.clone(), global_bind_group_layout);
         let global_bind_group_layout =
-            resource_manager.get_bind_group_layout(binding_layout_name.clone());
+            resource_manager.get_bind_group_layout(binding_layout_name.clone()).unwrap();
 
         vec![global_bind_group_layout]
     }

@@ -9,8 +9,7 @@ use crate::{
 
 pub fn create(app: &mut Application, position: Vec3, quality: ProbeQuality, format: ProbeFormat) -> Entity {
     let probe_id = {
-        let device = app.resources.get::<wgpu::Device>().unwrap();
-        app.probe_manager.create(Vec3::zeros(), &device, quality, format)
+        app.probe_manager.create(Vec3::zeros(), &app.resources, quality, format)
     };
     let probe_component = components::Probe {
         id: probe_id,

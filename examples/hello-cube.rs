@@ -41,8 +41,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
             transform_query,
         | {
             for mut transform in transform_query.iter_mut(&mut world) {
-                //transform.rotate_on_y(-2.0 * delta_time.0);
-                //transform.rotate_on_x(-1.0 * delta_time.0);
+                // transform.rotate_on_y(-2.0 * delta_time.0);
+                // transform.rotate_on_x(-1.0 * delta_time.0);
             }
     })
 }

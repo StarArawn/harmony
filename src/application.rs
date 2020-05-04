@@ -11,13 +11,15 @@ use crate::{
     graphics::{
         self,
         material::Skybox,
-        pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
         RenderGraph, Renderer,
+        resources::{CurrentRenderTarget, GPUResourceManager, ProbeManager},
+        systems::create_render_schedule_builder, 
+        pipeline_manager::PipelineManager
     },
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::{pipelines::LinePipelineDesc, resources::{CurrentRenderTarget, GPUResourceManager, RenderTargetDepth, ProbeManager}, systems::create_render_schedule_builder};
+use graphics::pipelines::{PBRPipelineDesc, UnlitPipelineDesc, LinePipelineDesc};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -67,6 +69,7 @@ impl Application {
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
+        resources.insert(PipelineManager::new());
 
         let renderer =
             futures::executor::block_on(Renderer::new(window, size, &mut resources));
@@ -74,6 +77,7 @@ impl Application {
         let asset_manager = AssetManager::new(asset_path.into());
 
         let mut render_schedule_builder = create_render_schedule_builder();
+        render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -88,7 +92,6 @@ impl Application {
 
         resources.insert(TransformCount(0));
         resources.insert(CurrentRenderTarget(None));
-        resources.insert(RenderTargetDepth(0));
 
         resources.insert(Input::new());
 
@@ -152,20 +155,23 @@ impl Application {
             let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-            // Skybox pipeline
-            let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "skybox",
-                skybox_pipeline_desc,
-                vec![],
-                false,
-                None,
-                false,
-            );
+
+            crate::graphics::pipelines::skybox::create(&self.resources);
+            
+            // // Skybox pipeline
+            // let skybox_pipeline_desc = SkyboxPipelineDesc::default();
+            // render_graph.add(
+            //     &asset_manager,
+            //     &device,
+            //     &sc_desc,
+            //     &mut resource_manager,
+            //     "skybox",
+            //     skybox_pipeline_desc,
+            //     vec![],
+            //     false,
+            //     None,
+            //     false,
+            // );
             // Unlit pipeline
             let unlit_pipeline_desc = UnlitPipelineDesc::default();
             render_graph.add(
@@ -227,15 +233,9 @@ impl Application {
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 let device = self.resources.get::<wgpu::Device>().unwrap();
                 {
-                    let material_layout = resource_manager.get_bind_group_layout("skybox_material");
+                    let material_layout = resource_manager.get_bind_group_layout("skybox_material").unwrap();
                     skybox.create_bind_group2(&device, material_layout);
                 }
-
-                let bound_group = {
-                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
-                    skybox.create_bind_group(&device, pbr_bind_group_layout)
-                };
-                resource_manager.add_single_bind_group("skybox_pbr_material", bound_group);
             }
         }
     }

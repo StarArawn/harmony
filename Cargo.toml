@@ -20,6 +20,7 @@ image = "0.23.4"
 legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"
 mikktspace = "0.2.0"
+ordered-float = "1.0"
 png = "0.16.3"
 nalgebra = "0.21.0"
 nalgebra-glm = "0.7"

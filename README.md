@@ -15,6 +15,7 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Render Graph
 - [x] Skybox rendering from an .hdr texture.
 - [x] Multi-threaded rendering
+- [x] Multiple Enviroment probes.
 
 ## Future Features (Prioritized)
 1. [x] Custom render pipelines

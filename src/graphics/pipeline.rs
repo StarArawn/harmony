@@ -146,6 +146,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
     ) -> Self::Pipeline;
 }
 
+#[derive(Debug, Hash, Clone)]
 pub struct VertexStateBuilder {
     pub(crate) index_format: wgpu::IndexFormat,
     pub(crate) buffer_desc: Vec<VertexBufferDescriptor>,
@@ -179,6 +180,7 @@ impl VertexStateBuilder {
     }
 }
 
+#[derive(Debug, Hash, Clone)]
 pub struct VertexBufferDescriptor {
     pub(crate) stride: wgpu::BufferAddress,
     pub(crate) step_mode: wgpu::InputStepMode,

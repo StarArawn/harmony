@@ -32,7 +32,7 @@ impl SimplePipelineDesc for LinePipelineDesc {
         _device: &wgpu::Device,
         resource_manager: &'a mut GPUResourceManager,
     ) -> Vec<&'a wgpu::BindGroupLayout> {
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals");
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals").unwrap();
         vec![global_bind_group_layout]
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {

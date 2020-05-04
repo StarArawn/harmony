@@ -36,7 +36,7 @@ impl SimplePipeline for IrradiancePipeline {
         _world: &mut legion::world::World,
         resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
-        let global_bind_group = resource_manager.get_bind_group_layout("irradiance");
+        let global_bind_group = resource_manager.get_bind_group_layout("irradiance").unwrap();
 
         self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: global_bind_group,
@@ -164,7 +164,7 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("irradiance", global_bind_group_layout);
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("irradiance");
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("irradiance").unwrap();
 
         vec![global_bind_group_layout]
     }

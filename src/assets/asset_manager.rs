@@ -190,7 +190,7 @@ impl AssetManager {
         for material in self.materials.values_mut() {
             match material {
                 crate::graphics::material::Material::Unlit(unlit_material) => {
-                    let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
+                    let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
                     unlit_material.create_bind_group(
                         &self.images,
                         &device,
@@ -198,7 +198,7 @@ impl AssetManager {
                     );
                 }
                 crate::graphics::material::Material::PBR(pbr_material) => {
-                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material").unwrap();
                     current_bind_group = Some(pbr_material.create_bind_group(
                             &self.images,
                             device,

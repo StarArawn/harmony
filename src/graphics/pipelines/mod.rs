@@ -10,13 +10,18 @@ pub(crate) use pbr::PBRPipelineDesc;
 mod line;
 pub(crate) use line::LinePipelineDesc;
 
-mod skybox;
-pub(crate) use skybox::{SkyboxPipelineDesc, SkyboxUniforms};
+pub(crate) mod mipmap;
+
+pub(crate) mod specular2;
+
+pub(crate) mod skybox;
+pub(crate) use skybox::{SkyboxUniforms};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;
 pub(crate) mod specular;
 pub(crate) mod specular_brdf;
+pub(crate) mod irradiance2;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

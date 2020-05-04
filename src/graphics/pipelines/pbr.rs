@@ -141,11 +141,11 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 label: None,
             });
 
-        resource_manager.add_bind_group_layout("skybox_pbr_material", pbr_bind_group_layout);
+        resource_manager.add_bind_group_layout("probe_material_layout", pbr_bind_group_layout);
 
-        let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals");
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
-        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
+        let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals").unwrap();
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material").unwrap();
+        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("probe_material_layout").unwrap();
 
         vec![
             global_bind_group_layout,

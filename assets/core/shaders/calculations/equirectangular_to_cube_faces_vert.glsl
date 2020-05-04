@@ -62,7 +62,7 @@ void main() {
     face_index = gl_InstanceIndex;
 
     vec3 cube_vert = cube_verts[gl_VertexIndex + (6 * face_index)];
-    f_pos = cube_vert;
+    f_pos = normalize(cube_vert);
 
     vec2 vert = verts[gl_VertexIndex];
     vert.y /= 6.0;

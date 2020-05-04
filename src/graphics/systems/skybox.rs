@@ -1,8 +1,8 @@
 use crate::{
     graphics::{
-        material::Skybox, pipelines::SkyboxUniforms, render_graph::RenderGraphNode,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, renderer::DepthTexture,
-        resources::{RenderTargetDepth, CurrentRenderTarget}
+        material::Skybox, pipelines::SkyboxUniforms,
+        CommandBufferQueue, CommandQueueItem, renderer::DepthTexture,
+        resources::{CurrentRenderTarget, GPUResourceManager}, pipeline_manager::{PipelineManager, Pipeline}
     },
     scene::components::CameraData,
 };
@@ -13,8 +13,8 @@ pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
         .write_resource::<CommandBufferQueue>()
         .read_resource::<CurrentRenderTarget>()
-        .read_resource::<RenderTargetDepth>()
-        .read_resource::<RenderGraph>()
+        .read_resource::<GPUResourceManager>()
+        .read_resource::<PipelineManager>()
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<DepthTexture>()
@@ -23,16 +23,17 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              world,
-             (command_buffer_queue, current_render_target, render_target_depth, render_graph, device, output, depth_texture),
+             (command_buffer_queue, current_render_target, resource_manager, pipeline_manager, device, output, depth_texture),
              (skyboxes, cameras)| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
 
-                let node: &RenderGraphNode = render_graph.get("skybox");
-
-                let (bind_group, uniform_buffer) = node.simple_pipeline.get_uniforms().unwrap();
-
+                let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
+               
+                let global_bind_group = resource_manager.get_bind_group("skybox_globals", 0).unwrap();
+                let uniform_buffer = resource_manager.get_buffer("skybox_buffer");
+                
                 for (camera_data,) in cameras.iter(&world) {
                     if camera_data.active {
                         let uniforms = SkyboxUniforms {
@@ -48,33 +49,21 @@ pub fn create() -> Box<dyn Schedulable> {
                         encoder.copy_buffer_to_buffer(
                             &constants_buffer,
                             0,
-                            uniform_buffer[0],
+                            uniform_buffer,
                             0,
                             std::mem::size_of::<SkyboxUniforms>() as u64,
                         );
                     }
                 }
 
-                let render_target_view = if current_render_target.0.is_some() {
-                    Some(current_render_target.0.as_ref().unwrap().texture.create_view(&wgpu::TextureViewDescriptor {
-                        format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                        dimension: wgpu::TextureViewDimension::D2,
-                        aspect: wgpu::TextureAspect::default(),
-                        base_mip_level: 0,
-                        level_count: 1,
-                        base_array_layer: render_target_depth.0,
-                        array_layer_count: 1,
-                    }))
-                } else { None };
-
                 let view_attachment = if current_render_target.0.is_some() {
-                    render_target_view.as_ref().unwrap()
+                    &current_render_target.0.as_ref().unwrap().1
                 } else {
                     &output.view
                 };
 
                 let depth_attachment = if current_render_target.0.is_some() {
-                    current_render_target.0.as_ref().unwrap().depth_texture_view.as_ref().unwrap()
+                    current_render_target.0.as_ref().unwrap().0.depth_texture_view.as_ref().unwrap()
                 } else {
                     &depth_texture.0
                 };
@@ -105,8 +94,8 @@ pub fn create() -> Box<dyn Schedulable> {
                         }),
                     });
 
-                    render_pass.set_pipeline(&node.pipeline);
-                    render_pass.set_bind_group(0, &bind_group[0], &[]);
+                    render_pass.set_pipeline(&pipeline.render_pipeline);
+                    render_pass.set_bind_group(0, &global_bind_group.group, &[]);
 
                     render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
                     render_pass.draw(0..3 as u32, 0..1);

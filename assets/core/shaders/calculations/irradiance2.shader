@@ -1,0 +1,2 @@
+equirectangular_to_cube_faces_vert.glsl
+env_irradiance2_frag.glsl
