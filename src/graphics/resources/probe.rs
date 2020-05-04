@@ -80,6 +80,7 @@ pub struct Probe {
     probe_cube: Arc<RenderTarget>,
     irradiance_target: RenderTarget,
     specular_target: RenderTarget,
+    brdf_texture: RenderTarget,
     pub(crate) has_rendered: bool,
 }
 
@@ -108,12 +109,13 @@ impl Probe {
         let specular_target = RenderTarget::new(&device, specular_resoultion as f32, specular_resoultion as f32, 6, 9, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST);
 
         // Create bind group
-        let asset_manager = resources.get_mut::<AssetManager>().unwrap();
         let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
         let bind_group_layout = resource_manager.get_bind_group_layout("probe_material_layout").unwrap();
 
-        let brdf_texture = asset_manager.get_image("brdf_texture.png");
-        let brdf_view = &brdf_texture.view;
+        let brdf_texture = RenderTarget::new(&device, 512.0, 512.0, 1, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
+
+        // Generate BRDF texture we should likely move this into the pipeline manager instead of living here.
+        crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu_format);
 
         let bind_group = BindGroup::new(3, device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Probe"),
@@ -129,7 +131,7 @@ impl Probe {
                 },
                 wgpu::Binding {
                     binding: 2,
-                    resource: wgpu::BindingResource::TextureView(brdf_view),
+                    resource: wgpu::BindingResource::TextureView(&brdf_texture.texture_view),
                 },
             ],
         }));
@@ -151,6 +153,7 @@ impl Probe {
             scale,
             specular_resoultion,
             specular_target,
+            brdf_texture,
         }
     }
 

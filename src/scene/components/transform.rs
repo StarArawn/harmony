@@ -1,4 +1,4 @@
-use crate::{graphics::{resources::{BindGroup, GPUResourceManager}, RenderGraph}, Application, TransformCount};
+use crate::{graphics::{resources::{BindGroup, GPUResourceManager}}, Application, TransformCount};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
 
@@ -83,8 +83,7 @@ impl Transform {
 
     pub(crate) fn create_bindings(app: &Application, index: u32) {
         let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
-        let render_graph = app.resources.get::<RenderGraph>().unwrap();
-        let bind_group_layout = &render_graph.local_bind_group_layout;
+        let bind_group_layout = resource_manager.get_bind_group_layout("locals").unwrap();
         // This data needs to be saved and passed onto the pipeline.
         let device = app.resources.get_mut::<wgpu::Device>().unwrap();
         let local_buffer = device.create_buffer_with_data(

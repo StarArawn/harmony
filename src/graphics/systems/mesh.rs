@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         pipelines::{LightingUniform, PointLight, DirectionalLight, GlobalUniform, MAX_LIGHTS}, resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture,
+        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture, pipeline_manager::PipelineManager,
     },
     scene::components,
     AssetManager,
@@ -21,6 +21,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
         .read_resource::<DepthTexture>()
+        .read_resource::<PipelineManager>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<(Read<components::DirectionalLightData>,)>::query())
         .with_query(<(Read<components::PointLightData>, Read<components::Transform>)>::query())
@@ -29,7 +30,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              mut world,
-             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
+             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture, pipeline_manager),
              (
                 camera_data,
                 directional_lights,
@@ -238,8 +239,8 @@ pub fn create() -> Box<dyn Schedulable> {
                     }
 
                     // Render pbr materials.
-                    let pbr_node = render_graph.get("pbr");
-                    render_pass.set_pipeline(&pbr_node.pipeline);
+                    let pbr_node = pipeline_manager.get("pbr", None).unwrap();
+                    render_pass.set_pipeline(&pbr_node.render_pipeline);
                     render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
                     resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
                     for material in pbr_materials.iter() {

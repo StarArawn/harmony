@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        resources::{BindGroup, GPUResourceManager, RenderTarget},
+        resources::{GPUResourceManager, RenderTarget},
         RenderGraph,
     },
     Application, AssetManager,
@@ -70,12 +70,9 @@ impl Skybox {
             None,
             None,
         );
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
         // Push to all command buffers to the queue
         let queue = app.resources.get::<wgpu::Queue>().unwrap();
-        queue.submit(vec![command_buffer, encoder.finish()]);
+        queue.submit(vec![command_buffer]);
 
         // Note that we're not calling `.await` here.
         // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);

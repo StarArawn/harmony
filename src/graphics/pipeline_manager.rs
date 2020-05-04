@@ -2,7 +2,7 @@ use ordered_float::OrderedFloat;
 use std::collections::{HashMap, hash_map::DefaultHasher};
 use std::hash::{Hash, Hasher};
 
-use super::{resources::GPUResourceManager, VertexStateBuilder, renderer::FRAME_FORMAT};
+use super::{resources::GPUResourceManager, VertexStateBuilder, renderer::FRAME_FORMAT, CommandBufferQueue};
 use crate::AssetManager;
 use solvent::DepGraph;
 
@@ -237,5 +237,28 @@ impl PipelineManager {
     pub fn set_current_pipeline_hash<T: Into<String>>(&mut self, name: T, hash: u64) {
         let name = name.into();
         self.current_pipelines.insert(name, hash);
+    }
+
+    pub fn collect_buffers(
+        &self,
+        command_queue: &mut CommandBufferQueue,
+    ) -> Vec<wgpu::CommandBuffer> {
+        let mut command_buffers = Vec::new();
+        let mut queue_items = Vec::new();
+        while let Ok(command) = command_queue.pop() {
+            queue_items.push(command);
+        }
+
+        for order in self.order.iter() {
+            while let Some(queue_item_index) = queue_items
+                .iter()
+                .position(|queue_item| &queue_item.name == order) {
+
+                let queue_item = queue_items.remove(queue_item_index);
+                command_buffers.push(queue_item.buffer);
+            }
+        }
+
+        command_buffers
     }
 }

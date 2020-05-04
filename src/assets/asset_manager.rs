@@ -198,7 +198,7 @@ impl AssetManager {
                     );
                 }
                 crate::graphics::material::Material::PBR(pbr_material) => {
-                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material").unwrap();
+                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material_layout").unwrap();
                     current_bind_group = Some(pbr_material.create_bind_group(
                             &self.images,
                             device,
