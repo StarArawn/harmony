@@ -1,0 +1,8 @@
+NewMaterialHandle(
+    main_texture:None,
+    roughness_texture:None,
+    normal_texture:None,
+    roughness:None,
+    metallic:None,
+    color:None,
+)

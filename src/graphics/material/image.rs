@@ -3,141 +3,28 @@ use std::{fs, io};
 pub struct Image {
     pub(crate) name: String,
     pub(crate) texture: wgpu::Texture,
-    pub(crate) extent: wgpu::Extent3d,
+    pub(crate) size: wgpu::Extent3d,
     pub(crate) sampler: wgpu::Sampler,
     pub(crate) view: wgpu::TextureView,
     pub(crate) format: wgpu::TextureFormat,
 }
 
 impl Image {
-    pub fn new<T>(
+    pub fn new_hdr(
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        path: T,
-        file_name: T,
-    ) -> Self
-    where
-        T: Into<String>,
-    {
-        let path = path.into();
-
-        let (image_bytes, texture_extent, format) = if path.ends_with(".hdr") {
-            Self::create_hdr_image(path)
-        } else if path.to_lowercase().contains("_normal") || path.to_lowercase().contains("metallic") {
-            Self::create_normal_image(path)
-        } else {
-            Self::create_color_image(path)
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: texture_extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-            label: None,
-        });
-
-        let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
-
-        encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &temp_buf,
-                offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb || format == wgpu::TextureFormat::Rgba8Unorm {
-                    4 * texture_extent.width
-                } else {
-                    (4 * 4) * texture_extent.width
-                },
-                rows_per_image: 0,
-            },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                array_layer: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            texture_extent,
-        );
-
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
-        });
-
-        let view = texture.create_default_view();
-
-        Self {
-            name: file_name.into().clone(),
-            texture,
-            extent: texture_extent,
-            sampler,
-            view,
-            format,
-        }
-    }
-
-    fn create_normal_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
-        let img = image::open(&path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
-            .to_rgba();
-        let (width, height) = img.dimensions();
-        let texture_extent = wgpu::Extent3d {
-            width,
-            height,
-            depth: 1,
-        };
-
-        let image_bytes: Vec<u8> = img.into_raw();
-
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba8Unorm,
-        )
-    }
-
-    fn create_color_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
-        let img = image::open(&path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
-            .to_rgba();
-        let (width, height) = img.dimensions();
-        let texture_extent = wgpu::Extent3d {
-            width,
-            height,
-            depth: 1,
-        };
-
-        let image_bytes: Vec<u8> = img.into_raw();
-
-        // TODO: Fix loading of images. We should use SRGB for textures and Unorm for roughness/normal maps/etc.
-        // Should be done with a material loader perhaps?
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-        )
-    }
-
-    fn create_hdr_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
+        path: &str,
+    ) -> Self {
         // Load the image
         let decoder =
-            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(&path).unwrap()))
+            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(path).unwrap())) //TODO: make unfailable
                 .unwrap();
         let metadata = decoder.metadata();
         let decoded = decoder.read_image_hdr().unwrap();
 
         let (w, h) = (metadata.width, metadata.height);
 
-        let texture_extent = wgpu::Extent3d {
+        let size = wgpu::Extent3d {
             width: w,
             height: h,
             depth: 1,
@@ -152,11 +39,132 @@ impl Image {
             std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
         }
         .to_vec();
+        let format = wgpu::TextureFormat::Rgba32Float;
 
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba32Float,
-        )
+        Self::new(path.into(), device, encoder, image_bytes, size, format)
+    }
+
+    pub fn new_normal(
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        path: &str,
+    ) -> Self {
+        let img = image::open(path)
+            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {:?}", path)) //TODO: make unfailable
+            .to_rgba();
+        let (width, height) = img.dimensions();
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth: 1,
+        };
+        let image_bytes: Vec<u8> = img.into_raw();
+
+        let format = wgpu::TextureFormat::Rgba8Unorm;
+
+        Self::new(path.into(), device, encoder, image_bytes, size, format)
+    }
+
+    pub fn new_color(
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        path: &str,
+    ) -> Self {
+        let img = image::open(path)
+            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {:?}", path)) //TODO: make unfailable
+            .to_rgba();
+        let (width, height) = img.dimensions();
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth: 1,
+        };
+
+        let image_bytes: Vec<u8> = img.into_raw();
+
+        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+
+        Self::new(path.into(), device, encoder, image_bytes, size, format)
+    }
+
+    // creates a default white 1x1 texture Should be automatically added to the Image Assets
+    pub fn new_white(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) -> Self {
+        let name = String::from("white");
+
+        let image_bytes = vec![255u8, 255u8, 255u8, 255u8];
+
+        let size = wgpu::Extent3d {
+            width: 1u32,
+            height: 1u32,
+            depth: 1u32,
+        };
+        let format = wgpu::TextureFormat::Rgba8Unorm;
+
+        Self::new(name, device, encoder, image_bytes, size, format)
+    }
+
+    pub fn new(
+        name: String,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        image_bytes: Vec<u8>,
+        size: wgpu::Extent3d,
+        format: wgpu::TextureFormat,
+    ) -> Self {
+        //TODO: dont create a new sampler for each image. Reuse
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: wgpu::CompareFunction::Undefined,
+        });
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            label: None,
+        });
+
+        let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
+
+        encoder.copy_buffer_to_texture(
+            wgpu::BufferCopyView {
+                buffer: &temp_buf,
+                offset: 0,
+                bytes_per_row: match format {
+                    wgpu::TextureFormat::Rgba8UnormSrgb => 4 * size.width,
+                    wgpu::TextureFormat::Rgba8Unorm => 4 * size.width,
+                    _ => (4 * 4) * size.width,
+                },
+                rows_per_image: 0, //TODO: set to size.height if size.depth != 0?
+            },
+            wgpu::TextureCopyView {
+                texture: &texture,
+                mip_level: 0,
+                array_layer: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            size,
+        );
+
+        let view = texture.create_default_view();
+
+        Self {
+            name,
+            texture,
+            size,
+            sampler,
+            view,
+            format,
+        }
     }
 }

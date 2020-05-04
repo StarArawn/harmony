@@ -75,18 +75,32 @@ impl AssetManager {
                 self.meshes.insert(file_name.to_string(), mesh);
                 info!("Loaded mesh: {}", file_name);
             }
-            if file_name.ends_with(".png")
-                || file_name.ends_with(".jpg")
-                || file_name.ends_with(".hdr")
-            {
-                let image = Image::new(
-                    &device,
-                    &mut init_encoder,
-                    format!("{}{}", full_file_path, file_name),
-                    file_name.to_string(),
-                );
+            if file_name.ends_with(".png") || file_name.ends_with(".jpg")
+            {   
+                let image;
+                if file_name.to_lowercase().contains("_normal") || file_name.to_lowercase().contains("metallic"){
+                    image = Image::new_normal(
+                        &device,
+                        &mut init_encoder,
+                    &format!("{}{}", full_file_path, file_name),
+                    );
+                } else {
+                    image = Image::new_color(
+                        &device,
+                        &mut init_encoder,
+                        &format!("{}{}", full_file_path, file_name),
+                    );
+                }
                 self.images.insert(file_name.to_string(), image);
                 info!("Loaded image: {}", file_name);
+            } else if file_name.ends_with(".hdr") {
+                let image = Image::new_hdr(
+                    &device,
+                    &mut init_encoder,
+                    &format!("{}{}", full_file_path, file_name),
+                );
+                self.images.insert(file_name.to_string(), image);
+                info!("Loaded skybox: {}", file_name);
             }
         }
         queue.submit(Some(init_encoder.finish()));
