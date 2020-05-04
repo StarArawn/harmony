@@ -11,13 +11,15 @@ use crate::{
     graphics::{
         self,
         material::Skybox,
-        pipelines::{PBRPipelineDesc, SkyboxPipelineDesc, UnlitPipelineDesc},
         RenderGraph, Renderer,
+        resources::{CurrentRenderTarget, GPUResourceManager, ProbeManager},
+        systems::create_render_schedule_builder, 
+        pipeline_manager::PipelineManager
     },
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::resources::GPUResourceManager;
+use graphics::pipelines::{PBRPipelineDesc, UnlitPipelineDesc, LinePipelineDesc};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -36,10 +38,10 @@ pub struct Application {
     elapsed_time: f32,
     pub frame_time: f32,
     pub delta_time: f32,
-    pub input: Input,
     pub current_scene: Scene,
     pub render_schedule: Schedule,
     pub resources: Resources,
+    pub probe_manager: ProbeManager,
 }
 
 impl Application {
@@ -67,15 +69,15 @@ impl Application {
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
+        resources.insert(PipelineManager::new());
 
         let renderer =
             futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 
-        let mut render_schedule_builder = Schedule::builder()
-            .add_system(graphics::systems::skybox::create())
-            .add_system(graphics::systems::mesh::create());
+        let mut render_schedule_builder = create_render_schedule_builder();
+        render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -89,6 +91,9 @@ impl Application {
         resources.insert(asset_manager);
 
         resources.insert(TransformCount(0));
+        resources.insert(CurrentRenderTarget(None));
+
+        resources.insert(Input::new());
 
         Application {
             renderer,
@@ -97,14 +102,14 @@ impl Application {
             elapsed_time: 0.0,
             frame_time: 0.0,
             delta_time: 0.0,
-            input: Input::new(),
             current_scene: scene,
             resources,
             render_schedule,
+            probe_manager: ProbeManager::new(),
         }
     }
 
-    /// Set's the current scene that harmony will use for rendering. Consider this a connivent place to store our specs world.
+    /// Set's the current scene that harmony will use for rendering.
     /// # Arguments
     ///
     /// * `current_scene` - The current scene.
@@ -150,20 +155,23 @@ impl Application {
             let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-            // Skybox pipeline
-            let skybox_pipeline_desc = SkyboxPipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "skybox",
-                skybox_pipeline_desc,
-                vec![],
-                false,
-                None,
-                false,
-            );
+
+            crate::graphics::pipelines::skybox::create(&self.resources);
+            
+            // // Skybox pipeline
+            // let skybox_pipeline_desc = SkyboxPipelineDesc::default();
+            // render_graph.add(
+            //     &asset_manager,
+            //     &device,
+            //     &sc_desc,
+            //     &mut resource_manager,
+            //     "skybox",
+            //     skybox_pipeline_desc,
+            //     vec![],
+            //     false,
+            //     None,
+            //     false,
+            // );
             // Unlit pipeline
             let unlit_pipeline_desc = UnlitPipelineDesc::default();
             render_graph.add(
@@ -192,6 +200,21 @@ impl Application {
                 None,
                 false,
             );
+
+            // PBR pipeline
+            let line_pipeline_desc = LinePipelineDesc::default();
+            render_graph.add(
+                &asset_manager,
+                &device,
+                &sc_desc,
+                &mut resource_manager,
+                "line",
+                line_pipeline_desc,
+                vec!["skybox"],
+                false,
+                None,
+                false,
+            );
         }
 
         app_state.load(self);
@@ -210,15 +233,9 @@ impl Application {
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 let device = self.resources.get::<wgpu::Device>().unwrap();
                 {
-                    let material_layout = resource_manager.get_bind_group_layout("skybox_material");
+                    let material_layout = resource_manager.get_bind_group_layout("skybox_material").unwrap();
                     skybox.create_bind_group2(&device, material_layout);
                 }
-
-                let bound_group = {
-                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
-                    skybox.create_bind_group(&device, pbr_bind_group_layout)
-                };
-                resource_manager.add_single_bind_group("skybox_pbr_material", bound_group);
             }
         }
     }
@@ -241,7 +258,11 @@ impl Application {
     ) where
         T: AppState,
     {
-        self.input.update_events(event);
+        {
+            let mut input = self.resources.get_mut::<Input>().unwrap();
+            input.update_events(event);
+        }
+
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
@@ -252,7 +273,11 @@ impl Application {
                     self.current_scene
                         .update(self.delta_time, &mut self.resources);
 
-                    self.input.clear();
+                    {
+                        let mut input = self.resources.get_mut::<Input>().unwrap();
+                        input.clear();
+                    }
+                    
                     frame_time -= self.delta_time;
                     self.elapsed_time += self.delta_time;
                 }
@@ -263,9 +288,16 @@ impl Application {
                     self.resources.insert(output);
                 }
 
-                // Render's the scene.
-                self.render_schedule
-                    .execute(&mut self.current_scene.world, &mut self.resources);
+                // First update our probes if we need to.
+                {
+                    self.probe_manager.render(&mut self.resources, &mut self.current_scene);
+                }
+
+                // Next render's our scene.
+                self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
+
+                // We need to let the swap drop so the frame renderers.
+                let _swap_chain_output = self.resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
 
                 self.renderer.window.request_redraw();
             }

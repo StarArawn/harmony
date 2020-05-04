@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-const uint SAMPLE_COUNT = 1024;
+const uint SAMPLE_COUNT = 2048;
 
 layout(location = 0) in vec3 f_pos;
 layout(location = 1) flat in int face_index;

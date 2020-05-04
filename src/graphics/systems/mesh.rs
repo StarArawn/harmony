@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         pipelines::{LightingUniform, PointLight, DirectionalLight, GlobalUniform, MAX_LIGHTS}, resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material,
+        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture,
     },
     scene::components,
     AssetManager,
@@ -20,6 +20,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
+        .read_resource::<DepthTexture>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<(Read<components::DirectionalLightData>,)>::query())
         .with_query(<(Read<components::PointLightData>, Read<components::Transform>)>::query())
@@ -28,7 +29,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              mut world,
-             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager),
+             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
              (
                 camera_data,
                 directional_lights,
@@ -63,6 +64,8 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     let uniforms = GlobalUniform {
                         view_projection: camera_matrix,
+                        camera_pos: Vec4::new(camera_data.position.x, camera_data.position.y, camera_data.position.z, 0.0),
+                        view: camera_data.view,
                     };
 
                     let constants_buffer = device.create_buffer_with_data(
@@ -189,7 +192,15 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 1.0,
                             },
                         }],
-                        depth_stencil_attachment: None,
+                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                            attachment: &depth_texture.0,
+                            depth_load_op: wgpu::LoadOp::Load,
+                            depth_store_op: wgpu::StoreOp::Store,
+                            stencil_load_op: wgpu::LoadOp::Load,
+                            stencil_store_op: wgpu::StoreOp::Store,
+                            clear_depth: 1.0,
+                            clear_stencil: 0,
+                        }),
                     });
 
                     // Collect materials in to their groups.
@@ -216,7 +227,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
                                     for sub_mesh in asset_mesh.sub_meshes.iter() {
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                        render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+                                        render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                                     }
                                 }
@@ -230,7 +241,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     let pbr_node = render_graph.get("pbr");
                     render_pass.set_pipeline(&pbr_node.pipeline);
                     render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
-                    resource_manager.set_bind_group(&mut render_pass, "skybox_pbr_material", 3);
+                    resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
                     for material in pbr_materials.iter() {
                         match material {
                             Material::PBR(data) => {
@@ -242,7 +253,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
                                     for sub_mesh in asset_mesh.sub_meshes.iter() {
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                        render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+                                        render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                                     }
                                 }

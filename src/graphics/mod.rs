@@ -1,4 +1,4 @@
-mod renderer;
+pub mod renderer;
 pub use renderer::Renderer;
 
 pub mod material;
@@ -16,3 +16,5 @@ pub mod pipelines;
 pub mod resources;
 
 pub mod systems;
+
+pub mod pipeline_manager;

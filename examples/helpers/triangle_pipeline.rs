@@ -31,7 +31,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
             label: None,
         });
         resource_manager.add_bind_group_layout("triangle_layout", bind_group_layout);
-        let bind_group_layout = resource_manager.get_bind_group_layout("triangle_layout");
+        let bind_group_layout = resource_manager.get_bind_group_layout("triangle_layout").unwrap();
 
         vec![bind_group_layout]
     }
@@ -75,7 +75,7 @@ impl SimplePipelineDesc for TrianglePipelineDesc {
         resource_manager: &mut GPUResourceManager,
     ) -> TrianglePipeline {
         // This doesn't have to live here, but it's a convient place to create bind groups / buffers if you need one.
-        let layout = resource_manager.get_bind_group_layout("triangle_layout");
+        let layout = resource_manager.get_bind_group_layout("triangle_layout").unwrap();
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
             bindings: &[],

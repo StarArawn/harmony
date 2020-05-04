@@ -2,6 +2,9 @@ use super::resources::GPUResourceManager;
 use legion::systems::resource::Resources;
 
 pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+pub(crate) const FRAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb;
+
+pub struct DepthTexture(pub wgpu::TextureView);
 
 pub struct Renderer {
     pub(crate) surface: wgpu::Surface,
@@ -9,7 +12,6 @@ pub struct Renderer {
     adapter: wgpu::Adapter,
     pub(crate) swap_chain: wgpu::SwapChain,
     pub(crate) window: winit::window::Window,
-    pub(crate) forward_depth: wgpu::TextureView,
 }
 
 impl Renderer {
@@ -43,7 +45,7 @@ impl Renderer {
 
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format: FRAME_FORMAT,
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Fifo,
@@ -68,6 +70,7 @@ impl Renderer {
         resources.insert(sc_desc);
         resources.insert(queue);
         resources.insert(device);
+        resources.insert(DepthTexture(depth_texture.create_default_view()));
 
         Self {
             surface,
@@ -75,7 +78,6 @@ impl Renderer {
             adapter,
             swap_chain,
             window,
-            forward_depth: depth_texture.create_default_view(),
         }
     }
 

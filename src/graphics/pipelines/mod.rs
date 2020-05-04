@@ -7,24 +7,36 @@ pub(crate) use unlit::UnlitPipelineDesc;
 mod pbr;
 pub(crate) use pbr::PBRPipelineDesc;
 
-mod skybox;
-pub(crate) use skybox::{SkyboxPipelineDesc, SkyboxUniforms};
+mod line;
+pub(crate) use line::LinePipelineDesc;
+
+pub(crate) mod mipmap;
+
+pub(crate) mod specular2;
+
+pub(crate) mod skybox;
+pub(crate) use skybox::{SkyboxUniforms};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance;
 pub(crate) mod specular;
 pub(crate) mod specular_brdf;
+pub(crate) mod irradiance2;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct GlobalUniform {
     pub view_projection: Mat4,
+    pub camera_pos: Vec4,
+    pub view: Mat4,
 }
 
 impl Default for GlobalUniform {
     fn default() -> Self {
         Self {
             view_projection: Mat4::identity(),
+            camera_pos: Vec4::zeros(),
+            view: Mat4::identity(),
         }
     }
 }

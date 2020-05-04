@@ -11,7 +11,7 @@ use winit::{
 use harmony::scene::{resources::DeltaTime, components::{
     CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
 }, Scene};
-use harmony::WinitState;
+use harmony::{core::input::Input, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
 
 struct WindowSize {
     width: u32,
@@ -31,28 +31,6 @@ impl AppState {
     }
 }
 
-//struct RotateSystem;
-
-// impl<'a> System<'a> for RotateSystem {
-//     type SystemData = (
-//         Read<'a, harmony::scene::resources::DeltaTime>,
-//         WriteStorage<'a, harmony::scene::components::Transform>,
-//     );
-
-//     fn run(&mut self, (delta_time, mut transforms): Self::SystemData) {
-//         for transform in (&mut transforms).join() {
-//             // Rust analyzer doesn't really always type stuff right
-//             let transform: &mut Transform = transform;
-
-//             // Transform is a specific type which calculates the world matrix of your object.
-//             // In this case it's our cube.
-//             // rotate_on_y rotates the cube along the Y axis. It is a helper function to make it
-//             // easier to modify quaternions without remember how to.
-//             transform.rotate_on_y(-2.0 * delta_time.0);
-//         }
-//     }
-// }
-
 fn create_rotate_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("Rotate Cube")
         .read_resource::<DeltaTime>()
@@ -63,17 +41,51 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
             transform_query,
         | {
             for mut transform in transform_query.iter_mut(&mut world) {
-                transform.rotate_on_y(-2.0 * delta_time.0);
+                // transform.rotate_on_y(-2.0 * delta_time.0);
+                // transform.rotate_on_x(-1.0 * delta_time.0);
             }
     })
+}
+
+fn create_camera_orbit_system() -> Box<dyn Schedulable> {
+    SystemBuilder::new("Camera Orbit")
+        .read_resource::<DeltaTime>()
+        .read_resource::<Input>()
+        .with_query(<Write<CameraData>>::query())
+        .build(|_,
+            mut world,
+            (delta_time, input),
+            camera_query,
+        | {
+            for mut camera in camera_query.iter_mut(&mut world) {
+                camera.yaw += input.mouse_delta.x * 0.5 * delta_time.0;
+                camera.pitch += input.mouse_delta.y * 0.5 * delta_time.0;
+                camera.pitch = camera.pitch
+                    .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
+                    .min(std::f32::consts::FRAC_PI_2 - 0.0001);
+                let eye = Vec3::new(0.0, 0.0, 0.0)
+                + (5.0
+                    * nalgebra::Vector3::new(
+                        camera.yaw.sin() * camera.pitch.cos(),
+                        camera.pitch.sin(),
+                        camera.yaw.cos() * camera.pitch.cos(),
+                    ));
+                camera.position = eye;
+                camera.update_view(eye, Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
+            }
+        })
 }
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
         let scheduler_builder = Schedule::builder()
-            .add_system(create_rotate_system());
+            .add_system(create_rotate_system())
+            .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
         
+        // We need to find the material index for the material that automatically gets created when loading in the GLTF.
+        // It's easy enough:
+        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("corset.gltf").sub_meshes[0].material_index;
 
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
@@ -82,28 +94,33 @@ impl harmony::AppState for AppState {
         // in a friendly way. For now we only have 1 GLTF file and 1 material in the file so our material index is 0.
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
-        let transform = Transform::new(app);
+        let mut transform = Transform::new(app);
+        transform.scale = Vec3::new(50.0, 50.0, 50.0);
+        transform.position = Vec3::new(0.0, -1.0, 0.0);
         app.current_scene.world.insert(
             (),
             vec![(
-                Mesh::new("cube.gltf"),
-                Material::new(0), // Need to be an index to the material
-                transform,        // Transform
+                Mesh::new("corset.gltf"),
+                Material::new(cube_material_index),
+                transform,
             )],
         );
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
-        // Skybox needs to be added as a resource in specs. (we only should have one).
+        // Skybox needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(skybox,)]);
+
+        // Setup probe for PBR
+        harmony::scene::entities::probe::create(app, Vec3::zeros(), ProbeQuality::Low, ProbeFormat::RGBA32);
 
         // Add directional light to our scene.
         let light_transform = Transform::new(app);
         harmony::scene::entities::light::create(
             &mut app.current_scene.world,
             LightType::Directional(DirectionalLightData {
-                direction: Vec3::new(0.0, 1.0, -0.5),
+                direction: Vec3::new(0.0, 1.0, 0.0),
                 color: Vec3::new(1.0, 1.0, 1.0),
             }),
             light_transform,
@@ -111,6 +128,7 @@ impl harmony::AppState for AppState {
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
+        // Point lights currently don't work.
         // let mut transform = Transform::new(app);
         // transform.position = Vec3::new(-5.0, 0.0, 0.0);
         // harmony::scene::entities::light::create(
@@ -134,8 +152,9 @@ impl harmony::AppState for AppState {
             0.01,
             10.0,
         );
+        camera_data.position = Vec3::new(0.0, 0.0, 5.0);
         camera_data.update_view(
-            Vec3::new(0.0, 0.0, -5.0), // This is our camera's "position".
+            camera_data.position, // This is our camera's "position".
             Vec3::new(0.0, 0.0, 0.0),  // Where the camera is looking at.
             Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
         );

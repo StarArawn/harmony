@@ -18,6 +18,16 @@ pub struct MeshVertexData {
 unsafe impl Zeroable for MeshVertexData {}
 unsafe impl Pod for MeshVertexData {}
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct MeshTangentLine {
+    pub pos: Vec3,   
+    pub color: Vec3,
+}
+
+unsafe impl Zeroable for MeshTangentLine {}
+unsafe impl Pod for MeshTangentLine {}
+
 impl Default for MeshVertexData {
     fn default() -> Self {
         Self {
@@ -30,16 +40,52 @@ impl Default for MeshVertexData {
 }
 
 pub struct SubMesh {
-    vertices: Vec<MeshVertexData>,
+    pub vertices: Vec<MeshVertexData>,
+    pub tangent_lines: Vec<MeshTangentLine>,
     indices: Vec<u32>,
     pub(crate) index_count: usize,
     mode: wgpu::PrimitiveTopology,
     material_id: Option<usize>,
-    pub(crate) vertex_buffer: wgpu::Buffer,
+    pub(crate) vertex_buffer: Option<wgpu::Buffer>,
+    pub(crate) tangent_line_buffer: Option<wgpu::Buffer>,
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
-    pub(crate) material_index: u32,
+    pub material_index: u32,
+}
+
+fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
+    &sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
+}
+
+fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData{
+    &mut sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
+}
+
+impl mikktspace::Geometry for SubMesh {
+    fn num_faces(&self) -> usize {
+        self.indices.len() / 3
+    }
+
+    fn num_vertices_of_face(&self, _face: usize) -> usize {
+        3
+    }
+
+    fn position(&self, face: usize, vert: usize) -> [f32; 3] {
+        vertex(self, face, vert).position.into()
+    }
+
+    fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
+        vertex(self, face, vert).normal.into()
+    }
+
+    fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
+        vertex(self, face, vert).uv.into()
+    }
+
+    fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
+        vertex_mut(self, face, vert).tangent = tangent.into();
+    }
 }
 
 pub struct Mesh {
@@ -57,9 +103,9 @@ impl Mesh {
         T: Into<String>,
     {
         let mut materials = Vec::new();
-        let cloned_path = path.into().clone();
+        let path = path.into();
         let (document, data, _) =
-            gltf::import(cloned_path).expect("Loaded the gltf file successfully!");
+            gltf::import(path.clone()).expect("Loaded the gltf file successfully!");
         let get_buffer_data = |buffer: gltf::Buffer<'_>| data.get(buffer.index()).map(|x| &*x.0);
 
         // let mut meshes = Vec::new();
@@ -102,13 +148,16 @@ impl Mesh {
                 }
             }
 
+            let mut had_tangents = false;
             // Load tangents if we have them.
             if let Some(tangents) = reader.read_tangents() {
                 for (i, tangent) in tangents.enumerate() {
-                    vertices[i].tangent = Vec4::from(tangent.clone());
+                    vertices[i].tangent = Vec4::new(tangent[0], tangent[1], tangent[2], tangent[3]);
                 }
+                had_tangents = true;
             } else {
                 // TODO: Calculate tangents if we don't have them.
+                //warn!("Don't have tangents for mesh.");
             }
 
             let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
@@ -121,7 +170,6 @@ impl Mesh {
             let pbr = gltf_material.pbr_metallic_roughness();
 
             let color_factor = pbr.base_color_factor();
-            let mut main_texture = None;
             let color = Vec4::new(
                 color_factor[0],
                 color_factor[1],
@@ -129,64 +177,100 @@ impl Mesh {
                 color_factor[3],
             );
 
-            let info = pbr.base_color_texture();
-            if info.is_some() {
-                let info = info.unwrap();
-                let tex = info.texture();
-                let image: Option<&gltf::Image<'_>> = images.get(tex.index());
-                if image.is_some() {
-                    let image = image.unwrap();
-                    let source = image.source();
-                    match source {
-                        gltf::image::Source::Uri { uri, .. } => {
-                            let main_texture_file_name = Some(
-                                Path::new(&uri)
-                                    .file_name()
-                                    .and_then(OsStr::to_str)
-                                    .unwrap()
-                                    .to_string(),
-                            );
-                            if main_texture_file_name.is_some() {
-                                main_texture = Some(main_texture_file_name.unwrap());
-                            }
+            let main_info = pbr.base_color_texture();
+            let mut normal_texture= None;
+            let normals_texture = gltf_material.normal_texture();
+            if normals_texture.is_some() {
+                let normal_source = normals_texture.unwrap().texture().source().source();
+                match normal_source {
+                    gltf::image::Source::Uri { uri, .. } => {
+                        let texture_file_name = Some(
+                            Path::new(&uri)
+                                .file_name()
+                                .and_then(OsStr::to_str)
+                                .unwrap()
+                                .to_string(),
+                        );
+                        if texture_file_name.is_some() {
+                            normal_texture = Some(texture_file_name.unwrap());
                         }
-                        _ => (),
                     }
+                    _ => (),
                 }
             }
+            let roughness_info = pbr.metallic_roughness_texture();
 
+
+            let main_texture = Self::get_texture_url(&main_info, &images);
+            let roughness_texture = Self::get_texture_url(&roughness_info, &images);
+            
             let material_index = material_start_index + materials.len() as u32;
             let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
+                normal_texture.unwrap_or("empty_normal.png".to_string()),
+                roughness_texture.unwrap_or("white.png".to_string()),
                 color,
                 material_index,
             );
             materials.push(Material::PBR(material));
 
-            // mesh.calculate_tangents();
-
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-            let vertex_buffer = device.create_buffer_with_data(
-                &bytemuck::cast_slice(&vertices),
-                wgpu::BufferUsage::VERTEX,
-            );
             let index_buffer = device
-                .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+            .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
 
-            sub_meshes.push(SubMesh {
+
+            let mut sub_mesh = SubMesh {
                 vertices,
+                tangent_lines: Vec::new(),
                 indices,
                 index_count,
                 mode: primitive_topology,
                 material_id: primitive.material().index(),
-                vertex_buffer,
+                vertex_buffer: None,
+                tangent_line_buffer: None,
                 index_buffer,
                 material_index,
-            });
-        }
+            };
+            
+            if !had_tangents {
+                log::info!("No tangents found for: {} generating tangents instead!", &path);
+                mikktspace::generate_tangents(&mut sub_mesh);
+            }
 
+            let tangents: Vec<(Vec3, Vec3)> = sub_mesh.vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
+            let mut tangent_lines = Vec::new();
+            for (tangent, position) in tangents.iter() {
+                let position: Vec3 = position.clone();// * 50.0;
+                let tangent: Vec3 = tangent.clone();
+                let scale: f32 = 0.1;
+                let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
+                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+                tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+            }
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 5.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
+            tangent_lines.push(MeshTangentLine { pos: Vec3::new(5.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
+            let tangent_line_buffer = device.create_buffer_with_data(
+                &bytemuck::cast_slice(&tangent_lines),
+                wgpu::BufferUsage::VERTEX,
+            );
+
+            let vertex_buffer = device.create_buffer_with_data(
+                &bytemuck::cast_slice(&sub_mesh.vertices),
+                wgpu::BufferUsage::VERTEX,
+            );
+            
+            sub_mesh.tangent_line_buffer = Some(tangent_line_buffer);
+            sub_mesh.vertex_buffer = Some(vertex_buffer);
+
+            sub_meshes.push(sub_mesh);
+        }
+        
         (Mesh { sub_meshes }, materials)
     }
 
@@ -199,5 +283,35 @@ impl Mesh {
             gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
             _ => panic!(format!("Error loading mesht topology isn't supported!")),
         }
+    }
+
+    fn get_texture_url(info: &Option<gltf::texture::Info<'_>>, images: &Vec<gltf::Image<'_>>) -> Option<String> {
+        let mut file_name = None;
+        if info.is_some() {
+            let info = info.as_ref().unwrap();
+            let tex = info.texture();
+            
+            let image: Option<&gltf::Image<'_>> = images.get(tex.index());
+            if image.is_some() {
+                let image = image.unwrap();
+                let source = image.source();
+                match source {
+                    gltf::image::Source::Uri { uri, .. } => {
+                        let texture_file_name = Some(
+                            Path::new(&uri)
+                                .file_name()
+                                .and_then(OsStr::to_str)
+                                .unwrap()
+                                .to_string(),
+                        );
+                        if texture_file_name.is_some() {
+                            file_name = Some(texture_file_name.unwrap());
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+        file_name
     }
 }

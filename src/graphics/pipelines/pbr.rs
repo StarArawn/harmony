@@ -5,7 +5,7 @@ use crate::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
         resources::{GPUResourceManager, RenderTarget},
-        // renderer::DEPTH_FORMAT,
+        renderer::DEPTH_FORMAT,
         SimplePipeline,
         SimplePipelineDesc,
     },
@@ -67,11 +67,16 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                 bindings: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStage::VERTEX,
+                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::UniformBuffer { dynamic: false },
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
                         visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::SampledTexture {
                             multisampled: false,
@@ -80,9 +85,22 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                         },
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 2,
+                        binding: 3,
                         visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: wgpu::TextureComponentType::Float,
+                            dimension: wgpu::TextureViewDimension::D2,
+                        },
                     },
                 ],
                 label: None,
@@ -104,11 +122,6 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
                         visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::SampledTexture {
                             multisampled: false,
                             component_type: wgpu::TextureComponentType::Float,
@@ -116,12 +129,7 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                         },
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 4,
+                        binding: 2,
                         visibility: wgpu::ShaderStage::FRAGMENT,
                         ty: wgpu::BindingType::SampledTexture {
                             multisampled: false,
@@ -129,20 +137,15 @@ impl SimplePipelineDesc for PBRPipelineDesc {
                             dimension: wgpu::TextureViewDimension::D2,
                         },
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
                 ],
                 label: None,
             });
 
-        resource_manager.add_bind_group_layout("skybox_pbr_material", pbr_bind_group_layout);
+        resource_manager.add_bind_group_layout("probe_material_layout", pbr_bind_group_layout);
 
-        let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals");
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material");
-        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("skybox_pbr_material");
+        let global_bind_group_layout = &resource_manager.get_bind_group_layout("globals").unwrap();
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material").unwrap();
+        let pbr_bind_group_layout = resource_manager.get_bind_group_layout("probe_material_layout").unwrap();
 
         vec![
             global_bind_group_layout,
@@ -152,8 +155,8 @@ impl SimplePipelineDesc for PBRPipelineDesc {
     }
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor {
         wgpu::RasterizationStateDescriptor {
-            front_face: wgpu::FrontFace::Cw,
-            cull_mode: wgpu::CullMode::Back,
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: wgpu::CullMode::None,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,
@@ -175,16 +178,15 @@ impl SimplePipelineDesc for PBRPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: true,
-        //     depth_compare: wgpu::CompareFunction::Greater,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {
@@ -197,28 +199,35 @@ impl SimplePipelineDesc for PBRPipelineDesc {
             .new_buffer_descriptor(
                 vertex_size as wgpu::BufferAddress,
                 wgpu::InputStepMode::Vertex,
-                vec![
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float3,
-                        offset: 0,
-                        shader_location: 0,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float3,
-                        offset: 4 * 3,
-                        shader_location: 1,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float2,
-                        offset: 4 * (3 + 3),
-                        shader_location: 2,
-                    },
-                    wgpu::VertexAttributeDescriptor {
-                        format: wgpu::VertexFormat::Float4,
-                        offset: 4 * (3 + 3 + 2),
-                        shader_location: 3,
-                    },
-                ],
+                //vec![
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float3,
+                //         offset: 0,
+                //         shader_location: 0,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float3,
+                //         offset: 4 * 3,
+                //         shader_location: 1,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float2,
+                //         offset: 4 * (3 + 3),
+                //         shader_location: 2,
+                //     },
+                //     wgpu::VertexAttributeDescriptor {
+                //         format: wgpu::VertexFormat::Float4,
+                //         offset: 4 * (3 + 3 + 2),
+                //         shader_location: 3,
+                //     },
+                // ],
+                // pub struct MeshVertexData {
+                //     pub position: Vec3,
+                //     pub normal: Vec3,
+                //     pub uv: Vec2,
+                //     pub tangent: Vec4,
+                // }
+                wgpu::vertex_attr_array![0 => Float3, 1 => Float3, 2 => Float2, 3 => Float4].to_vec(),
             );
 
         vertex_state_builder

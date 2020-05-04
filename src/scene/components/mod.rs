@@ -15,3 +15,6 @@ pub use skybox::SkyboxData;
 
 pub(crate) mod light_data;
 pub use light_data::*;
+
+pub(crate) mod probe;
+pub use probe::*;

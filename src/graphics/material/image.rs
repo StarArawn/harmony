@@ -23,8 +23,10 @@ impl Image {
 
         let (image_bytes, texture_extent, format) = if path.ends_with(".hdr") {
             Self::create_hdr_image(path)
-        } else {
+        } else if path.to_lowercase().contains("_normal") || path.to_lowercase().contains("metallic") {
             Self::create_normal_image(path)
+        } else {
+            Self::create_color_image(path)
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -43,7 +45,7 @@ impl Image {
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
                 offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb {
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb || format == wgpu::TextureFormat::Rgba8Unorm {
                     4 * texture_extent.width
                 } else {
                     (4 * 4) * texture_extent.width
@@ -96,6 +98,28 @@ impl Image {
 
         let image_bytes: Vec<u8> = img.into_raw();
 
+        (
+            image_bytes,
+            texture_extent,
+            wgpu::TextureFormat::Rgba8Unorm,
+        )
+    }
+
+    fn create_color_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
+        let img = image::open(&path)
+            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
+            .to_rgba();
+        let (width, height) = img.dimensions();
+        let texture_extent = wgpu::Extent3d {
+            width,
+            height,
+            depth: 1,
+        };
+
+        let image_bytes: Vec<u8> = img.into_raw();
+
+        // TODO: Fix loading of images. We should use SRGB for textures and Unorm for roughness/normal maps/etc.
+        // Should be done with a material loader perhaps?
         (
             image_bytes,
             texture_extent,

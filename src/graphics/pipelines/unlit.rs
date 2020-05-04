@@ -5,7 +5,7 @@ use crate::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
         resources::{GPUResourceManager, RenderTarget},
-        // renderer::DEPTH_FORMAT,
+        renderer::DEPTH_FORMAT,
         SimplePipeline,
         SimplePipelineDesc,
     },
@@ -108,9 +108,9 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
             });
 
         resource_manager.add_bind_group_layout("unlit_material", material_bind_group_layout);
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material");
+        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
 
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals");
+        let global_bind_group_layout = resource_manager.get_bind_group_layout("globals").unwrap();
 
         vec![global_bind_group_layout, material_bind_group_layout]
     }
@@ -139,16 +139,15 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     }
 
     fn depth_stencil_state_desc(&self) -> Option<wgpu::DepthStencilStateDescriptor> {
-        // Some(wgpu::DepthStencilStateDescriptor {
-        //     format: DEPTH_FORMAT,
-        //     depth_write_enabled: true,
-        //     depth_compare: wgpu::CompareFunction::Greater,
-        //     stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        //     stencil_read_mask: 0,
-        //     stencil_write_mask: 0,
-        // })
-        None
+        Some(wgpu::DepthStencilStateDescriptor {
+            format: DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Greater,
+            stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+            stencil_read_mask: 0,
+            stencil_write_mask: 0,
+        })
     }
 
     fn vertex_state_desc(&self) -> VertexStateBuilder {

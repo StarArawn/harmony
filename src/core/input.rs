@@ -26,7 +26,8 @@ pub struct Input {
     mouse_buttons_down: HashSet<MouseButton>,
     mouse_buttons_pressed: HashSet<MouseButton>,
     mouse_buttons_released: HashSet<MouseButton>,
-    mouse_position: Vec2,
+    pub mouse_position: Vec2,
+    pub mouse_delta: Vec2,
     mouse_wheel_movement: Vec2,
     // current_text_input: Option<String>,
 
@@ -44,6 +45,7 @@ impl Input {
             mouse_buttons_pressed: HashSet::new(),
             mouse_buttons_released: HashSet::new(),
             mouse_position: Vec2::zeros(),
+            mouse_delta: Vec2::zeros(),
             mouse_wheel_movement: Vec2::zeros(),
             // current_text_input: None,
 
@@ -63,8 +65,8 @@ impl Input {
         self.keys_released.contains(&key)
     }
 
-    pub(crate) fn update_events(&mut self, event: &winit::event::Event<'_, ()>) {
-        match event {
+    pub(crate) fn update_events(&mut self, winit_event: &winit::event::Event<'_, ()>) {
+        match winit_event {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::KeyboardInput { input, .. } => {
                     if input.state == winit::event::ElementState::Pressed {
@@ -76,7 +78,19 @@ impl Input {
                             self.keys_released.insert(input.virtual_keycode.unwrap());
                         }
                     }
-                }
+                },
+                winit::event::WindowEvent::CursorMoved {
+                    position,
+                    ..
+                } => {
+                    self.mouse_position = Vec2::new(position.x as f32, position.y as f32);
+                },
+                _ => (),
+            },
+            winit::event::Event::DeviceEvent { event, .. } => match event {
+                winit::event::DeviceEvent::MouseMotion { delta } => {
+                    self.mouse_delta = Vec2::new(delta.0 as f32, delta.1 as f32);
+                },
                 _ => (),
             },
             _ => (),
@@ -89,5 +103,6 @@ impl Input {
         self.mouse_buttons_pressed.clear();
         self.mouse_buttons_released.clear();
         self.mouse_wheel_movement = Vec2::zeros();
+        self.mouse_delta = Vec2::zeros();
     }
 }

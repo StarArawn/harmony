@@ -1,0 +1,39 @@
+warning: Patch `wgpu-core v0.5.0 (https://github.com/gfx-rs/wgpu?rev=bc065e4abc24e82a2c92403740ffe8d7e6643243#bc065e4a)` was not used in the crate graph.
+Check that the patched package version and available features are compatible
+with the dependency requirements. If the patch has a different version from
+what is locked in the Cargo.lock file, run `cargo update` to use the new
+version. This may also occur with an optional dependency that is not enabled.
+   Compiling harmony v0.1.0 (/Users/jmitchell/rust/harmony)
+error[E0308]: mismatched types
+   --> src/graphics/systems/mesh.rs:230:74
+    |
+230 | ...                   render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^^ expected struct `wgpu::Buffer`, found enum `std::option::Option`
+    |
+    = note: expected reference `&wgpu::Buffer`
+               found reference `&std::option::Option<wgpu::Buffer>`
+
+error[E0308]: mismatched types
+   --> src/graphics/systems/mesh.rs:256:74
+    |
+256 | ...                   render_pass.set_vertex_buffer(0, &sub_mesh.vertex_buffer, 0, 0);
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^^ expected struct `wgpu::Buffer`, found enum `std::option::Option`
+    |
+    = note: expected reference `&wgpu::Buffer`
+               found reference `&std::option::Option<wgpu::Buffer>`
+
+error[E0308]: mismatched types
+   --> src/graphics/systems/line.rs:111:62
+    |
+111 | ...                   render_pass.set_vertex_buffer(0, &sub_mesh.tangent_line_buffer, 0, 0);
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected struct `wgpu::Buffer`, found enum `std::option::Option`
+    |
+    = note: expected reference `&wgpu::Buffer`
+               found reference `&std::option::Option<wgpu::Buffer>`
+
+error: aborting due to 3 previous errors
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `harmony`.
+
+To learn more, run the command again with --verbose.
