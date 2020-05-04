@@ -11,7 +11,7 @@ use harmony::scene::components::{
     CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
 };
 use harmony::scene::{resources::DeltaTime, Scene};
-use harmony::WinitState;
+use harmony::{graphics::resources::{ProbeFormat, ProbeQuality}, WinitState};
 
 struct WindowSize {
     width: u32,
@@ -53,6 +53,11 @@ impl harmony::AppState for AppState {
             .add_system(create_rotate_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
+        // We need to find the material index for the material that automatically gets created when loading in the GLTF.
+        // It's easy enough:
+        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("cube.gltf").sub_meshes[0].material_index;
+
+
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
@@ -71,7 +76,7 @@ impl harmony::AppState for AppState {
                     (),
                     vec![(
                         Mesh::new("cube.gltf"),
-                        Material::new(0), // Need to be an index to the material
+                        Material::new(cube_material_index), // Need to be an index to the material
                         transform,        // Transform
                     )],
                 );
@@ -83,6 +88,9 @@ impl harmony::AppState for AppState {
         let skybox = harmony::graphics::material::Skybox::new(app, "venice_sunrise_4k.hdr", 2048.0);
         // Skybox needs to be added as an entity in legion. (we only should have one).
         app.current_scene.world.insert((), vec![(skybox,)]);
+
+        // Setup probe for PBR
+        harmony::scene::entities::probe::create(app, Vec3::zeros(), ProbeQuality::Low, ProbeFormat::RGBA32);
 
         // Add directional light to our scene.
         let light_transform = Transform::new(app);
@@ -111,7 +119,7 @@ impl harmony::AppState for AppState {
             Vec3::new(
                 (size as f32 * scale) / 2.0,
                 (size as f32 * scale) / 2.0,
-                -190.0,
+                -100.0,
             ), // This is our camera's "position".
             Vec3::new(
                 (size as f32 * scale) / 2.0,
