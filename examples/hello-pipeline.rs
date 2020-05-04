@@ -6,7 +6,7 @@ use winit::{
 };
 
 use harmony::{
-    graphics::{resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph},
+    graphics::{resources::{BindGroup, GPUResourceManager}, CommandBufferQueue, CommandQueueItem, pipeline_manager::{PipelineDesc, PipelineManager}},
     WinitState, AssetManager,
 };
 
@@ -39,21 +39,21 @@ impl AppState {
 pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_triangle")
         .write_resource::<CommandBufferQueue>()
-        .read_resource::<RenderGraph>()
+        .read_resource::<PipelineManager>()
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
         .build(
             |_,
              _world,
-             (command_buffer_queue, render_graph, device, output, resource_manager),
+             (command_buffer_queue, pipeline_manager, device, output, resource_manager),
              _| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Triangle Pass"),
                 });
 
                 // Name of our node we created in app state "load".
-                let node = render_graph.get("triangle");
+                let node = pipeline_manager.get("triangle", None).unwrap();
 
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -66,12 +66,15 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                         }],
                         depth_stencil_attachment: None,
                     });
-                    rpass.set_pipeline(&node.pipeline);
+                    rpass.set_pipeline(&node.render_pipeline);
                     resource_manager.set_bind_group(&mut rpass, "triangle", 0);
                     rpass.draw(0..3, 0..1);
                 }
 
                 // Name here should match node name.
+                // Note: Rendering behind the scenes happens in a threaded way.
+                // meaning that multiple "render" systems can be ran at the same
+                // time to increase performance on the CPU.
                 command_buffer_queue
                     .push(CommandQueueItem {
                         buffer: encoder.finish(),
@@ -84,26 +87,51 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        let asset_manager = app.resources.get::<AssetManager>().unwrap();
-        let mut render_graph = app.resources.get_mut::<RenderGraph>().unwrap();
-        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
-        let device = app.resources.get::<wgpu::Device>().unwrap();
-        let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
-        // Setup our custom render pass.
-        let pipeline_desc = triangle_pipeline::TrianglePipelineDesc::default();
-        render_graph.add(
-            &asset_manager,
-            &device,
-            &sc_desc,
-            &mut resource_manager,
-            "triangle",    // The name of the pipeline node.
-            pipeline_desc, // A description of what our pipeline is which should match the shader in the pipeline as well.
-            vec![],        // Can be used to pass in dependencies which dictate draw order.
-            false, // Automatically include local bindings from transforms these get applied to slot 0.
-            None,  // Optional output target useful rendering to a texture.
-            false, // This option will pass the previous output as the input. Useful for chaining stuff together.
+        // First we need to access some of the internal data.
+        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let asset_manager = app.resources.get::<AssetManager>().unwrap();
+        let mut gpu_resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let mut pipeline_manager = app.resources.get_mut::<PipelineManager>().unwrap();
+        
+        // Setup our bind groups and layouts
+        let layout = gpu_resource_manager.get_bind_group_layout("triangle_layout").unwrap();
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            bindings: &[],
+            label: None,
+        });
+        gpu_resource_manager.add_single_bind_group("triangle", BindGroup::new(0, bind_group));
+
+        // Setup our custom pipeline
+        let mut triangle_desc = PipelineDesc::default();
+        triangle_desc.shader = "triangle.shader".to_string(); // Make sure we reference the right shader!
+        triangle_desc.layouts = vec!["triangle_layout".to_string()];
+
+        // The pipeline manager helps manage pipelines. It's somewhat smart and will cache your pipeline.
+        // Remember that adding new pipelines is expensive and should be avoided at runtime.
+        pipeline_manager.add(
+            "triangle", // Name of pipeline.
+            &triangle_desc, // Pipeline description
+            vec![], // Dependencies list as names.
+            &device, // The wgpu device.
+            &asset_manager, // asset manager from where we can load shaders.
+            &gpu_resource_manager // The gpu resource manager.
         );
+        
+        // Pipeline manager is smart enough to not add a new pipeline even if we call pipeline_manager.add again!
+        // Note: There are ways to add a variation of a pipeline by cloning the description modifying it and adding
+        // it with the same name. This is useful for example if you want to render your pipeline/shader to the 
+        // frame buffer and to a render target(with a different format).
+        pipeline_manager.add(
+            "triangle", // Name of pipeline.
+            &triangle_desc, // Pipeline description
+            vec![], // Dependencies list as names.
+            &device, // The wgpu device.
+            &asset_manager, // asset manager from where we can load shaders.
+            &gpu_resource_manager // The gpu resource manager.
+        );
+
     }
 }
 
