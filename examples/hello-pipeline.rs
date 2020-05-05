@@ -10,6 +10,7 @@ use harmony::{
     WinitState, AssetManager,
 };
 use std::sync::Arc;
+use nalgebra_glm::Vec3;
 
 struct WindowSize {
     width: u32,
@@ -57,9 +58,9 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Clear,
+                            load_op: wgpu::LoadOp::Load, // Load because of our clear pass.
                             store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color::GREEN,
+                            clear_color: wgpu::Color::BLACK,
                         }],
                         depth_stencil_attachment: None,
                     });
@@ -131,6 +132,11 @@ impl harmony::AppState for AppState {
             &asset_manager, // asset manager from where we can load shaders.
             &gpu_resource_manager // The gpu resource manager.
         );
+
+        // Create a clear color
+        let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(0.0, 1.0, 0.0));
+        // Clear color needs to be added as an entity in legion (we only should have one for now..).
+        app.current_scene.world.insert((), vec![(clear_color,)]);
 
     }
 }

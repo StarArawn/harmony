@@ -19,7 +19,7 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::pipelines::{UnlitPipelineDesc, LinePipelineDesc};
+use graphics::{material::skybox::SkyboxType, pipelines::{UnlitPipelineDesc, LinePipelineDesc}};
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
@@ -206,8 +206,8 @@ impl Application {
             let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
-                let device = self.resources.get::<wgpu::Device>().unwrap();
-                {
+                if skybox.skybox_type == SkyboxType::HdrCubemap {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
                     let material_layout = resource_manager.get_bind_group_layout("skybox_material").unwrap();
                     skybox.create_bind_group2(&device, material_layout);
                 }

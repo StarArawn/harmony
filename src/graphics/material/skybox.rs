@@ -1,3 +1,5 @@
+use nalgebra_glm::Vec3;
+
 use crate::{
     graphics::{
         resources::{GPUResourceManager, RenderTarget},
@@ -8,17 +10,25 @@ use crate::{
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum SkyboxType {
+    ClearColor,
+    HdrCubemap,
+}
+
 pub struct Skybox {
     pub size: f32,
-    pub(crate) color_texture: wgpu::Texture,
-    pub(crate) color_view: wgpu::TextureView,
-    pub(crate) cubemap_sampler: wgpu::Sampler,
+    pub skybox_type: SkyboxType,
+    pub clear_color: Vec3,
+    pub(crate) color_texture: Option<wgpu::Texture>,
+    pub(crate) color_view: Option<wgpu::TextureView>,
+    pub(crate) cubemap_sampler: Option<wgpu::Sampler>,
     pub(crate) cubemap_bind_group: Option<wgpu::BindGroup>,
     pub(crate) pbr_bind_group: Option<wgpu::BindGroup>,
 }
 
 impl Skybox {
-    pub fn new<T>(app: &mut Application, texture: T, size: f32) -> Self
+    pub fn new_hdr<T>(app: &mut Application, texture: T, size: f32) -> Self
     where
         T: Into<String>,
     {
@@ -107,11 +117,26 @@ impl Skybox {
 
         Self {
             size,
-            color_texture: color.texture,
-            color_view: color_view,
-            cubemap_sampler,
+            color_texture: Some(color.texture),
+            color_view: Some(color_view),
+            cubemap_sampler: Some(cubemap_sampler),
             cubemap_bind_group: None,
             pbr_bind_group: None,
+            clear_color: Vec3::zeros(),
+            skybox_type: SkyboxType::HdrCubemap,
+        }
+    }
+
+    pub fn create_clear_color(color: Vec3) -> Self {
+        Self {
+            size: 0.0,
+            color_texture: None,
+            color_view: None,
+            cubemap_sampler: None,
+            cubemap_bind_group: None,
+            pbr_bind_group: None,
+            clear_color: color,
+            skybox_type: SkyboxType::ClearColor,
         }
     }
 
@@ -125,11 +150,11 @@ impl Skybox {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&self.color_view),
+                    resource: wgpu::BindingResource::TextureView(self.color_view.as_ref().unwrap()),
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.cubemap_sampler),
+                    resource: wgpu::BindingResource::Sampler(self.cubemap_sampler.as_ref().unwrap()),
                 },
             ],
             label: None,
