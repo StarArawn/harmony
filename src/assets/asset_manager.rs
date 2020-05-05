@@ -1,17 +1,13 @@
 use log::*;
 use std::{
-    borrow::Borrow,
-    collections::{HashMap, HashSet},
-    error::Error,
-    hash::Hash,
-    io::ErrorKind,
+    collections::{HashMap},
     sync::Arc,
 };
 use walkdir::WalkDir;
 
 use crate::core::Font;
 use crate::graphics::{
-    material::{Image, Material, NewMaterialData, NewMaterialHandle, Shader},
+    material::{Image, NewMaterialData, NewMaterialHandle, Shader},
     mesh::{GltfData, SubMesh},
     resources::GPUResourceManager,
 };
@@ -73,10 +69,12 @@ impl AssetManager {
                 let current_index = self.materials.len() as u32;
                 let gltf_data =
                     GltfData::load(&device, format!("{}{}", full_file_path, file_name)).unwrap();
+                // TODO: Figure out what this needs to look like
                 let mesh = gltf_data.mesh;
-                for handle in mesh.material_handles {
+                for (handle,submeshes) in mesh.data {
                     self.materials.insert(handle, None);
                 }
+                //TODO: prob wrong
                 for sub in mesh.sub_meshes {
                     self.meshes.insert(file_name.to_string(), sub);
                     info!("Loaded mesh: {}", file_name);
@@ -145,21 +143,19 @@ impl AssetManager {
             .entry(handle)
             .and_modify(|e| {
                 if e.is_none() {
-                    *e = Some(Arc::new(handle.load_data(device, encoder)))
+                    //if handle is inside but Data is not loaded
+                    *e = Some(Arc::new(handle.load_data(&mut self.images, device, encoder)));
                 }
             })
-            .or_insert(Some(Arc::new(handle.load_data(device, encoder))));
+            //if DataHandle is not present load and add
+            .or_insert(Some(Arc::new(handle.load_data(&mut self.images, device, encoder))));
             t.unwrap()
     }
-    //
-    //pub fn get_materials_mut(&mut self) -> Vec<&mut Material> {
-    //    self.materials.values_mut().collect()
-    //}
-    //
-    pub fn get_loaded_material_data(&self) -> Vec<Arc<NewMaterialData>> {
+    
+    pub fn get_loaded_materials(&self) -> Vec<Arc<NewMaterialData>> {
         self.materials.values().filter(|opt| opt.is_some()).map(|opt| opt.unwrap().clone()).collect()
     }
-    
+
     pub fn get_image_or_white(&self, key: &str) -> Arc<Image> {
         self.images.get(key).unwrap_or(self.images.get("white").unwrap()).clone()
     }
@@ -199,22 +195,22 @@ impl AssetManager {
     ) {
         let mut current_bind_group = None;
         let mut current_index = 0;
-        for material in self.materials.values_mut() {
-            match material {
-                crate::graphics::material::Material::Unlit(unlit_material) => {
+        for material in self.get_loaded_materials() {
+            match material.material_kind{
+                crate::graphics::material::MaterialKind::Unlit => {
                     let unlit_bind_group_layout = resource_manager
                         .get_bind_group_layout("unlit_material")
                         .unwrap();
-                    unlit_material.create_bind_group(&self, &device, unlit_bind_group_layout);
+                    material.create_bind_group(&device, unlit_bind_group_layout);
                 }
-                crate::graphics::material::Material::PBR(pbr_material) => {
+                crate::graphics::material::MaterialKind::PBR => {
                     let pbr_bind_group_layout = resource_manager
                         .get_bind_group_layout("pbr_material")
                         .unwrap();
                     current_bind_group =
-                        Some(pbr_material.create_bind_group(&self, device, pbr_bind_group_layout));
-                    current_index = pbr_material.index;
+                        Some(material.create_bind_group( device, pbr_bind_group_layout));
                 }
+                crate::graphics::material::MaterialKind::None => {}
             }
             if current_bind_group.is_some() {
                 resource_manager.add_multi_bind_group(

@@ -4,7 +4,7 @@ use crate::graphics::resources::BindGroup;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{vec4, Vec4};
 use serde;
-use std::{hash::Hash, mem, sync::Arc};
+use std::{hash::Hash, mem, sync::Arc, collections::HashMap};
 use walkdir::WalkDir;
 
 pub enum MaterialKind {
@@ -167,22 +167,27 @@ impl NewMaterialHandle {
             color,
         }
     }
-
+    
+    /// load_data loads the data specified in self if not present in images and returns them bundled as a materialdata
     pub fn load_data(
         self,
+        images: &mut HashMap<String,Arc<Image>>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
     ) -> NewMaterialData {
         NewMaterialData {
             material_kind: MaterialKind::from(&self),
             main_texture: self.main_texture.map_or(None, |path| {
-                Image::new_color(device, encoder, path.into()).ok()
+                Some(images.entry(path).or_insert(Image::new_color(device, encoder, path.into()).unwrap()//dont unwrap here
+            ).clone())
             }),
             roughness_texture: self.roughness_texture.map_or(None, |path| {
-                Image::new_normal(device, encoder, path.into()).ok()
+                Some(images.entry(path).or_insert(Image::new_normal(device, encoder, path.into()).unwrap()//dont unwrap here
+            ).clone())
             }),
             normal_texture: self.normal_texture.map_or(None, |path| {
-                Image::new_normal(device, encoder, path.into()).ok()
+                Some(images.entry(path).or_insert(Image::new_normal(device, encoder, path.into()).unwrap()//dont unwrap here
+            ).clone())
             }),
             roughness: self.roughness,
             metallic: self.metallic,

@@ -3,7 +3,7 @@ use crate::graphics::material::Material;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
 use std::ffi::OsStr;
-use std::{error::Error, path::Path};
+use std::{error::Error, path::Path, collections::HashMap};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -89,12 +89,11 @@ impl mikktspace::Geometry for SubMesh {
 }
 
 pub struct Mesh {
-    pub sub_meshes: Vec<SubMesh>,
-    pub material_handles: Vec<NewMaterialHandle>,
+    pub(crate) data: HashMap<NewMaterialHandle,Vec<SubMesh>>,
 }
 
 impl Mesh {
-    pub fn new(sub_meshes: Vec<SubMesh>, material_handles: Vec<NewMaterialHandle>) -> Self { Self { sub_meshes, material_handles } }
+    pub fn new() -> Self { Self { data: HashMap::new(), } }
 }
 
 
@@ -111,7 +110,6 @@ impl GltfData {
     where
         T: Into<String>,
     {
-        let mut material_handles = Vec::new();
         let path = path.into();
         let (document, data, _) = gltf::import(path.clone())?;
         log::info!("Loaded the gltf file successfully!");
@@ -125,9 +123,9 @@ impl GltfData {
         // For now we only support 1 mesh.
         let gltf_mesh: &gltf::Mesh<'_> = meshes.first().unwrap();
 
-        let mut sub_meshes = Vec::new();
+        let mut mesh = Mesh::new();
+        
         let primitives = gltf_mesh.primitives();
-
         let images: Vec<gltf::Image<'_>> = document.images().collect();
 
         for primitive in primitives {
@@ -202,8 +200,7 @@ impl GltfData {
                 Some(pbr.metallic_factor()),
                 Some(pbr.base_color_factor()),
             );
-
-            material_handles.push(material_handle);
+            mesh.data.entry(material_handle).or_insert(Vec::new());//add if it doesnt exist
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
@@ -293,10 +290,10 @@ impl GltfData {
             sub_mesh.tangent_line_buffer = Some(tangent_line_buffer);
             sub_mesh.vertex_buffer = Some(vertex_buffer);
 
-            sub_meshes.push(sub_mesh);
+            mesh.data.entry(material_handle).and_modify(|v|v.push(sub_mesh));
         }
 
-        Ok(Self { mesh: Mesh::new( sub_meshes, material_handles) })
+        Ok(Self { mesh })
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
