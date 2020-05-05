@@ -156,8 +156,6 @@ impl Application {
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
-            crate::graphics::pipelines::skybox::create(&self.resources);
-
             // Unlit pipeline
             let unlit_pipeline_desc = UnlitPipelineDesc::default();
             render_graph.add(
@@ -174,9 +172,6 @@ impl Application {
             );
 
             // PBR pipeline
-            super::graphics::pipelines::pbr::create(&self.resources);
-
-            // PBR pipeline
             let line_pipeline_desc = LinePipelineDesc::default();
             render_graph.add(
                 &asset_manager,
@@ -191,7 +186,13 @@ impl Application {
                 false,
             );
         }
+        
+        // Create new pipelines
+        crate::graphics::pipelines::skybox::create(&self.resources);
+        // PBR pipeline
+        super::graphics::pipelines::pbr::create(&self.resources);
 
+        // Run user code.
         app_state.load(self);
 
         // Once materials have been created we need to create more info for them.
