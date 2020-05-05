@@ -25,7 +25,7 @@ png = "0.16.3"
 nalgebra = "0.21.0"
 nalgebra-glm = "0.7"
 ron = "0.5"
-serde = "1.0.106"
+serde = { version = "1.0", features = ["derive"] }
 shaderc = "0.6"
 stretch = "0.3.2"
 solvent = "0.8.1"

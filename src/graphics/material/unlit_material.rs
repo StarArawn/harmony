@@ -1,8 +1,8 @@
 use super::Image;
-use crate::graphics::pipeline::BindGroupWithData;
+use crate::{AssetManager, graphics::pipeline::BindGroupWithData};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Vec4;
-use std::{collections::HashMap, mem};
+use std::{collections::HashMap, mem, sync::Arc};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -38,7 +38,7 @@ impl UnlitMaterial {
     // Be careful here to make sure the layout of the pipeline matches our layout here.
     pub(crate) fn create_bind_group(
         &mut self,
-        images: &HashMap<String, Image>,
+        asset_manager: &AssetManager, //should be material
         device: &wgpu::Device,
         local_bind_group_layout: &wgpu::BindGroupLayout,
     ) {
@@ -49,14 +49,7 @@ impl UnlitMaterial {
             label: None,
         });
 
-        // Asset manager will panic if image doesn't exist, but we don't want that.
-        // So use get_image_option instead.
-        let image = images
-            .get(&self.main_texture)
-            .unwrap_or(
-                images.get("white.png")
-                    .unwrap_or_else(|| panic!("UnlitMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
-            );
+        let image = asset_manager.get_image_or_white(&self.main_texture);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &local_bind_group_layout,

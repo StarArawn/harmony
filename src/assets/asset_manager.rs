@@ -4,7 +4,7 @@ use walkdir::WalkDir;
 
 use crate::core::Font;
 use crate::graphics::{
-    material::{Image, Material, Shader},
+    material::{Image, Material, Shader, NewMaterialHandle},
     mesh::Mesh, resources::GPUResourceManager,
 };
 
@@ -14,8 +14,8 @@ pub struct AssetManager {
     fonts: HashMap<String, Font>,
     meshes: HashMap<String, Mesh>,
     pub(crate) materials: HashMap<u32, Material>,
-
-    pub(crate) images: HashSet<Arc<Image>>,
+    materials_available: HashMap<String,NewMaterialHandle>,
+    pub(crate) images: HashMap<String,Arc<Image>>,
 
     //TODO: store samplers
 }
@@ -28,7 +28,8 @@ impl AssetManager {
             fonts: HashMap::new(),
             meshes: HashMap::new(),
             materials: HashMap::new(),
-            images: HashSet::new(),
+            materials_available: HashMap::new(),
+            images: HashMap::new(),
         }
     }
 
@@ -85,24 +86,24 @@ impl AssetManager {
                     image = Image::new_normal(
                         &device,
                         &mut init_encoder,
-                        entry.into_path(),
+                        entry.path().into(),
                     ).unwrap();
                 } else {
                     image = Image::new_color(
                         &device,
                         &mut init_encoder,
-                        entry.into_path(),
+                        entry.path().into(),
                     ).unwrap();
                 }
-                self.images.insert( image);
+                self.images.insert( image.name.clone(),image);
                 info!("Loaded image: {}", file_name);
             } else if file_name.ends_with(".hdr") {
                 let image = Image::new_hdr(
                     &device,
                     &mut init_encoder,
-                    entry.into_path(),
+                    entry.path().into(),
                 ).unwrap();
-                self.images.insert(image);
+                self.images.insert(image.name.clone(),image);
                 info!("Loaded skybox: {}", file_name);
             }
         }
@@ -152,25 +153,25 @@ impl AssetManager {
     pub fn get_materials(&self) -> Vec<&Material> {
         self.materials.values().collect()
     }
-
-    fn get_image(&self, key: &String) -> Option<Arc<Image>> 
+    pub fn get_image_or_white(&self, key: &str) -> Arc<Image>
     {
-        let t = self.images.get(&key);//{
+        match self.images.get(key){
+            Some(img) => img.clone(),
+            None => self.images.get("white").unwrap().clone(), //TODO!
+        };//{
             //Some(arc) => Some(arc.clone()),
             //None => None,
         //}
+        unimplemented!()
     }
 
-    pub fn get_image_option<T>(&self, key: T) -> Option<&Image>
-    where
-        T: Into<String>,
+    pub fn get_image(&self, key: &str) -> Option<Arc<Image>>
     {
-        let key = key.into();
-        self.images.get(&key)
+        self.images.get(key).map_or(None, |img| Some(img.clone()))
     }
 
-    pub fn get_images(&self) -> Vec<&Image> {
-        self.images.values().collect()
+    pub fn get_images(&self) -> Vec<Arc<Image>> {
+        self.images.values().map(|img| img.clone()).collect()
     }
 
     pub fn get_font<T>(&self, key: T) -> &Font
@@ -206,7 +207,7 @@ impl AssetManager {
                 crate::graphics::material::Material::Unlit(unlit_material) => {
                     let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
                     unlit_material.create_bind_group(
-                        &self.images,
+                        &self,
                         &device,
                         unlit_bind_group_layout,
                     );
@@ -214,7 +215,7 @@ impl AssetManager {
                 crate::graphics::material::Material::PBR(pbr_material) => {
                     let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material").unwrap();
                     current_bind_group = Some(pbr_material.create_bind_group(
-                            &self.images,
+                            &self,
                             device,
                             pbr_bind_group_layout,
                         ));

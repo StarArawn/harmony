@@ -1,4 +1,4 @@
-use std::{fs, io, hash::Hash, sync::Arc, path::PathBuf, error::Error, borrow::Borrow};
+use std::{fs, io, sync::Arc, path::PathBuf, error::Error};
 pub struct Image {
     pub(crate) name: String,
     pub(crate) texture: wgpu::Texture,
@@ -7,23 +7,6 @@ pub struct Image {
     pub(crate) view: wgpu::TextureView,
     pub(crate) format: wgpu::TextureFormat,
 }
-
-impl Eq for Image {
-    fn assert_receiver_is_total_eq(&self) {self.name.assert_receiver_is_total_eq()}
-}
-
-impl PartialEq for Image {
-    fn eq(&self, other: &Image) -> bool {
-        self.name.eq(&other.name)
-    }
-}
-
-impl Hash for Image {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.name.hash(state)
-    }
-}
-
 
 impl Image {
     pub fn new_hdr(
@@ -69,9 +52,7 @@ impl Image {
     ) -> Result<Arc<Self>,Box<dyn Error>>{
         let name = String::from(path.file_name().map_or("no_filename", |f| f.to_str().unwrap()));
 
-        let img = image::open(path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {:?}", path)) //TODO: make unfailable
-            .to_rgba();
+        let img = image::open(path)?.to_rgba();
         let (width, height) = img.dimensions();
         let size = wgpu::Extent3d {
             width,

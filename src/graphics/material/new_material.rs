@@ -5,9 +5,31 @@ use std::{sync::Arc, mem};
 use walkdir::WalkDir;
 use crate::graphics::resources::BindGroup;
 use bytemuck::{Pod, Zeroable};
+use serde;
 
+pub enum MaterialKind{
+    Unlit,
+    PBR,
+    None,
+}
+impl From<&NewMaterialHandle> for MaterialKind{
+    fn from(h: &NewMaterialHandle) -> Self {
+        if h.main_texture.is_some() &&
+        h.roughness_texture.is_some() &&
+        h.normal_texture.is_some() &&
+        h.roughness.is_some() &&
+        h.metallic.is_some(){
+            MaterialKind::PBR
+        } else if h.main_texture.is_some() && h.color.is_some(){
+            MaterialKind::Unlit
+        }else{
+            MaterialKind::None
+        }
+    }
+}
 /// Hash as identifier.
 pub struct NewMaterialData {
+    pub material_kind: MaterialKind,
     pub main_texture: Option<Arc<Image>>,
     pub roughness_texture: Option<Arc<Image>>,
     pub normal_texture: Option<Arc<Image>>,
@@ -104,6 +126,7 @@ impl NewMaterialHandle {
         encoder: &mut wgpu::CommandEncoder,
     ) -> NewMaterialData {
         NewMaterialData{
+            material_kind: MaterialKind::from(&self),
             main_texture: self.main_texture.map_or(None, |path| Image::new_color(device, encoder, path.into()).ok()),
             roughness_texture: self.roughness_texture.map_or(None, |path| Image::new_normal(device, encoder, path.into()).ok()),
             normal_texture: self.normal_texture.map_or(None, |path| Image::new_normal(device, encoder, path.into()).ok()),

@@ -1,5 +1,5 @@
 use super::Image;
-use crate::graphics::resources::BindGroup;
+use crate::{AssetManager, graphics::resources::BindGroup};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Vec4;
 use std::{collections::HashMap, mem};
@@ -44,7 +44,7 @@ impl PBRMaterial {
 
     pub(crate) fn create_bind_group<'a>(
         &mut self,
-        images: &HashMap<String, Image>,
+        asset_manager: &AssetManager, //should be material
         device: &wgpu::Device,
         pipeline_layout: &'a wgpu::BindGroupLayout,
     ) -> BindGroup {
@@ -58,25 +58,11 @@ impl PBRMaterial {
         let uniform_buf = device.create_buffer_with_data(bytemuck::bytes_of(&uniform), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
         self.uniform_buf = Some(uniform_buf);
 
-        // Asset manager will panic if image doesn't exist, but we don't want that.
-        // So use get_image_option instead.
-        let main_image = images.get(&self.main_texture)
-            .unwrap_or(
-                images.get("white.png")
-                    .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
-            );
+        let main_image = asset_manager.get_image_or_white(&self.main_texture);
         
-        let normal_image = images.get(&self.normal_texture)
-            .unwrap_or(
-                images.get("white.png")
-                    .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
-            );
+        let normal_image = asset_manager.get_image_or_white(&self.normal_texture);
         
-        let roughness_image = images.get(&self.roughness_texture)
-            .unwrap_or(
-                images.get("white.png")
-                    .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
-            );
+        let roughness_image = asset_manager.get_image_or_white(&&self.roughness_texture);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline_layout,
