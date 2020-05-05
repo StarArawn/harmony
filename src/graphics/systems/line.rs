@@ -107,7 +107,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     // draw lines
                     for mesh in mesh_query.iter(&world) {
                         let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
-                        for sub_mesh in asset_mesh.sub_meshes.iter() {
+                        for sub_mesh in asset_mesh.iter() {
                             render_pass.set_vertex_buffer(0, sub_mesh.tangent_line_buffer.as_ref().unwrap(), 0, 0);
                             render_pass.draw(0..sub_mesh.tangent_lines.len() as u32, 0..1);
                         }

@@ -112,7 +112,7 @@ impl Probe {
         let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
         let bind_group_layout = resource_manager.get_bind_group_layout("probe_material_layout").unwrap();
 
-        let brdf_texture = asset_manager.get_image("brdf_texture.png").unwrap();//TODO: dont unwrap.
+        let brdf_texture = asset_manager.get_image_or_white("brdf_texture.png");//TODO: dont unwrap.
         let brdf_view = &brdf_texture.view;
 
         let bind_group = BindGroup::new(3, device.create_bind_group(&wgpu::BindGroupDescriptor {

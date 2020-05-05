@@ -26,6 +26,7 @@ pub trait SimplePipeline: Send + Sync + 'static {
 
     fn render(
         &mut self,
+        _asset_manager: &AssetManager,
         _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,

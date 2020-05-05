@@ -38,7 +38,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         {
-            let image = asset_manager.get_image(self.texture.clone());
+            let image = asset_manager.get_image_or_white(&self.texture);
 
             let global_bind_group =
                 resource_manager.get_bind_group_layout("equirectangular_globals").unwrap();
