@@ -31,7 +31,7 @@ unsafe impl Zeroable for SkyboxUniforms {}
 unsafe impl Pod for SkyboxUniforms {}
 
 pub fn create(resources: &Resources) {
-    let asset_manager = resources.get_mut::<AssetManager>().unwrap();
+    let asset_manager = resources.get::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
     let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
     let device = resources.get::<wgpu::Device>().unwrap();
