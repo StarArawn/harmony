@@ -1,28 +1,29 @@
 //Materials are being Stored in a HashSet
 use super::Image;
-use nalgebra_glm::{vec4, Vec4};
-use std::{sync::Arc, mem};
-use walkdir::WalkDir;
 use crate::graphics::resources::BindGroup;
 use bytemuck::{Pod, Zeroable};
+use nalgebra_glm::{vec4, Vec4};
 use serde;
+use std::{hash::Hash, mem, sync::Arc};
+use walkdir::WalkDir;
 
-pub enum MaterialKind{
+pub enum MaterialKind {
     Unlit,
     PBR,
     None,
 }
-impl From<&NewMaterialHandle> for MaterialKind{
+impl From<&NewMaterialHandle> for MaterialKind {
     fn from(h: &NewMaterialHandle) -> Self {
-        if h.main_texture.is_some() &&
-        h.roughness_texture.is_some() &&
-        h.normal_texture.is_some() &&
-        h.roughness.is_some() &&
-        h.metallic.is_some(){
+        if h.main_texture.is_some()
+            && h.roughness_texture.is_some()
+            && h.normal_texture.is_some()
+            && h.roughness.is_some()
+            && h.metallic.is_some()
+        {
             MaterialKind::PBR
-        } else if h.main_texture.is_some() && h.color.is_some(){
+        } else if h.main_texture.is_some() && h.color.is_some() {
             MaterialKind::Unlit
-        }else{
+        } else {
             MaterialKind::None
         }
     }
@@ -39,43 +40,47 @@ pub struct NewMaterialData {
     pub uniform_buf: Option<wgpu::Buffer>,
 }
 
-impl NewMaterialData{
+impl NewMaterialData {
     pub(crate) fn create_bind_group<'a>(
         &mut self,
         device: &wgpu::Device,
         pipeline_layout: &'a wgpu::BindGroupLayout,
     ) -> BindGroup {
+        let metallic = self.metallic.map_or(0.0, |v| v);
+        let roughness = self.roughness.map_or(0.0, |v| v);
+        let color = self.color.map_or(vec4(0f32, 0f32, 0f32, 0f32), |v| {
+            vec4(v[0], v[1], v[2], v[3])
+        });
 
-        let metallic = self.metallic.map_or(0.0, |v|v);
-        let roughness = self.roughness.map_or(0.0, |v|v);
-        let color = self.color.map_or(vec4(0f32,0f32,0f32,0f32), |v| vec4(v[0],v[1],v[2],v[3]));
-        
         let uniform = PBRMaterialUniform {
             color,
             info: Vec4::new(metallic, roughness, 0.0, 0.0),
         };
-    
+
         let material_uniform_size = mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
-        let uniform_buf = device.create_buffer_with_data(bytemuck::bytes_of(&uniform), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
+        let uniform_buf = device.create_buffer_with_data(
+            bytemuck::bytes_of(&uniform),
+            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        );
         self.uniform_buf = Some(uniform_buf);
-    
+
         // Asset manager will panic if image doesn't exist, but we don't want that.
         // So use get_image_option instead.
-        let main_image = match &self.main_texture{
+        let main_image = match &self.main_texture {
             Some(img) => img,
-            None => unimplemented!()//return white
+            None => unimplemented!(), //return white
         };
-        
-        let normal_image = match &self.normal_texture{
+
+        let normal_image = match &self.normal_texture {
             Some(img) => img,
-            None => unimplemented!()//return white
+            None => unimplemented!(), //return white
         };
-        
-        let roughness_image = match &self.roughness_texture{
+
+        let roughness_image = match &self.roughness_texture {
             Some(img) => img,
-            None => unimplemented!()//return white
+            None => unimplemented!(), //return white
         };
-    
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline_layout,
             bindings: &[
@@ -105,11 +110,11 @@ impl NewMaterialData{
             ],
             label: None,
         });
-    
+
         BindGroup::new(2, bind_group)
     }
 }
-#[derive(serde::Serialize, serde::Deserialize, std::fmt::Debug)]
+#[derive(serde::Serialize, serde::Deserialize, std::fmt::Debug, PartialEq)]
 pub struct NewMaterialHandle {
     main_texture: Option<String>,
     roughness_texture: Option<String>,
@@ -119,17 +124,66 @@ pub struct NewMaterialHandle {
     color: Option<[f32; 4]>,
 }
 
+impl Eq for NewMaterialHandle {}
+
+impl Hash for NewMaterialHandle {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if let Some(tex) = self.main_texture {
+            tex.hash(state)
+        }
+        if let Some(tex) = self.roughness_texture {
+            tex.hash(state)
+        }
+        if let Some(tex) = self.normal_texture {
+            tex.hash(state)
+        }
+        if let Some(f) = self.roughness {
+            f.to_bits().hash(state)
+        }
+        if let Some(f) = self.metallic {
+            f.to_bits().hash(state)
+        }
+        if let Some(f) = self.color {
+            f.iter().map(|f| f.to_bits().hash(state)).collect()
+        }
+    }
+}
+
 impl NewMaterialHandle {
-    fn load_data(
+    pub fn new(
+        main_texture: Option<String>,
+        roughness_texture: Option<String>,
+        normal_texture: Option<String>,
+        roughness: Option<f32>,
+        metallic: Option<f32>,
+        color: Option<[f32; 4]>,
+    ) -> Self {
+        Self {
+            main_texture,
+            roughness_texture,
+            normal_texture,
+            roughness,
+            metallic,
+            color,
+        }
+    }
+
+    pub fn load_data(
         self,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
     ) -> NewMaterialData {
-        NewMaterialData{
+        NewMaterialData {
             material_kind: MaterialKind::from(&self),
-            main_texture: self.main_texture.map_or(None, |path| Image::new_color(device, encoder, path.into()).ok()),
-            roughness_texture: self.roughness_texture.map_or(None, |path| Image::new_normal(device, encoder, path.into()).ok()),
-            normal_texture: self.normal_texture.map_or(None, |path| Image::new_normal(device, encoder, path.into()).ok()),
+            main_texture: self.main_texture.map_or(None, |path| {
+                Image::new_color(device, encoder, path.into()).ok()
+            }),
+            roughness_texture: self.roughness_texture.map_or(None, |path| {
+                Image::new_normal(device, encoder, path.into()).ok()
+            }),
+            normal_texture: self.normal_texture.map_or(None, |path| {
+                Image::new_normal(device, encoder, path.into()).ok()
+            }),
             roughness: self.roughness,
             metallic: self.metallic,
             color: self.color,

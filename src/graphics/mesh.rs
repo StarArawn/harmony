@@ -1,9 +1,9 @@
-use super::material::{PBRMaterial};
+use super::material::{NewMaterialHandle, PBRMaterial};
 use crate::graphics::material::Material;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
 use std::ffi::OsStr;
-use std::path::Path;
+use std::{error::Error, path::Path};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -21,7 +21,7 @@ unsafe impl Pod for MeshVertexData {}
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct MeshTangentLine {
-    pub pos: Vec3,   
+    pub pos: Vec3,
     pub color: Vec3,
 }
 
@@ -51,14 +51,14 @@ pub struct SubMesh {
     pub(crate) index_buffer: wgpu::Buffer,
 
     // Material index is stored here.
-    pub material_index: u32,
+    pub material_handle: NewMaterialHandle,
 }
 
-fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
+fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData {
     &sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
-fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData{
+fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData {
     &mut sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
@@ -90,22 +90,31 @@ impl mikktspace::Geometry for SubMesh {
 
 pub struct Mesh {
     pub sub_meshes: Vec<SubMesh>,
+    pub material_handles: Vec<NewMaterialHandle>,
 }
 
 impl Mesh {
+    pub fn new(sub_meshes: Vec<SubMesh>, material_handles: Vec<NewMaterialHandle>) -> Self { Self { sub_meshes, material_handles } }
+}
+
+
+pub struct GltfData {
+    pub(crate) mesh: Mesh,
+}
+
+impl GltfData {
     /// Imports glTF 2.0
-    pub fn new<T>(
+    pub fn load<T>(
         device: &wgpu::Device,
         path: T,
-        material_start_index: u32,
-    ) -> (Mesh, Vec<Material>)
+    ) -> Result<Self, Box<dyn Error>>
     where
         T: Into<String>,
     {
-        let mut materials = Vec::new();
+        let mut material_handles = Vec::new();
         let path = path.into();
-        let (document, data, _) =
-            gltf::import(path.clone()).expect("Loaded the gltf file successfully!");
+        let (document, data, _) = gltf::import(path.clone())?;
+        log::info!("Loaded the gltf file successfully!");
         let get_buffer_data = |buffer: gltf::Buffer<'_>| data.get(buffer.index()).map(|x| &*x.0);
 
         // let mut meshes = Vec::new();
@@ -167,59 +176,40 @@ impl Mesh {
             };
 
             let gltf_material: gltf::Material<'_> = primitive.material();
+            let t = gltf_material.normal_texture().unwrap().texture();
             let pbr = gltf_material.pbr_metallic_roughness();
 
-            let color_factor = pbr.base_color_factor();
-            let color = Vec4::new(
-                color_factor[0],
-                color_factor[1],
-                color_factor[2],
-                color_factor[3],
-            );
-
             let main_info = pbr.base_color_texture();
-            let mut normal_texture= None;
-            let normals_texture = gltf_material.normal_texture();
-            if normals_texture.is_some() {
-                let normal_source = normals_texture.unwrap().texture().source().source();
-                match normal_source {
-                    gltf::image::Source::Uri { uri, .. } => {
-                        let texture_file_name = Some(
-                            Path::new(&uri)
-                                .file_name()
-                                .and_then(OsStr::to_str)
-                                .unwrap()
-                                .to_string(),
-                        );
-                        if texture_file_name.is_some() {
-                            normal_texture = Some(texture_file_name.unwrap());
-                        }
-                    }
-                    _ => (),
+            
+            let normal_texture:Option<String> = gltf_material.normal_texture().map_or(None, |texture| {
+                match texture.texture().source().source() {
+                    gltf::image::Source::Uri { uri, .. } => Path::new(&uri).file_name().unwrap().to_owned().into_string().ok(),
+                    //TODO: Buffer view
+                    _ => None,
                 }
-            }
-            let roughness_info = pbr.metallic_roughness_texture();
+            });
 
+            let roughness_info = pbr.metallic_roughness_texture();
 
             let main_texture = Self::get_texture_url(&main_info, &images);
             let roughness_texture = Self::get_texture_url(&roughness_info, &images);
-            
-            let material_index = material_start_index + materials.len() as u32;
-            let material = PBRMaterial::new(
-                main_texture.unwrap_or("white.png".to_string()),
-                normal_texture.unwrap_or("empty_normal.png".to_string()),
-                roughness_texture.unwrap_or("white.png".to_string()),
-                color,
-                material_index,
+
+            let material_handle = NewMaterialHandle::new(
+                main_texture,
+                roughness_texture,
+                normal_texture,
+                Some(pbr.roughness_factor()),
+                Some(pbr.metallic_factor()),
+                Some(pbr.base_color_factor()),
             );
-            materials.push(Material::PBR(material));
+
+            material_handles.push(material_handle);
 
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
             let index_buffer = device
-            .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+                .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
-
 
             let mut sub_mesh = SubMesh {
                 vertices,
@@ -231,30 +221,65 @@ impl Mesh {
                 vertex_buffer: None,
                 tangent_line_buffer: None,
                 index_buffer,
-                material_index,
+                material_handle,
             };
-            
+
             if !had_tangents {
-                log::info!("No tangents found for: {} generating tangents instead!", &path);
+                log::info!(
+                    "No tangents found for: {} generating tangents instead!",
+                    &path
+                );
                 mikktspace::generate_tangents(&mut sub_mesh);
             }
 
-            let tangents: Vec<(Vec3, Vec3)> = sub_mesh.vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
+            let tangents: Vec<(Vec3, Vec3)> = sub_mesh
+                .vertices
+                .iter()
+                .map(|data| (data.tangent.xyz() * data.tangent.w, data.position))
+                .collect();
             let mut tangent_lines = Vec::new();
             for (tangent, position) in tangents.iter() {
-                let position: Vec3 = position.clone();// * 50.0;
+                let position: Vec3 = position.clone(); // * 50.0;
                 let tangent: Vec3 = tangent.clone();
                 let scale: f32 = 0.1;
-                let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
-                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+                let vec3_tangent: Vec3 = Vec3::new(
+                    position.x + (tangent.x * scale),
+                    position.y + (tangent.y * scale),
+                    position.z + (tangent.z * scale),
+                );
+                tangent_lines.push(MeshTangentLine {
+                    pos: position.clone(),
+                    color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)),
+                });
+                tangent_lines.push(MeshTangentLine {
+                    pos: vec3_tangent,
+                    color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)),
+                });
             }
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 5.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(5.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(0.0, 0.0, 1.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 5.0),
+                color: Vec3::new(0.0, 0.0, 1.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(0.0, 1.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 5.0, 0.0),
+                color: Vec3::new(0.0, 1.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(1.0, 0.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(5.0, 0.0, 0.0),
+                color: Vec3::new(1.0, 0.0, 0.0),
+            });
             let tangent_line_buffer = device.create_buffer_with_data(
                 &bytemuck::cast_slice(&tangent_lines),
                 wgpu::BufferUsage::VERTEX,
@@ -264,14 +289,14 @@ impl Mesh {
                 &bytemuck::cast_slice(&sub_mesh.vertices),
                 wgpu::BufferUsage::VERTEX,
             );
-            
+
             sub_mesh.tangent_line_buffer = Some(tangent_line_buffer);
             sub_mesh.vertex_buffer = Some(vertex_buffer);
 
             sub_meshes.push(sub_mesh);
         }
-        
-        (Mesh { sub_meshes }, materials)
+
+        Ok(Self { mesh: Mesh::new( sub_meshes, material_handles) })
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
@@ -285,33 +310,20 @@ impl Mesh {
         }
     }
 
-    fn get_texture_url(info: &Option<gltf::texture::Info<'_>>, images: &Vec<gltf::Image<'_>>) -> Option<String> {
-        let mut file_name = None;
-        if info.is_some() {
-            let info = info.as_ref().unwrap();
+    fn get_texture_url(
+        info: &Option<gltf::texture::Info<'_>>,
+        images: &Vec<gltf::Image<'_>>,
+    ) -> Option<String> {
+        info.map_or(None, |info| {
             let tex = info.texture();
-            
             let image: Option<&gltf::Image<'_>> = images.get(tex.index());
-            if image.is_some() {
-                let image = image.unwrap();
-                let source = image.source();
-                match source {
-                    gltf::image::Source::Uri { uri, .. } => {
-                        let texture_file_name = Some(
-                            Path::new(&uri)
-                                .file_name()
-                                .and_then(OsStr::to_str)
-                                .unwrap()
-                                .to_string(),
-                        );
-                        if texture_file_name.is_some() {
-                            file_name = Some(texture_file_name.unwrap());
-                        }
-                    }
-                    _ => (),
+            image.map_or(None, |image| {
+                match image.source() {
+                    gltf::image::Source::Uri { uri, .. } => Path::new(&uri).file_name().unwrap().to_owned().into_string().ok(),
+                    //TODO: Buffer view
+                    _ => None,
                 }
-            }
-        }
-        file_name
+            })
+        })
     }
 }
