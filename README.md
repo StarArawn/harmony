@@ -19,6 +19,7 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Custom render pipelines
 - [x] Lighting (Directional, Point)
 - [x] PBR shading model
+- [x] IMGui integration
 
 ## Future Features (Prioritized)
 4. [ ] HDR/Tonemap rendering
