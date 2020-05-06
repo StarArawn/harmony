@@ -7,6 +7,7 @@ use serde;
 use std::{hash::Hash, mem, sync::Arc, collections::HashMap};
 use walkdir::WalkDir;
 
+#[derive(PartialEq)]
 pub enum MaterialKind {
     Unlit,
     PBR,

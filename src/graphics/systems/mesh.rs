@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
         pipelines::{LightingUniform, PointLight, DirectionalLight, GlobalUniform, MAX_LIGHTS}, resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture,
+        CommandBufferQueue, CommandQueueItem, RenderGraph, material::{MaterialKind, Material}, renderer::DepthTexture,
     },
     scene::components,
     AssetManager,
@@ -204,38 +204,35 @@ pub fn create() -> Box<dyn Schedulable> {
                     });
 
                     // Collect materials in to their groups.
-                    let asset_materials = asset_manager.get_materials();
-                    let pbr_materials: Vec<_> = asset_materials.iter().filter(|material| match material { Material::PBR(_) => { true }, _ => { false }}).collect();
-                    let unlit_materials: Vec<_> = asset_materials.iter().filter(|material| match material { Material::Unlit(_) => { true }, _ => { false }}).collect();
+                    let asset_materials = (asset_manager as &mut AssetManager).get_loaded_materials();
+                    let pbr_materials: Vec<_> = asset_materials.iter().filter(|material| material.material_kind == MaterialKind::PBR).collect();
+                    let unlit_materials: Vec<_> = asset_materials.iter().filter(|material|  material.material_kind == MaterialKind::Unlit).collect();
                     
                     // Render unlit materials.
                     let unlit_node = render_graph.get("unlit");
                     render_pass.set_pipeline(&unlit_node.pipeline);
                     render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
                     for material in unlit_materials.iter() {
-                        match material {
-                            Material::Unlit(data) => {
                                 render_pass.set_bind_group(
                                     2,
-                                    &data.bind_group_data.as_ref().unwrap().bind_group,
+                                    &material.bind_group_data.as_ref().unwrap().bind_group,
                                     &[],
                                 );
                                 for (mesh, _, transform) in mesh_query.iter(&world)
-                                    .filter(|(_, material, _)| material.index == data.index)
+                                    .filter(|(mesh, _, _)| mesh.d.index == data.index)
                                 {
                                     resource_manager.set_multi_bind_group(&mut render_pass, "transform", 0, transform.index);
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
-                                    for sub_mesh in asset_mesh.sub_meshes.iter() {
+                                    for sub_mesh_list in asset_mesh.data.values() {
+                                        for sub_mesh in sub_mesh_list{
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
                                         render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
+                                        }
                                     }
                                 }
-
-                            },
-                            _ => (),
                         }
-                    }
+                    
 
                     // Render pbr materials.
                     let pbr_node = render_graph.get("pbr");
@@ -243,25 +240,21 @@ pub fn create() -> Box<dyn Schedulable> {
                     render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
                     resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
                     for material in pbr_materials.iter() {
-                        match material {
-                            Material::PBR(data) => {
                                 resource_manager.set_multi_bind_group(&mut render_pass, "pbr", 2, data.index as u32);
                                 for (mesh, _, transform) in mesh_query.iter(&world)
                                     .filter(|(_, material, _)| material.index == data.index)
                                 {
                                     resource_manager.set_multi_bind_group(&mut render_pass, "transform", 0, transform.index);
                                     let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
-                                    for sub_mesh in asset_mesh.sub_meshes.iter() {
+                                    for sub_mesh_list in asset_mesh.data.values() {
+                                        for sub_mesh in sub_mesh_list{
                                         render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
                                         render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
                                         render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
                                     }
                                 }
-
-                            },
-                            _ => (),
-                        }
-                    }
+                                }
+                            }
                 }
 
                 command_buffer_queue
@@ -270,6 +263,6 @@ pub fn create() -> Box<dyn Schedulable> {
                         name: "pbr".to_string(),
                     })
                     .unwrap();
-            },
+            }
         )
 }

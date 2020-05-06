@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 use crate::core::Font;
 use crate::graphics::{
     material::{Image, NewMaterialData, NewMaterialHandle, Shader},
-    mesh::{GltfData, SubMesh},
+    mesh::{GltfData, SubMesh, Mesh},
     resources::GPUResourceManager,
 };
 
@@ -16,7 +16,7 @@ pub struct AssetManager {
     path: String,
     shaders: HashMap<String, Shader>,
     fonts: HashMap<String, Font>,
-    meshes: HashMap<String, SubMesh>,
+    meshes: HashMap<String, Mesh>,
     pub(crate) materials: HashMap<NewMaterialHandle, Option<Arc<NewMaterialData>>>,
     pub(crate) images: HashMap<String, Arc<Image>>,
     //TODO: store samplers
@@ -74,12 +74,10 @@ impl AssetManager {
                 for (handle,submeshes) in mesh.data {
                     self.materials.insert(handle, None);
                 }
-                //TODO: prob wrong
-                for sub in mesh.sub_meshes {
-                    self.meshes.insert(file_name.to_string(), sub);
-                    info!("Loaded mesh: {}", file_name);
-                }
+                self.meshes.entry(file_name.to_string()).or_insert( mesh);
+                info!("Loaded mesh: {}", file_name);
             }
+            //TODO: Dont load pictures here
             if file_name.ends_with(".png") || file_name.ends_with(".jpg") {
                 let image;
                 if file_name.to_lowercase().contains("_normal")
@@ -114,23 +112,22 @@ impl AssetManager {
         ))
     }
 
-    pub fn get_mesh<T>(&self, key: T) -> &SubMesh
+    pub fn get_mesh<T>(&self, key: T) -> &Mesh
     where
         T: Into<String>,
     {
         let key = key.into();
-        self.meshes
-            .get(&key)
-            .expect(&format!("Asset Error: Could not find {} mesh asset!", &key))
+        self.meshes.get(&key)
+            .expect(&format!("Asset Error: Could not find {} mesh asset!", &key)) //TODO: Dont unwrap
     }
 
-    pub fn get_meshes(&self) -> Vec<&SubMesh> {
-        self.meshes.values().collect()
-    }
+    //pub fn get_meshes(&self) -> Vec<&Mesh> {
+    //    self.meshes.values().collect()
+    //}
 
-    pub fn get_meshes_mut(&mut self) -> Vec<&mut SubMesh> {
-        self.meshes.values_mut().collect()
-    }
+    //pub fn get_meshes_mut(&mut self) -> Vec<&mut Mesh> {
+    //    self.meshes.values_mut().collect()
+    //}
 
     fn get_material_or_load(
         &mut self,
