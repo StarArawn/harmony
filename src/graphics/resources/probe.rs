@@ -98,6 +98,13 @@ impl Probe {
         // Create the specular workflow pipeline
         crate::graphics::pipelines::specular2::create(resources, wgpu_format);
 
+        let brdf_texture = {
+            let device = resources.get::<wgpu::Device>().unwrap();
+            RenderTarget::new(&device, 512.0, 512.0, 1, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT)
+        };
+        crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu_format);
+
+
         let device = resources.get::<wgpu::Device>().unwrap();
 
         // TODO: Replace this one day with the correct format. Which means building out multiple same pipelines with only different formats.
@@ -111,11 +118,6 @@ impl Probe {
         // Create bind group
         let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
         let bind_group_layout = resource_manager.get_bind_group_layout("probe_material_layout").unwrap();
-
-        let brdf_texture = RenderTarget::new(&device, 512.0, 512.0, 1, 1, wgpu_format, wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT);
-
-        // Generate BRDF texture we should likely move this into the pipeline manager instead of living here.
-        crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu_format);
 
         let bind_group = BindGroup::new(3, device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Probe"),
