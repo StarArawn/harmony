@@ -823,6 +823,9 @@ dependencies = [
  "gltf",
  "glyph_brush",
  "image",
+ "imgui",
+ "imgui-wgpu",
+ "imgui-winit-support",
  "legion",
  "log",
  "mikktspace",
@@ -883,6 +886,44 @@ dependencies = [
  "png",
  "scoped_threadpool",
  "tiff",
+]
+
+[[package]]
+name = "imgui"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "bitflags",
+ "imgui-sys",
+ "lazy_static",
+ "parking_lot",
+]
+
+[[package]]
+name = "imgui-sys"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "imgui-wgpu"
+version = "0.6.0"
+source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=101b4048aaaf47210ea451bb1ecfc58e1e85782b#101b4048aaaf47210ea451bb1ecfc58e1e85782b"
+dependencies = [
+ "imgui",
+ "log",
+ "wgpu",
+]
+
+[[package]]
+name = "imgui-winit-support"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "imgui",
+ "winit",
 ]
 
 [[package]]

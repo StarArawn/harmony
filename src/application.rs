@@ -5,6 +5,7 @@ use winit::{
 };
 
 use legion::prelude::*;
+use imgui::*;
 
 use crate::{
     core::input::Input,
@@ -19,16 +20,19 @@ use crate::{
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::{material::skybox::SkyboxType, pipelines::{UnlitPipelineDesc, LinePipelineDesc}};
+use graphics::{material::skybox::SkyboxType, pipelines::{UnlitPipelineDesc, LinePipelineDesc}, CommandBufferQueue, CommandQueueItem};
+use nalgebra_glm::Vec2;
 
 pub trait AppState {
     /// Is called after the engine has loaded an assets.
     fn load(&mut self, _app: &mut Application) {}
     /// Called to update app state.
     fn update(&mut self, _app: &mut Application) {}
-
     /// Called when the window resizes
     fn resize(&mut self, _app: &mut Application) {}
+
+    fn update_ui(&mut self, _app: &mut Application) {}
+    fn draw_ui(&mut self, _ui: &mut imgui::Ui<'_>, _screen_ize: Vec2) {}
 }
 
 pub struct Application {
@@ -42,6 +46,12 @@ pub struct Application {
     pub render_schedule: Schedule,
     pub resources: Resources,
     pub probe_manager: ProbeManager,
+    pub(crate) imgui: imgui::Context,
+    pub(crate) platform: imgui_winit_support::WinitPlatform,
+    pub(crate) imgui_renderer: imgui_wgpu::Renderer,
+    last_cursor: Option<imgui::MouseCursor>,
+    last_frame: Instant,
+    demo_open: bool,
 }
 
 impl Application {
@@ -95,6 +105,122 @@ impl Application {
 
         resources.insert(Input::new());
 
+        let hidpi_factor = renderer.window.scale_factor();
+        let mut imgui = imgui::Context::create();
+        let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
+        platform.attach_window(
+            imgui.io_mut(),
+            &renderer.window,
+            imgui_winit_support::HiDpiMode::Default,
+        );
+        imgui.set_ini_filename(None);
+
+        let font_size = (13.0 * hidpi_factor) as f32;
+        imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
+
+        imgui.fonts().add_font(&[FontSource::DefaultFontData {
+            config: Some(imgui::FontConfig {
+                oversample_h: 1,
+                pixel_snap_h: true,
+                size_pixels: font_size,
+                ..Default::default()
+            }),
+        }]);
+
+        let mut style = imgui.style_mut();
+        let colors = &mut style.colors;
+
+        style.window_rounding    = 2.0;             // Radius of window corners rounding. Set to 0.0f to have rectangular windows
+        style.scrollbar_rounding = 3.0;             // Radius of grab corners rounding for scrollbar
+        style.grab_rounding      = 2.0;             // Radius of grabs corners rounding. Set to 0.0f to have rectangular slider grabs.
+        style.anti_aliased_lines  = true;
+        style.anti_aliased_fill   = true;
+        style.window_rounding    = 2.0;
+        style.child_rounding     = 2.0;
+        style.scrollbar_size     = 16.0;
+        style.scrollbar_rounding = 3.0;
+        style.item_spacing[0]     = 10.0;
+        style.item_spacing[1]     = 4.0;
+        style.indent_spacing     = 22.0;
+        style.frame_padding[0]    = 6.0;
+        style.frame_padding[1]    = 4.0;
+        style.alpha             = 1.0;
+        style.frame_rounding     = 3.0;
+
+        colors[imgui::StyleColor::Text as usize]                   = [0.00, 0.00, 0.00, 1.00];
+        colors[imgui::StyleColor::TextDisabled as usize]          = [0.60, 0.60, 0.60, 1.00];
+        colors[imgui::StyleColor::WindowBg as usize]              = [0.86, 0.86, 0.86, 1.00];
+        colors[imgui::StyleColor::ChildBg as usize]                = [0.00, 0.00, 0.00, 0.00];
+        colors[imgui::StyleColor::PopupBg as usize]                = [0.93, 0.93, 0.93, 0.98];
+        colors[imgui::StyleColor::Border as usize]                = [0.71, 0.71, 0.71, 0.08];
+        colors[imgui::StyleColor::BorderShadow as usize]          = [0.00, 0.00, 0.00, 0.04];
+        colors[imgui::StyleColor::FrameBg as usize]               = [0.71, 0.71, 0.71, 0.55];
+        colors[imgui::StyleColor::FrameBgHovered as usize]        = [0.94, 0.94, 0.94, 0.55];
+        colors[imgui::StyleColor::FrameBgActive as usize]         = [0.71, 0.78, 0.69, 0.98];
+        colors[imgui::StyleColor::TitleBg as usize]               = [0.85, 0.85, 0.85, 1.00];
+        colors[imgui::StyleColor::TitleBgCollapsed as usize]      = [0.82, 0.78, 0.78, 0.51];
+        colors[imgui::StyleColor::TitleBgActive as usize]         = [0.78, 0.78, 0.78, 1.00];
+        colors[imgui::StyleColor::MenuBarBg as usize]             = [0.86, 0.86, 0.86, 1.00];
+        colors[imgui::StyleColor::ScrollbarBg as usize]           = [0.20, 0.25, 0.30, 0.61];
+        colors[imgui::StyleColor::ScrollbarGrab as usize]         = [0.90, 0.90, 0.90, 0.30];
+        colors[imgui::StyleColor::ScrollbarGrabHovered as usize]  = [0.92, 0.92, 0.92, 0.78];
+        colors[imgui::StyleColor::ScrollbarGrabActive as usize]   = [1.00, 1.00, 1.00, 1.00];
+        colors[imgui::StyleColor::CheckMark as usize]             = [0.184, 0.407, 0.193, 1.00];
+        colors[imgui::StyleColor::SliderGrab as usize]            = [0.26, 0.59, 0.98, 0.78];
+        colors[imgui::StyleColor::SliderGrabActive as usize]      = [0.26, 0.59, 0.98, 1.00];
+        colors[imgui::StyleColor::Button as usize]                = [0.71, 0.78, 0.69, 0.40];
+        colors[imgui::StyleColor::ButtonHovered as usize]         = [0.725, 0.805, 0.702, 1.00];
+        colors[imgui::StyleColor::ButtonActive as usize]          = [0.793, 0.900, 0.836, 1.00];
+        colors[imgui::StyleColor::Header as usize]                = [0.71, 0.78, 0.69, 0.31];
+        colors[imgui::StyleColor::HeaderHovered as usize]         = [0.71, 0.78, 0.69, 0.80];
+        colors[imgui::StyleColor::HeaderActive as usize]          = [0.71, 0.78, 0.69, 1.00];
+        // colors[imgui::StyleColor::Column as usize]                = [0.39, 0.39, 0.39, 1.00];
+        // colors[imgui::StyleColor::ColumnHovered as usize]         = [0.26, 0.59, 0.98, 0.78];
+        // colors[imgui::StyleColor::ColumnActive as usize]          = [0.26, 0.59, 0.98, 1.00];
+        colors[imgui::StyleColor::Separator as usize]              = [0.39, 0.39, 0.39, 1.00];
+        colors[imgui::StyleColor::SeparatorHovered as usize]       = [0.14, 0.44, 0.80, 0.78];
+        colors[imgui::StyleColor::SeparatorActive as usize]        = [0.14, 0.44, 0.80, 1.00];
+        colors[imgui::StyleColor::ResizeGrip as usize]            = [1.00, 1.00, 1.00, 0.00];
+        colors[imgui::StyleColor::ResizeGripHovered as usize]     = [0.26, 0.59, 0.98, 0.45];
+        colors[imgui::StyleColor::ResizeGripActive as usize]      = [0.26, 0.59, 0.98, 0.78];
+        colors[imgui::StyleColor::PlotLines as usize]             = [0.39, 0.39, 0.39, 1.00];
+        colors[imgui::StyleColor::PlotLinesHovered as usize]      = [1.00, 0.43, 0.35, 1.00];
+        colors[imgui::StyleColor::PlotHistogram as usize]         = [0.90, 0.70, 0.00, 1.00];
+        colors[imgui::StyleColor::PlotHistogramHovered as usize]  = [1.00, 0.60, 0.00, 1.00];
+        colors[imgui::StyleColor::TextSelectedBg as usize]        = [0.26, 0.59, 0.98, 0.35];
+        colors[imgui::StyleColor::ModalWindowDimBg as usize]  = [0.20, 0.20, 0.20, 0.35];
+        colors[imgui::StyleColor::DragDropTarget as usize]         = [0.26, 0.59, 0.98, 0.95];
+        colors[imgui::StyleColor::NavWindowingHighlight as usize]  = [0.70, 0.70, 0.70, 0.70];
+        colors[imgui::StyleColor::NavHighlight as usize]           = colors[imgui::StyleColor::HeaderHovered as usize];
+
+        // Fix incorrect colors with sRGB framebuffer
+        fn imgui_gamma_to_linear(col: [f32; 4]) -> [f32; 4] {
+            let x = col[0].powf(2.2);
+            let y = col[1].powf(2.2);
+            let z = col[2].powf(2.2);
+            let w = 1.0 - (1.0 - col[3]).powf(2.2);
+            [x, y, z, w]
+        }
+
+        for col in 0..style.colors.len() {
+            style.colors[col] = imgui_gamma_to_linear(style.colors[col]);
+        }
+
+        let imgui_renderer = {
+            let device = resources.get::<wgpu::Device>().unwrap();
+            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap();
+            let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+            imgui_wgpu::Renderer::new(
+                &mut imgui,
+                &device,
+                &mut queue,
+                sc_desc.format,
+                None,
+            )
+        };
+
+        let last_frame = Instant::now();
+
         Application {
             renderer,
             clock: Instant::now(),
@@ -106,6 +232,12 @@ impl Application {
             resources,
             render_schedule,
             probe_manager: ProbeManager::new(),
+            imgui,
+            platform,
+            imgui_renderer,
+            last_frame,
+            demo_open: true,
+            last_cursor: None,
         }
     }
 
@@ -242,6 +374,10 @@ impl Application {
         match event {
             Event::MainEventsCleared => {
                 let mut frame_time = self.clock.elapsed().as_secs_f32() - self.elapsed_time;
+                self.frame_time = frame_time * 1000.0;
+                {
+                    self.last_frame = self.imgui.io_mut().update_delta_time(self.last_frame);
+                }
 
                 while frame_time > 0.0 {
                     self.delta_time = f32::min(frame_time, self.fixed_timestep);
@@ -254,9 +390,16 @@ impl Application {
                         input.clear();
                     }
                     
+                    app_state.update_ui(self);
+
                     frame_time -= self.delta_time;
                     self.elapsed_time += self.delta_time;
                 }
+
+                self.platform
+                    .prepare_frame(self.imgui.io_mut(), &self.renderer.window)
+                    .expect("Failed to prepare frame");
+                let mut ui = self.imgui.frame();
 
                 // Store current frame buffer.
                 {
@@ -268,7 +411,35 @@ impl Application {
                 {
                     self.probe_manager.render(&mut self.resources, &mut self.current_scene);
                 }
+                
+                // Allow user to render UI stuff.
+                let scale = self.renderer.window.scale_factor() as f32;
+                app_state.draw_ui(&mut ui, Vec2::new(self.renderer.size.width as f32 / scale, self.renderer.size.height as f32 / scale));
+                
+                // Draw UI.
+                {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let frame = self.resources.get::<Arc<wgpu::SwapChainOutput>>().unwrap();
+                    let command_buffer_queue = self.resources.get::<CommandBufferQueue>().unwrap();
+                    let mut encoder: wgpu::CommandEncoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("UI") });
+                    
+                    if self.last_cursor != ui.mouse_cursor() {
+                        self.last_cursor = ui.mouse_cursor();
+                        self.platform.prepare_render(&ui, &self.renderer.window);
+                    }
 
+                    self.imgui_renderer
+                        .render(ui.render(), &device, &mut encoder, &frame.view)
+                        .expect("Rendering failed");
+
+                    command_buffer_queue
+                        .push(CommandQueueItem {
+                            buffer: encoder.finish(),
+                            name: "UI".to_string(),
+                        })
+                        .unwrap();
+                }
+                
                 // Next render's our scene.
                 self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
 
@@ -298,5 +469,6 @@ impl Application {
             }
             _ => (),
         }
+        self.platform.handle_event(self.imgui.io_mut(), &self.renderer.window, &event);
     }
 }
