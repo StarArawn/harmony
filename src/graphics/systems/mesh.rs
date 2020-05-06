@@ -14,8 +14,8 @@ use components::transform::LocalUniform;
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
-        .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
+        .read_resource::<AssetManager>()
         .read_resource::<RenderGraph>()
         .read_resource::<wgpu::Device>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
@@ -29,7 +29,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              mut world,
-             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
+             (command_buffer_queue, asset_manager, render_graph, device, output, resource_manager, depth_texture),
              (
                 camera_data,
                 directional_lights,
@@ -204,7 +204,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     });
 
                     // Collect materials in to their groups.
-                    let asset_materials = (asset_manager as &mut AssetManager).get_loaded_materials();
+                    let asset_materials = asset_manager.get_loaded_materials();
                     let pbr_materials: Vec<_> = asset_materials.iter().filter(|material| material.material_kind == MaterialKind::PBR).collect();
                     let unlit_materials: Vec<_> = asset_materials.iter().filter(|material|  material.material_kind == MaterialKind::Unlit).collect();
                     
