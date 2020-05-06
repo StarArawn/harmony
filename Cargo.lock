@@ -95,6 +95,15 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
 name = "base64"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
+name = "base64"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b41b7ea54a0c9d92199de89e20e58d49f02f8e699814ef3fdf266f6f748d15c7"
@@ -755,7 +764,7 @@ version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6fb0d1d772daf10ea74528c3aeb12215f6d5b820adf2ecfc93a6578d6779c3c"
 dependencies = [
- "base64",
+ "base64 0.11.0",
  "byteorder",
  "gltf-json",
  "image",
@@ -823,6 +832,9 @@ dependencies = [
  "gltf",
  "glyph_brush",
  "image",
+ "imgui",
+ "imgui-wgpu",
+ "imgui-winit-support",
  "legion",
  "log",
  "mikktspace",
@@ -830,6 +842,8 @@ dependencies = [
  "nalgebra-glm",
  "ordered-float",
  "png",
+ "ron",
+ "serde",
  "shaderc",
  "solvent",
  "stretch",
@@ -883,6 +897,44 @@ dependencies = [
  "png",
  "scoped_threadpool",
  "tiff",
+]
+
+[[package]]
+name = "imgui"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "bitflags",
+ "imgui-sys",
+ "lazy_static",
+ "parking_lot",
+]
+
+[[package]]
+name = "imgui-sys"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "imgui-wgpu"
+version = "0.6.0"
+source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=101b4048aaaf47210ea451bb1ecfc58e1e85782b#101b4048aaaf47210ea451bb1ecfc58e1e85782b"
+dependencies = [
+ "imgui",
+ "log",
+ "wgpu",
+]
+
+[[package]]
+name = "imgui-winit-support"
+version = "0.4.0-pre"
+source = "git+https://github.com/jaynus/imgui-rs?rev=fd3caf3e5b1141e8af3725f8c6898524c14426b0#fd3caf3e5b1141e8af3725f8c6898524c14426b0"
+dependencies = [
+ "imgui",
+ "winit",
 ]
 
 [[package]]
@@ -1650,6 +1702,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5bd57d1d7414c6b5ed48563a2c855d995ff777729dcd91c369ec7fea395ae"
 
 [[package]]
+name = "ron"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ece421e0c4129b90e4a35b6f625e472e96c552136f5093a2f4fa2bbb75a62d5"
+dependencies = [
+ "base64 0.10.1",
+ "bitflags",
+ "serde",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1712,6 +1775,9 @@ name = "serde"
 version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36df6ac6412072f67cf767ebbde4133a5b2e88e76dc6187fa7104cd16f783399"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"

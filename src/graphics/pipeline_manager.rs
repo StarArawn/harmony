@@ -209,6 +209,9 @@ impl PipelineManager {
             }
         }
 
+        // UI always comes last.
+        order.push("UI".to_string());
+
         self.order = order;
     }
 
