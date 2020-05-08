@@ -140,7 +140,7 @@ vec3 importance_sample(vec3 N)
         vec3 H = importanceSampleGGX( Xi, data2.z, N);
         vec3 L = 2 * dot( V, H ) * H - V;
         float NoL = max(dot( N, L ), 0);
-        float VoL = max (dot(V, L), 0);
+        //float VoL = max (dot(V, L), 0);
         float NoH = max(dot( N, H ), 0);
         float VoH = max(dot( V, H ), 0);
         if (NoL > 0.0)
