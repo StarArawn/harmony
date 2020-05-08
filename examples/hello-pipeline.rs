@@ -111,7 +111,7 @@ impl harmony::AppState for AppState {
 
         // The pipeline manager helps manage pipelines. It's somewhat smart and will cache your pipeline.
         // Remember that adding new pipelines is expensive and should be avoided at runtime.
-        pipeline_manager.add(
+        pipeline_manager.add_pipeline(
             "triangle", // Name of pipeline.
             &triangle_desc, // Pipeline description
             vec![], // Dependencies list as names.
@@ -124,7 +124,7 @@ impl harmony::AppState for AppState {
         // Note: There are ways to add a variation of a pipeline by cloning the description modifying it and adding
         // it with the same name. This is useful for example if you want to render your pipeline/shader to the 
         // frame buffer and to a render target(with a different format).
-        pipeline_manager.add(
+        pipeline_manager.add_pipeline(
             "triangle", // Name of pipeline.
             &triangle_desc, // Pipeline description
             vec![], // Dependencies list as names.

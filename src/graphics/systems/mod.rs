@@ -2,6 +2,7 @@ pub mod mesh;
 pub mod render;
 pub mod skybox;
 pub mod line;
+pub mod globals;
 
 use legion::prelude::*;
 use legion::systems::schedule::Builder;

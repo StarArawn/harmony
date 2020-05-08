@@ -87,6 +87,7 @@ impl Application {
         let asset_manager = AssetManager::new(asset_path.into());
 
         let mut render_schedule_builder = create_render_schedule_builder();
+        render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::globals::create());
         render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
@@ -241,7 +242,7 @@ impl Application {
                 false,
             );
 
-            // PBR pipeline
+            // Line pipeline
             let line_pipeline_desc = LinePipelineDesc::default();
             render_graph.add(
                 &asset_manager,
@@ -256,11 +257,18 @@ impl Application {
                 false,
             );
         }
+
+        // Global Node
+        {
+            let mut pipeline_manager = self.resources.get_mut::<PipelineManager>().unwrap();
+            pipeline_manager.add_node("globals", vec![]);
+        }
         
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
+
 
         // Run user code.
         app_state.load(self);

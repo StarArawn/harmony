@@ -24,7 +24,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
         mipmap_desc.shader = "specular_brdf.shader".to_string();
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
-        pipeline_manager.add("brdf", &mipmap_desc, vec![], &device, &asset_manager, &resource_manager);
+        pipeline_manager.add_pipeline("brdf", &mipmap_desc, vec![], &device, &asset_manager, &resource_manager);
         pipeline = pipeline_manager.get("brdf", None);
     }
 

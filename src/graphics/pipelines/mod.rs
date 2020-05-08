@@ -27,6 +27,7 @@ pub struct GlobalUniform {
     pub view_projection: Mat4,
     pub camera_pos: Vec4,
     pub view: Mat4,
+    pub projection: Mat4,
 }
 
 impl Default for GlobalUniform {
@@ -35,6 +36,7 @@ impl Default for GlobalUniform {
             view_projection: Mat4::identity(),
             camera_pos: Vec4::zeros(),
             view: Mat4::identity(),
+            projection: Mat4::identity(),
         }
     }
 }

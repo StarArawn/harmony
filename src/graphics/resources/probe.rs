@@ -188,7 +188,7 @@ impl Probe {
             let mut new_skybox_desc = skybox_pipeline.desc.clone();
             new_skybox_desc.color_state.format = self.format.into();
             let hash = new_skybox_desc.create_hash();
-            pipeline_manager.add("skybox", &new_skybox_desc, vec![], &device, &asset_manager, &resource_manager);
+            pipeline_manager.add_pipeline("skybox", &new_skybox_desc, vec![], &device, &asset_manager, &resource_manager);
             pipeline_manager.set_current_pipeline_hash("skybox", hash);
         }
         

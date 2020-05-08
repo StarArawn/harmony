@@ -121,5 +121,5 @@ pub fn create(resources: &Resources) {
             wgpu::vertex_attr_array![0 => Float3, 1 => Float3, 2 => Float2, 3 => Float4].to_vec(),
         );
 
-    pipeline_manager.add("pbr", &pbr_desc, vec!["skybox"], &device, &asset_manager, &resource_manager);
+    pipeline_manager.add_pipeline("pbr", &pbr_desc, vec!["globals", "skybox"], &device, &asset_manager, &resource_manager);
 }

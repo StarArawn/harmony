@@ -63,5 +63,5 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     );
     resource_manager.add_buffer("specular", specular_globals_buffer);
 
-    pipeline_manager.add("specular", &skybox_desc, vec![], &device, &asset_manager, &resource_manager);
+    pipeline_manager.add_pipeline("specular", &skybox_desc, vec![], &device, &asset_manager, &resource_manager);
 }

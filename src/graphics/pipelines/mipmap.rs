@@ -68,7 +68,7 @@ pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: w
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         mipmap_desc.layouts = vec!["mipmap".to_string()];
-        pipeline_manager.add("mipmap", &mipmap_desc, vec![], &device, &asset_manager, &resource_manager);
+        pipeline_manager.add_pipeline("mipmap", &mipmap_desc, vec![], &device, &asset_manager, &resource_manager);
         pipeline = pipeline_manager.get("mipmap", None);
     }
 

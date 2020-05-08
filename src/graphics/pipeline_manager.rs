@@ -131,9 +131,15 @@ pub struct Pipeline {
     pub render_pipeline: wgpu::RenderPipeline,
 }
 
+pub enum PipelineType {
+    Pipeline(Pipeline),
+    Node,
+}
+
+
 
 pub struct PipelineManager {
-    pipelines: HashMap<String, HashMap<u64, Pipeline>>,
+    pipelines: HashMap<String, HashMap<u64, PipelineType>>,
     pub(crate) current_pipelines: HashMap<String, u64>,
     dep_graph: DepGraph<String>,
     order: Vec<String>,
@@ -154,7 +160,7 @@ impl PipelineManager {
     /// This lets you add new pipelines. Note: You can have multiple pipelines for the same shader. It's recomended that you store
     /// PipelineDesc and pass it in when retrieving the pipeline.
     /// Note: Pipeline's are considered a fairly costly operation, try not to create a new one every frame.
-    pub fn add<T: Into<String>>(&mut self, name: T, pipeline_desc: &PipelineDesc, dependency: Vec<&str>, device: &wgpu::Device, asset_manager: &AssetManager, gpu_resource_manager: &GPUResourceManager) {
+    pub fn add_pipeline<T: Into<String>>(&mut self, name: T, pipeline_desc: &PipelineDesc, dependency: Vec<&str>, device: &wgpu::Device, asset_manager: &AssetManager, gpu_resource_manager: &GPUResourceManager) {
         let hash = pipeline_desc.create_hash();
         let name = name.into();
         
@@ -173,7 +179,44 @@ impl PipelineManager {
         }
 
         let pipeline = pipeline_desc.build(&asset_manager, &device, &gpu_resource_manager);
-        pipeline_hashmap.insert(hash, pipeline);
+        pipeline_hashmap.insert(hash, PipelineType::Pipeline(pipeline));
+
+        // Add to our graph
+        self.dep_graph.register_node(name.clone());
+
+        if dependency.len() > 0 {
+            let dependency = dependency
+                .iter()
+                .map(|name| name.to_string())
+                .collect::<Vec<String>>();
+            self.dep_graph
+                .register_dependencies(name.clone(), dependency);
+        }
+
+        // Recalculate order.
+        self.get_order();
+    }
+
+    // A node is an encoder you want to run at some step inside of the pipeline workflow.
+    pub fn add_node<T: Into<String>>(&mut self, name: T, dependency: Vec<&str>) {
+        let name = name.into();
+        let mut hasher = DefaultHasher::new();
+        name.hash(&mut hasher);
+        let hash = hasher.finish();
+        
+        if !self.pipelines.contains_key(&name) {
+            let pipeline_hashmap = HashMap::new();
+            self.pipelines.insert(name.clone(), pipeline_hashmap);
+
+            // Save the first pipeline into our special hashmap for keeping track of that.
+            self.current_pipelines.insert(name.clone(), hash);
+        }
+
+        let pipeline_hashmap = self.pipelines.get_mut(&name).unwrap();
+        if pipeline_hashmap.contains_key(&hash) {
+            // Already exists do nothing in this case. Perhaps error?
+            return;
+        }
 
         // Add to our graph
         self.dep_graph.register_node(name.clone());
@@ -227,8 +270,15 @@ impl PipelineManager {
         } else {
             *self.current_pipelines.get(&name).unwrap()
         };
-
-        pipeline_hashmap.unwrap().get(&hash)
+        
+        let pipeline_type = pipeline_hashmap.unwrap().get(&hash);
+        if pipeline_type.is_none() {
+            return None;
+        }
+        match pipeline_type.as_ref().unwrap() {
+            PipelineType::Pipeline(pipeline) => Some(pipeline),
+            _ => None,
+        }
     }
 
     // Get's the hash for the current pipeline being used.

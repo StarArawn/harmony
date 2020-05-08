@@ -31,31 +31,6 @@ pub fn create() -> Box<dyn Schedulable> {
 
                 let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
                
-                let global_bind_group = resource_manager.get_bind_group("skybox_globals", 0).unwrap();
-                let uniform_buffer = resource_manager.get_buffer("skybox_buffer");
-                
-                for (camera_data,) in cameras.iter(&world) {
-                    if camera_data.active {
-                        let uniforms = SkyboxUniforms {
-                            proj: camera_data.projection,
-                            view: camera_data.view,
-                        };
-
-                        let constants_buffer = device.create_buffer_with_data(
-                            bytemuck::bytes_of(&uniforms),
-                            wgpu::BufferUsage::COPY_SRC,
-                        );
-
-                        encoder.copy_buffer_to_buffer(
-                            &constants_buffer,
-                            0,
-                            uniform_buffer,
-                            0,
-                            std::mem::size_of::<SkyboxUniforms>() as u64,
-                        );
-                    }
-                }
-
                 let view_attachment = if current_render_target.0.is_some() {
                     &current_render_target.0.as_ref().unwrap().1
                 } else {
@@ -95,7 +70,7 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     if skybox.skybox_type == SkyboxType::HdrCubemap {
                         render_pass.set_pipeline(&pipeline.render_pipeline);
-                        render_pass.set_bind_group(0, &global_bind_group.group, &[]);
+                        render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
 
                         render_pass.set_bind_group(1, skybox.cubemap_bind_group.as_ref().unwrap(), &[]);
                         render_pass.draw(0..3 as u32, 0..1);
