@@ -4,10 +4,9 @@ use crate::{
     graphics::{
         mesh::MeshVertexData,
         pipeline::VertexStateBuilder,
-        resources::{GPUResourceManager, RenderTarget},
         renderer::DEPTH_FORMAT,
-        SimplePipeline,
-        SimplePipelineDesc,
+        resources::{GPUResourceManager, RenderTarget},
+        SimplePipeline, SimplePipelineDesc,
     },
     AssetManager,
 };
@@ -108,7 +107,9 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
             });
 
         resource_manager.add_bind_group_layout("unlit_material", material_bind_group_layout);
-        let material_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
+        let material_bind_group_layout = resource_manager
+            .get_bind_group_layout("unlit_material")
+            .unwrap();
 
         let global_bind_group_layout = resource_manager.get_bind_group_layout("globals").unwrap();
 

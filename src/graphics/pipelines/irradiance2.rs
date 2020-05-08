@@ -7,8 +7,7 @@ use crate::{
     AssetManager,
 };
 
-pub struct IrradiancePipeline {
-}
+pub struct IrradiancePipeline {}
 
 impl SimplePipeline for IrradiancePipeline {
     fn prepare(
@@ -39,8 +38,7 @@ impl SimplePipeline for IrradiancePipeline {
 }
 
 #[derive(Debug, Default)]
-pub struct IrradiancePipelineDesc {
-}
+pub struct IrradiancePipelineDesc {}
 
 impl SimplePipelineDesc for IrradiancePipelineDesc {
     type Pipeline = IrradiancePipeline;
@@ -93,7 +91,9 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("irradiance2", global_bind_group_layout);
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("irradiance2").unwrap();
+        let global_bind_group_layout = resource_manager
+            .get_bind_group_layout("irradiance2")
+            .unwrap();
 
         vec![global_bind_group_layout]
     }
@@ -135,6 +135,6 @@ impl SimplePipelineDesc for IrradiancePipelineDesc {
         _device: &wgpu::Device,
         _resource_manager: &mut GPUResourceManager,
     ) -> IrradiancePipeline {
-        IrradiancePipeline { }
+        IrradiancePipeline {}
     }
 }

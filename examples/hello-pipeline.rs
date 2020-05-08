@@ -6,11 +6,15 @@ use winit::{
 };
 
 use harmony::{
-    graphics::{resources::{BindGroup, GPUResourceManager}, CommandBufferQueue, CommandQueueItem, pipeline_manager::{PipelineDesc, PipelineManager}},
-    WinitState, AssetManager,
+    graphics::{
+        pipeline_manager::{PipelineDesc, PipelineManager},
+        resources::{BindGroup, GPUResourceManager},
+        CommandBufferQueue, CommandQueueItem,
+    },
+    AssetManager, WinitState,
 };
-use std::sync::Arc;
 use nalgebra_glm::Vec3;
+use std::sync::Arc;
 
 struct WindowSize {
     width: u32,
@@ -82,13 +86,12 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-
         // First we need to access some of the internal data.
         let device = app.resources.get::<wgpu::Device>().unwrap();
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
         let mut gpu_resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
         let mut pipeline_manager = app.resources.get_mut::<PipelineManager>().unwrap();
-        
+
         // Setup our bind groups and layouts
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[],
@@ -106,38 +109,40 @@ impl harmony::AppState for AppState {
         let mut triangle_desc = PipelineDesc::default();
         triangle_desc.shader = "triangle.shader".to_string(); // Make sure we reference the right shader!
         triangle_desc.layouts = vec!["triangle_layout".to_string()];
-        triangle_desc.vertex_state.set_index_format(wgpu::IndexFormat::Uint16);
+        triangle_desc
+            .vertex_state
+            .set_index_format(wgpu::IndexFormat::Uint16);
         triangle_desc.cull_mode = wgpu::CullMode::None;
 
         // The pipeline manager helps manage pipelines. It's somewhat smart and will cache your pipeline.
         // Remember that adding new pipelines is expensive and should be avoided at runtime.
         pipeline_manager.add_pipeline(
-            "triangle", // Name of pipeline.
-            &triangle_desc, // Pipeline description
-            vec![], // Dependencies list as names.
-            &device, // The wgpu device.
-            &asset_manager, // asset manager from where we can load shaders.
-            &gpu_resource_manager // The gpu resource manager.
+            "triangle",            // Name of pipeline.
+            &triangle_desc,        // Pipeline description
+            vec![],                // Dependencies list as names.
+            &device,               // The wgpu device.
+            &asset_manager,        // asset manager from where we can load shaders.
+            &gpu_resource_manager, // The gpu resource manager.
         );
-        
+
         // Pipeline manager is smart enough to not add a new pipeline even if we call pipeline_manager.add again!
         // Note: There are ways to add a variation of a pipeline by cloning the description modifying it and adding
-        // it with the same name. This is useful for example if you want to render your pipeline/shader to the 
+        // it with the same name. This is useful for example if you want to render your pipeline/shader to the
         // frame buffer and to a render target(with a different format).
         pipeline_manager.add_pipeline(
-            "triangle", // Name of pipeline.
-            &triangle_desc, // Pipeline description
-            vec![], // Dependencies list as names.
-            &device, // The wgpu device.
-            &asset_manager, // asset manager from where we can load shaders.
-            &gpu_resource_manager // The gpu resource manager.
+            "triangle",            // Name of pipeline.
+            &triangle_desc,        // Pipeline description
+            vec![],                // Dependencies list as names.
+            &device,               // The wgpu device.
+            &asset_manager,        // asset manager from where we can load shaders.
+            &gpu_resource_manager, // The gpu resource manager.
         );
 
         // Create a clear color
-        let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(0.0, 1.0, 0.0));
+        let clear_color =
+            harmony::graphics::material::Skybox::create_clear_color(Vec3::new(0.0, 1.0, 0.0));
         // Clear color needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(clear_color,)]);
-
     }
 }
 

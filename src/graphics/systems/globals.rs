@@ -1,12 +1,12 @@
-use std::convert::TryInto;
 use legion::prelude::*;
 use nalgebra_glm::Vec4;
+use std::convert::TryInto;
 
 use crate::{
     graphics::{
-        pipelines::{LightingUniform, MAX_LIGHTS, PointLight, DirectionalLight, GlobalUniform},
+        pipelines::{DirectionalLight, GlobalUniform, LightingUniform, PointLight, MAX_LIGHTS},
+        resources::GPUResourceManager,
         CommandBufferQueue, CommandQueueItem,
-        resources::{GPUResourceManager},
     },
     scene::components,
 };
@@ -18,7 +18,10 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<wgpu::Device>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<(Read<components::DirectionalLightData>,)>::query())
-        .with_query(<(Read<components::PointLightData>, Read<components::Transform>)>::query())
+        .with_query(<(
+            Read<components::PointLightData>,
+            Read<components::Transform>,
+        )>::query())
         .build(
             |_,
              world,
@@ -32,7 +35,6 @@ pub fn create() -> Box<dyn Schedulable> {
                 // This section is meant to prepare our global uniforms and pass them to the GPU.
                 // ******************************************************************************
                 {
-
                     let filtered_camera_data: Vec<_> = camera_data
                         .iter(&world)
                         .filter(|(camera,)| camera.active)
@@ -50,7 +52,12 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     let uniforms = GlobalUniform {
                         view_projection: camera_matrix,
-                        camera_pos: Vec4::new(camera_data.position.x, camera_data.position.y, camera_data.position.z, 0.0),
+                        camera_pos: Vec4::new(
+                            camera_data.position.x,
+                            camera_data.position.y,
+                            camera_data.position.z,
+                            0.0,
+                        ),
                         view: camera_data.view,
                         projection: camera_data.projection,
                     };
@@ -75,8 +82,13 @@ pub fn create() -> Box<dyn Schedulable> {
                 if directional_lights.iter(&world).count() > 0 {
                     let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights
                         .iter(&world)
-                        .map(|(data, )| DirectionalLight {
-                            direction: Vec4::new(data.direction.x, data.direction.y, data.direction.z, 0.0),
+                        .map(|(data,)| DirectionalLight {
+                            direction: Vec4::new(
+                                data.direction.x,
+                                data.direction.y,
+                                data.direction.z,
+                                0.0,
+                            ),
                             color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
                         })
                         .collect();
@@ -101,11 +113,20 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     // Fill in missing data if we don't have it.
                     point_light_data_vec.resize_with(MAX_LIGHTS / 2, || PointLight::default());
-                    directional_light_data_vec.resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
+                    directional_light_data_vec
+                        .resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
 
                     let light_uniform = LightingUniform {
-                        light_num: Vec4::new(total_dir_lights as f32, total_point_lights as f32, 0.0, 0.0),
-                        directional_lights: directional_light_data_vec.as_slice().try_into().unwrap(),
+                        light_num: Vec4::new(
+                            total_dir_lights as f32,
+                            total_point_lights as f32,
+                            0.0,
+                            0.0,
+                        ),
+                        directional_lights: directional_light_data_vec
+                            .as_slice()
+                            .try_into()
+                            .unwrap(),
                         point_lights: point_light_data_vec.as_slice().try_into().unwrap(),
                     };
 

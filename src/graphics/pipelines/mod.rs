@@ -16,7 +16,6 @@ pub(crate) mod brdf;
 pub(crate) mod specular2;
 
 pub(crate) mod skybox;
-pub(crate) use skybox::{SkyboxUniforms};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance2;

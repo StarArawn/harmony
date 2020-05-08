@@ -5,7 +5,8 @@ use walkdir::WalkDir;
 use crate::core::Font;
 use crate::graphics::{
     material::{Image, Material, Shader},
-    mesh::Mesh, resources::GPUResourceManager,
+    mesh::Mesh,
+    resources::GPUResourceManager,
 };
 
 pub struct AssetManager {
@@ -183,14 +184,19 @@ impl AssetManager {
         self.fonts.values().collect()
     }
 
-    pub(crate) fn load_materials(&mut self, device: &wgpu::Device, resource_manager: &mut GPUResourceManager) {
-        
+    pub(crate) fn load_materials(
+        &mut self,
+        device: &wgpu::Device,
+        resource_manager: &mut GPUResourceManager,
+    ) {
         let mut current_bind_group = None;
         let mut current_index = 0;
         for material in self.materials.values_mut() {
             match material {
                 crate::graphics::material::Material::Unlit(unlit_material) => {
-                    let unlit_bind_group_layout = resource_manager.get_bind_group_layout("unlit_material").unwrap();
+                    let unlit_bind_group_layout = resource_manager
+                        .get_bind_group_layout("unlit_material")
+                        .unwrap();
                     unlit_material.create_bind_group(
                         &self.images,
                         &device,
@@ -198,12 +204,14 @@ impl AssetManager {
                     );
                 }
                 crate::graphics::material::Material::PBR(pbr_material) => {
-                    let pbr_bind_group_layout = resource_manager.get_bind_group_layout("pbr_material_layout").unwrap();
+                    let pbr_bind_group_layout = resource_manager
+                        .get_bind_group_layout("pbr_material_layout")
+                        .unwrap();
                     current_bind_group = Some(pbr_material.create_bind_group(
-                            &self.images,
-                            device,
-                            pbr_bind_group_layout,
-                        ));
+                        &self.images,
+                        device,
+                        pbr_bind_group_layout,
+                    ));
                     current_index = pbr_material.index;
                 }
             }

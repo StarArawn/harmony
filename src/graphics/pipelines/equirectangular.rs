@@ -40,8 +40,9 @@ impl SimplePipeline for CubeProjectionPipeline {
         {
             let image = asset_manager.get_image(self.texture.clone());
 
-            let global_bind_group =
-                resource_manager.get_bind_group_layout("equirectangular_globals").unwrap();
+            let global_bind_group = resource_manager
+                .get_bind_group_layout("equirectangular_globals")
+                .unwrap();
 
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: global_bind_group,
@@ -167,7 +168,9 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                 label: None,
             });
         resource_manager.add_bind_group_layout("equirectangular_globals", global_bind_group_layout);
-        let global_bind_group_layout = resource_manager.get_bind_group_layout("equirectangular_globals").unwrap();
+        let global_bind_group_layout = resource_manager
+            .get_bind_group_layout("equirectangular_globals")
+            .unwrap();
 
         vec![global_bind_group_layout]
     }

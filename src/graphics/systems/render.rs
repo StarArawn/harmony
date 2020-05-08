@@ -1,4 +1,4 @@
-use crate::graphics::{CommandBufferQueue, pipeline_manager::PipelineManager};
+use crate::graphics::{pipeline_manager::PipelineManager, CommandBufferQueue};
 use legion::prelude::*;
 
 pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {

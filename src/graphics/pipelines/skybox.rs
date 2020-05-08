@@ -1,34 +1,13 @@
 use legion::prelude::Resources;
-use nalgebra_glm::Mat4;
-use bytemuck::{Pod, Zeroable};
 
 use crate::{
-    AssetManager, 
     graphics::{
+        pipeline_manager::{PipelineDesc, PipelineManager},
         renderer::DEPTH_FORMAT,
-        pipeline_manager::{PipelineDesc, PipelineManager}, 
-        resources::{GPUResourceManager}
-    }
+        resources::GPUResourceManager,
+    },
+    AssetManager,
 };
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct SkyboxUniforms {
-    pub proj: Mat4,
-    pub view: Mat4,
-}
-
-impl Default for SkyboxUniforms {
-    fn default() -> Self {
-        Self {
-            proj: Mat4::identity(),
-            view: Mat4::identity(),
-        }
-    }
-}
-
-unsafe impl Zeroable for SkyboxUniforms {}
-unsafe impl Pod for SkyboxUniforms {}
 
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get::<AssetManager>().unwrap();
@@ -73,7 +52,16 @@ pub fn create(resources: &Resources) {
     resource_manager.add_bind_group_layout("skybox_material", skybox_material_layout);
     skybox_desc.layouts = vec!["globals".to_string(), "skybox_material".to_string()];
     skybox_desc.cull_mode = wgpu::CullMode::None;
-    skybox_desc.vertex_state.set_index_format(wgpu::IndexFormat::Uint16);
+    skybox_desc
+        .vertex_state
+        .set_index_format(wgpu::IndexFormat::Uint16);
 
-    pipeline_manager.add_pipeline("skybox", &skybox_desc, vec!["globals"], &device, &asset_manager, &resource_manager);
+    pipeline_manager.add_pipeline(
+        "skybox",
+        &skybox_desc,
+        vec!["globals"],
+        &device,
+        &asset_manager,
+        &resource_manager,
+    );
 }

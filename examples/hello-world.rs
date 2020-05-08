@@ -1,18 +1,13 @@
-use legion::prelude::*;
 use log;
 use nalgebra_glm::{Vec2, Vec3};
 
+use harmony::WinitState;
+use imgui::{im_str, Condition};
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::ControlFlow,
 };
-
-use harmony::scene::{resources::DeltaTime, components::{
-    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
-}, Scene};
-use harmony::{core::input::Input, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
-use imgui::{Condition, im_str};
 
 struct WindowSize {
     width: u32,
@@ -30,16 +25,16 @@ struct AppState {
 
 impl AppState {
     pub fn new() -> Self {
-        Self {
-            frame_time: 0.0,
-        }
+        Self { frame_time: 0.0 }
     }
 }
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
         // Create a clear color
-        let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(0.0125, 0.0125, 0.0125));
+        let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(
+            0.0125, 0.0125, 0.0125,
+        ));
         // Clear color needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(clear_color,)]);
     }

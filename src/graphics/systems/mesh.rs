@@ -1,14 +1,14 @@
 use crate::{
     graphics::{
-        resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph, material::Material, renderer::DepthTexture, pipeline_manager::PipelineManager,
+        material::Material, pipeline_manager::PipelineManager, renderer::DepthTexture,
+        resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph,
     },
     scene::components,
     AssetManager,
 };
+use components::transform::LocalUniform;
 use legion::prelude::*;
 use std::sync::Arc;
-use components::transform::LocalUniform;
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
@@ -21,15 +21,25 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<DepthTexture>()
         .read_resource::<PipelineManager>()
         .with_query(<(Write<components::Transform>,)>::query())
-        .with_query(<(Read<components::Mesh>, Read<components::Material>, Read<components::Transform>)>::query())
+        .with_query(<(
+            Read<components::Mesh>,
+            Read<components::Material>,
+            Read<components::Transform>,
+        )>::query())
         .build(
             |_,
              mut world,
-             (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture, pipeline_manager),
              (
-                transform_query,
-                mesh_query,
-            )| {
+                asset_manager,
+                command_buffer_queue,
+                render_graph,
+                device,
+                output,
+                resource_manager,
+                depth_texture,
+                pipeline_manager,
+            ),
+             (transform_query, mesh_query)| {
                 // Create mesh encoder
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("mesh"),
@@ -48,7 +58,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     });
 
                     // FIXME: Align and use `LayoutVerified`
-                    for ((mut transform, ), slot) in transform_query
+                    for ((mut transform,), slot) in transform_query
                         .iter_mut(mut_world)
                         .zip(temp_buf_data.data().chunks_exact_mut(size))
                     {
@@ -61,8 +71,9 @@ pub fn create() -> Box<dyn Schedulable> {
                     let temp_buf = temp_buf_data.finish();
 
                     let mut i = 0;
-                    for (transform, ) in transform_query.iter_mut(mut_world) {
-                        let transform_buffer = resource_manager.get_multi_buffer("transform", transform.index);
+                    for (transform,) in transform_query.iter_mut(mut_world) {
+                        let transform_buffer =
+                            resource_manager.get_multi_buffer("transform", transform.index);
                         encoder.copy_buffer_to_buffer(
                             &temp_buf,
                             (i * size) as wgpu::BufferAddress,
@@ -91,23 +102,37 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 1.0,
                             },
                         }],
-                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                            attachment: &depth_texture.0,
-                            depth_load_op: wgpu::LoadOp::Load,
-                            depth_store_op: wgpu::StoreOp::Store,
-                            stencil_load_op: wgpu::LoadOp::Load,
-                            stencil_store_op: wgpu::StoreOp::Store,
-                            clear_depth: 1.0,
-                            clear_stencil: 0,
-                        }),
+                        depth_stencil_attachment: Some(
+                            wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                                attachment: &depth_texture.0,
+                                depth_load_op: wgpu::LoadOp::Load,
+                                depth_store_op: wgpu::StoreOp::Store,
+                                stencil_load_op: wgpu::LoadOp::Load,
+                                stencil_store_op: wgpu::StoreOp::Store,
+                                clear_depth: 1.0,
+                                clear_stencil: 0,
+                            },
+                        ),
                     });
 
                     if mesh_query.iter(&world).count() > 0 {
                         // Collect materials in to their groups.
                         let asset_materials = asset_manager.get_materials();
-                        let pbr_materials: Vec<_> = asset_materials.iter().filter(|material| match material { Material::PBR(_) => { true }, _ => { false }}).collect();
-                        let unlit_materials: Vec<_> = asset_materials.iter().filter(|material| match material { Material::Unlit(_) => { true }, _ => { false }}).collect();
-                        
+                        let pbr_materials: Vec<_> = asset_materials
+                            .iter()
+                            .filter(|material| match material {
+                                Material::PBR(_) => true,
+                                _ => false,
+                            })
+                            .collect();
+                        let unlit_materials: Vec<_> = asset_materials
+                            .iter()
+                            .filter(|material| match material {
+                                Material::Unlit(_) => true,
+                                _ => false,
+                            })
+                            .collect();
+
                         // Render unlit materials.
                         let unlit_node = render_graph.get("unlit");
                         render_pass.set_pipeline(&unlit_node.pipeline);
@@ -120,19 +145,38 @@ pub fn create() -> Box<dyn Schedulable> {
                                         &data.bind_group_data.as_ref().unwrap().bind_group,
                                         &[],
                                     );
-                                    for (mesh, _, transform) in mesh_query.iter(&world)
+                                    for (mesh, _, transform) in mesh_query
+                                        .iter(&world)
                                         .filter(|(_, material, _)| material.index == data.index)
                                     {
-                                        resource_manager.set_multi_bind_group(&mut render_pass, "transform", 0, transform.index);
-                                        let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
+                                        resource_manager.set_multi_bind_group(
+                                            &mut render_pass,
+                                            "transform",
+                                            0,
+                                            transform.index,
+                                        );
+                                        let asset_mesh =
+                                            asset_manager.get_mesh(mesh.mesh_name.clone());
                                         for sub_mesh in asset_mesh.sub_meshes.iter() {
-                                            render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                            render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
-                                            render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
+                                            render_pass.set_index_buffer(
+                                                &sub_mesh.index_buffer,
+                                                0,
+                                                0,
+                                            );
+                                            render_pass.set_vertex_buffer(
+                                                0,
+                                                sub_mesh.vertex_buffer.as_ref().unwrap(),
+                                                0,
+                                                0,
+                                            );
+                                            render_pass.draw_indexed(
+                                                0..sub_mesh.index_count as u32,
+                                                0,
+                                                0..1,
+                                            );
                                         }
                                     }
-
-                                },
+                                }
                                 _ => (),
                             }
                         }
@@ -145,20 +189,44 @@ pub fn create() -> Box<dyn Schedulable> {
                         for material in pbr_materials.iter() {
                             match material {
                                 Material::PBR(data) => {
-                                    resource_manager.set_multi_bind_group(&mut render_pass, "pbr", 2, data.index as u32);
-                                    for (mesh, _, transform) in mesh_query.iter(&world)
+                                    resource_manager.set_multi_bind_group(
+                                        &mut render_pass,
+                                        "pbr",
+                                        2,
+                                        data.index as u32,
+                                    );
+                                    for (mesh, _, transform) in mesh_query
+                                        .iter(&world)
                                         .filter(|(_, material, _)| material.index == data.index)
                                     {
-                                        resource_manager.set_multi_bind_group(&mut render_pass, "transform", 0, transform.index);
-                                        let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
+                                        resource_manager.set_multi_bind_group(
+                                            &mut render_pass,
+                                            "transform",
+                                            0,
+                                            transform.index,
+                                        );
+                                        let asset_mesh =
+                                            asset_manager.get_mesh(mesh.mesh_name.clone());
                                         for sub_mesh in asset_mesh.sub_meshes.iter() {
-                                            render_pass.set_index_buffer(&sub_mesh.index_buffer, 0, 0);
-                                            render_pass.set_vertex_buffer(0, sub_mesh.vertex_buffer.as_ref().unwrap(), 0, 0);
-                                            render_pass.draw_indexed(0..sub_mesh.index_count as u32, 0, 0..1);
+                                            render_pass.set_index_buffer(
+                                                &sub_mesh.index_buffer,
+                                                0,
+                                                0,
+                                            );
+                                            render_pass.set_vertex_buffer(
+                                                0,
+                                                sub_mesh.vertex_buffer.as_ref().unwrap(),
+                                                0,
+                                                0,
+                                            );
+                                            render_pass.draw_indexed(
+                                                0..sub_mesh.index_count as u32,
+                                                0,
+                                                0..1,
+                                            );
                                         }
                                     }
-
-                                },
+                                }
                                 _ => (),
                             }
                         }

@@ -78,19 +78,16 @@ impl Input {
                             self.keys_released.insert(input.virtual_keycode.unwrap());
                         }
                     }
-                },
-                winit::event::WindowEvent::CursorMoved {
-                    position,
-                    ..
-                } => {
+                }
+                winit::event::WindowEvent::CursorMoved { position, .. } => {
                     self.mouse_position = Vec2::new(position.x as f32, position.y as f32);
-                },
+                }
                 _ => (),
             },
             winit::event::Event::DeviceEvent { event, .. } => match event {
                 winit::event::DeviceEvent::MouseMotion { delta } => {
                     self.mouse_delta = Vec2::new(delta.0 as f32, delta.1 as f32);
-                },
+                }
                 _ => (),
             },
             _ => (),

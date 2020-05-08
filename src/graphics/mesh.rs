@@ -1,4 +1,4 @@
-use super::material::{PBRMaterial};
+use super::material::PBRMaterial;
 use crate::graphics::material::Material;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
@@ -21,7 +21,7 @@ unsafe impl Pod for MeshVertexData {}
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct MeshTangentLine {
-    pub pos: Vec3,   
+    pub pos: Vec3,
     pub color: Vec3,
 }
 
@@ -54,11 +54,11 @@ pub struct SubMesh {
     pub material_index: u32,
 }
 
-fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData{
+fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData {
     &sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
-fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData{
+fn vertex_mut(sub_mesh: &mut SubMesh, face: usize, vert: usize) -> &mut MeshVertexData {
     &mut sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
 
@@ -178,7 +178,7 @@ impl Mesh {
             );
 
             let main_info = pbr.base_color_texture();
-            let mut normal_texture= None;
+            let mut normal_texture = None;
             let normals_texture = gltf_material.normal_texture();
             if normals_texture.is_some() {
                 let normal_source = normals_texture.unwrap().texture().source().source();
@@ -200,10 +200,9 @@ impl Mesh {
             }
             let roughness_info = pbr.metallic_roughness_texture();
 
-
             let main_texture = Self::get_texture_url(&main_info, &images);
             let roughness_texture = Self::get_texture_url(&roughness_info, &images);
-            
+
             let material_index = material_start_index + materials.len() as u32;
             let material = PBRMaterial::new(
                 main_texture.unwrap_or("white.png".to_string()),
@@ -217,9 +216,8 @@ impl Mesh {
             let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
             let index_buffer = device
-            .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+                .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
             let index_count = indices.len();
-
 
             let mut sub_mesh = SubMesh {
                 vertices,
@@ -233,28 +231,63 @@ impl Mesh {
                 index_buffer,
                 material_index,
             };
-            
+
             if !had_tangents {
-                log::info!("No tangents found for: {} generating tangents instead!", &path);
+                log::info!(
+                    "No tangents found for: {} generating tangents instead!",
+                    &path
+                );
                 mikktspace::generate_tangents(&mut sub_mesh);
             }
 
-            let tangents: Vec<(Vec3, Vec3)> = sub_mesh.vertices.iter().map(|data| (data.tangent.xyz() * data.tangent.w, data.position)).collect();
+            let tangents: Vec<(Vec3, Vec3)> = sub_mesh
+                .vertices
+                .iter()
+                .map(|data| (data.tangent.xyz() * data.tangent.w, data.position))
+                .collect();
             let mut tangent_lines = Vec::new();
             for (tangent, position) in tangents.iter() {
-                let position: Vec3 = position.clone();// * 50.0;
+                let position: Vec3 = position.clone(); // * 50.0;
                 let tangent: Vec3 = tangent.clone();
                 let scale: f32 = 0.1;
-                let vec3_tangent: Vec3 =  Vec3::new(position.x + (tangent.x * scale), position.y + (tangent.y * scale), position.z + (tangent.z * scale));
-                tangent_lines.push(MeshTangentLine { pos: position.clone(), color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
-                tangent_lines.push(MeshTangentLine { pos: vec3_tangent, color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)) });
+                let vec3_tangent: Vec3 = Vec3::new(
+                    position.x + (tangent.x * scale),
+                    position.y + (tangent.y * scale),
+                    position.z + (tangent.z * scale),
+                );
+                tangent_lines.push(MeshTangentLine {
+                    pos: position.clone(),
+                    color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)),
+                });
+                tangent_lines.push(MeshTangentLine {
+                    pos: vec3_tangent,
+                    color: 0.5 * (tangent + Vec3::new(1.0, 1.0, 1.0)),
+                });
             }
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 0.0, 1.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 5.0), color: Vec3::new(0.0, 0.0, 1.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 5.0, 0.0), color: Vec3::new(0.0, 1.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(0.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
-            tangent_lines.push(MeshTangentLine { pos: Vec3::new(5.0, 0.0, 0.0), color: Vec3::new(1.0, 0.0, 0.0) });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(0.0, 0.0, 1.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 5.0),
+                color: Vec3::new(0.0, 0.0, 1.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(0.0, 1.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 5.0, 0.0),
+                color: Vec3::new(0.0, 1.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(0.0, 0.0, 0.0),
+                color: Vec3::new(1.0, 0.0, 0.0),
+            });
+            tangent_lines.push(MeshTangentLine {
+                pos: Vec3::new(5.0, 0.0, 0.0),
+                color: Vec3::new(1.0, 0.0, 0.0),
+            });
             let tangent_line_buffer = device.create_buffer_with_data(
                 &bytemuck::cast_slice(&tangent_lines),
                 wgpu::BufferUsage::VERTEX,
@@ -264,13 +297,13 @@ impl Mesh {
                 &bytemuck::cast_slice(&sub_mesh.vertices),
                 wgpu::BufferUsage::VERTEX,
             );
-            
+
             sub_mesh.tangent_line_buffer = Some(tangent_line_buffer);
             sub_mesh.vertex_buffer = Some(vertex_buffer);
 
             sub_meshes.push(sub_mesh);
         }
-        
+
         (Mesh { sub_meshes }, materials)
     }
 
@@ -285,12 +318,15 @@ impl Mesh {
         }
     }
 
-    fn get_texture_url(info: &Option<gltf::texture::Info<'_>>, images: &Vec<gltf::Image<'_>>) -> Option<String> {
+    fn get_texture_url(
+        info: &Option<gltf::texture::Info<'_>>,
+        images: &Vec<gltf::Image<'_>>,
+    ) -> Option<String> {
         let mut file_name = None;
         if info.is_some() {
             let info = info.as_ref().unwrap();
             let tex = info.texture();
-            
+
             let image: Option<&gltf::Image<'_>> = images.get(tex.index());
             if image.is_some() {
                 let image = image.unwrap();

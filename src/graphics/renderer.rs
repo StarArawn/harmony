@@ -22,7 +22,7 @@ impl Renderer {
     ) -> Self {
         let instance = wgpu::Instance::new();
         let surface = unsafe { instance.create_surface(&window) };
-        let adapter =  instance
+        let adapter = instance
             .request_adapter(
                 &wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::Default,

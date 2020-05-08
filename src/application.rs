@@ -4,23 +4,27 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use legion::prelude::*;
 use imgui::*;
+use legion::prelude::*;
 
 use crate::{
     core::input::Input,
     graphics::{
         self,
         material::Skybox,
-        RenderGraph, Renderer,
+        pipeline_manager::PipelineManager,
         resources::{CurrentRenderTarget, GPUResourceManager, ProbeManager},
-        systems::create_render_schedule_builder, 
-        pipeline_manager::PipelineManager
+        systems::create_render_schedule_builder,
+        RenderGraph, Renderer,
     },
     scene::Scene,
     AssetManager, TransformCount,
 };
-use graphics::{material::skybox::SkyboxType, pipelines::{UnlitPipelineDesc, LinePipelineDesc}, CommandBufferQueue, CommandQueueItem};
+use graphics::{
+    material::skybox::SkyboxType,
+    pipelines::{LinePipelineDesc, UnlitPipelineDesc},
+    CommandBufferQueue, CommandQueueItem,
+};
 use nalgebra_glm::Vec2;
 
 pub trait AppState {
@@ -81,14 +85,15 @@ impl Application {
         resources.insert(crate::scene::resources::DeltaTime(0.05));
         resources.insert(PipelineManager::new());
 
-        let renderer =
-            futures::executor::block_on(Renderer::new(window, size, &mut resources));
+        let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
         let asset_manager = AssetManager::new(asset_path.into());
 
         let mut render_schedule_builder = create_render_schedule_builder();
-        render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::globals::create());
-        render_schedule_builder = render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
+        render_schedule_builder =
+            render_schedule_builder.add_system(crate::graphics::systems::globals::create());
+        render_schedule_builder =
+            render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -149,13 +154,7 @@ impl Application {
             let device = resources.get::<wgpu::Device>().unwrap();
             let mut queue = resources.get_mut::<wgpu::Queue>().unwrap();
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-            imgui_wgpu::Renderer::new(
-                &mut imgui,
-                &device,
-                &mut queue,
-                sc_desc.format,
-                None,
-            )
+            imgui_wgpu::Renderer::new(&mut imgui, &device, &mut queue, sc_desc.format, None)
         };
 
         let last_frame = Instant::now();
@@ -263,12 +262,11 @@ impl Application {
             let mut pipeline_manager = self.resources.get_mut::<PipelineManager>().unwrap();
             pipeline_manager.add_node("globals", vec![]);
         }
-        
+
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
-
 
         // Run user code.
         app_state.load(self);
@@ -280,14 +278,16 @@ impl Application {
             let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             asset_manager.load_materials(&device, &mut resource_manager);
         }
-        
+
         {
             let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 if skybox.skybox_type == SkyboxType::HdrCubemap {
                     let device = self.resources.get::<wgpu::Device>().unwrap();
-                    let material_layout = resource_manager.get_bind_group_layout("skybox_material").unwrap();
+                    let material_layout = resource_manager
+                        .get_bind_group_layout("skybox_material")
+                        .unwrap();
                     skybox.create_bind_group2(&device, material_layout);
                 }
             }
@@ -335,7 +335,7 @@ impl Application {
                         let mut input = self.resources.get_mut::<Input>().unwrap();
                         input.clear();
                     }
-                    
+
                     app_state.update_ui(self);
 
                     frame_time -= self.delta_time;
@@ -355,20 +355,30 @@ impl Application {
 
                 // First update our probes if we need to.
                 {
-                    self.probe_manager.render(&mut self.resources, &mut self.current_scene);
+                    self.probe_manager
+                        .render(&mut self.resources, &mut self.current_scene);
                 }
-                
+
                 // Allow user to render UI stuff.
                 let scale = self.renderer.window.scale_factor() as f32;
-                app_state.draw_ui(&mut ui, Vec2::new(self.renderer.size.width as f32 / scale, self.renderer.size.height as f32 / scale));
-                
+                app_state.draw_ui(
+                    &mut ui,
+                    Vec2::new(
+                        self.renderer.size.width as f32 / scale,
+                        self.renderer.size.height as f32 / scale,
+                    ),
+                );
+
                 // Draw UI.
                 {
                     let device = self.resources.get::<wgpu::Device>().unwrap();
                     let frame = self.resources.get::<Arc<wgpu::SwapChainOutput>>().unwrap();
                     let command_buffer_queue = self.resources.get::<CommandBufferQueue>().unwrap();
-                    let mut encoder: wgpu::CommandEncoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("UI") });
-                    
+                    let mut encoder: wgpu::CommandEncoder =
+                        device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("UI"),
+                        });
+
                     if self.last_cursor != ui.mouse_cursor() {
                         self.last_cursor = ui.mouse_cursor();
                         self.platform.prepare_render(&ui, &self.renderer.window);
@@ -385,12 +395,16 @@ impl Application {
                         })
                         .unwrap();
                 }
-                
+
                 // Next render's our scene.
-                self.render_schedule.execute(&mut self.current_scene.world, &mut self.resources);
+                self.render_schedule
+                    .execute(&mut self.current_scene.world, &mut self.resources);
 
                 // We need to let the swap drop so the frame renderers.
-                let _swap_chain_output = self.resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
+                let _swap_chain_output = self
+                    .resources
+                    .remove::<Arc<wgpu::SwapChainOutput>>()
+                    .unwrap();
 
                 self.renderer.window.request_redraw();
             }
@@ -415,6 +429,7 @@ impl Application {
             }
             _ => (),
         }
-        self.platform.handle_event(self.imgui.io_mut(), &self.renderer.window, &event);
+        self.platform
+            .handle_event(self.imgui.io_mut(), &self.renderer.window, &event);
     }
 }

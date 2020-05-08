@@ -78,16 +78,16 @@ impl GPUResourceManager {
         bind_group_layouts.insert("globals".to_string(), global_bind_group_layout);
 
         // Local bind group layout
-        let local_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            }],
-            label: Some("Locals"),
-        });
+        let local_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
+                }],
+                label: Some("Locals"),
+            });
         bind_group_layouts.insert("locals".to_string(), local_bind_group_layout);
-
 
         Self {
             bind_group_layouts,
@@ -168,9 +168,13 @@ impl GPUResourceManager {
     pub fn get_multi_buffer<T: Into<String>>(
         &self,
         render_node: T,
-        item_index: u32
+        item_index: u32,
     ) -> &wgpu::Buffer {
-        self.multi_buffer.get(&render_node.into()).unwrap().get(&item_index).unwrap()
+        self.multi_buffer
+            .get(&render_node.into())
+            .unwrap()
+            .get(&item_index)
+            .unwrap()
     }
 
     pub fn get_multi_bind_group<T: Into<String>>(
@@ -250,16 +254,17 @@ impl GPUResourceManager {
         self.bind_group_layouts.insert(name, bind_group_layout);
     }
 
-    pub fn get_bind_group_layout<T: Into<String>>(&self, name: T) -> Option<&wgpu::BindGroupLayout> {
+    pub fn get_bind_group_layout<T: Into<String>>(
+        &self,
+        name: T,
+    ) -> Option<&wgpu::BindGroupLayout> {
         self.bind_group_layouts.get(&name.into())
     }
 
     pub fn add_buffer<T: Into<String>>(&mut self, name: T, buffer: wgpu::Buffer) {
         let name = name.into();
         if self.bind_group_layouts.contains_key(&name) {
-            panic!(
-                "Buffer already exists use `get_buffer` or use a different key."
-            );
+            panic!("Buffer already exists use `get_buffer` or use a different key.");
         }
         self.buffers.insert(name, buffer);
     }
