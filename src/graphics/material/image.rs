@@ -1,12 +1,12 @@
 use std::{fs, io};
 
 pub struct Image {
-    pub(crate) name: String,
-    pub(crate) texture: wgpu::Texture,
-    pub(crate) extent: wgpu::Extent3d,
-    pub(crate) sampler: wgpu::Sampler,
-    pub(crate) view: wgpu::TextureView,
-    pub(crate) format: wgpu::TextureFormat,
+    pub name: String,
+    pub texture: wgpu::Texture,
+    pub extent: wgpu::Extent3d,
+    pub sampler: wgpu::Sampler,
+    pub view: wgpu::TextureView,
+    pub format: wgpu::TextureFormat,
 }
 
 impl Image {
