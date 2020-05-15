@@ -17,6 +17,17 @@ pub enum MouseButton {
     X2,
 }
 
+fn map_mouse_button(button: winit::event::MouseButton) -> Option<MouseButton> {
+    match button {
+        winit::event::MouseButton::Left => Some(MouseButton::Left),
+        winit::event::MouseButton::Right => Some(MouseButton::Right),
+        winit::event::MouseButton::Middle => Some(MouseButton::Middle),
+        winit::event::MouseButton::Other(8) => Some(MouseButton::X1),
+        winit::event::MouseButton::Other(9) => Some(MouseButton::X2),
+        _ => None
+    }
+}
+
 #[derive(Debug)]
 pub struct Input {
     keys_down: HashSet<VirtualKeyCode>,
@@ -65,20 +76,47 @@ impl Input {
         self.keys_released.contains(&key)
     }
 
+    pub fn is_mouse_button_down(&self, button: MouseButton) -> bool {
+        self.mouse_buttons_down.contains(&button)
+    }
+
+    pub fn is_mouse_button_pressed(&self, button: MouseButton) -> bool {
+        self.mouse_buttons_pressed.contains(&button)
+    }
+
+    pub fn is_mouse_button_released(&self, button: MouseButton) -> bool {
+        self.mouse_buttons_released.contains(&button)
+    }
+
     pub(crate) fn update_events(&mut self, winit_event: &winit::event::Event<'_, ()>) {
         match winit_event {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::KeyboardInput { input, .. } => {
                     if input.state == winit::event::ElementState::Pressed {
                         if input.virtual_keycode.is_some() {
+                            self.keys_down.insert(input.virtual_keycode.unwrap());
                             self.keys_pressed.insert(input.virtual_keycode.unwrap());
                         }
                     } else if input.state == winit::event::ElementState::Released {
                         if input.virtual_keycode.is_some() {
+                            self.keys_down.remove(&input.virtual_keycode.unwrap());
                             self.keys_released.insert(input.virtual_keycode.unwrap());
                         }
                     }
                 },
+                winit::event::WindowEvent::MouseInput { device_id: _, state, button, ..} => {
+                    println!("mouse_button: {:?}", *button);
+                    if let Some(mouse_button) = map_mouse_button(*button) {
+                        if *state == winit::event::ElementState::Pressed {
+                            self.mouse_buttons_down.insert(mouse_button);
+                            self.mouse_buttons_pressed.insert(mouse_button);
+                        }
+                        else if *state == winit::event::ElementState::Released {
+                            self.mouse_buttons_down.remove(&mouse_button);
+                            self.mouse_buttons_released.insert(mouse_button);
+                        }
+                    }
+                }
                 winit::event::WindowEvent::CursorMoved {
                     position,
                     ..
