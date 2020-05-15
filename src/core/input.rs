@@ -105,7 +105,6 @@ impl Input {
                     }
                 },
                 winit::event::WindowEvent::MouseInput { device_id: _, state, button, ..} => {
-                    println!("mouse_button: {:?}", *button);
                     if let Some(mouse_button) = map_mouse_button(*button) {
                         if *state == winit::event::ElementState::Pressed {
                             self.mouse_buttons_down.insert(mouse_button);
