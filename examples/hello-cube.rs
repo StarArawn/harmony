@@ -11,7 +11,7 @@ use winit::{
 use harmony::scene::{resources::DeltaTime, components::{
     CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
 }, Scene};
-use harmony::{core::input::Input, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
+use harmony::{core::input::{Input, MouseButton}, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
 
 struct WindowSize {
     width: u32,
@@ -58,6 +58,9 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
             camera_query,
         | {
             for mut camera in camera_query.iter_mut(&mut world) {
+                if !input.is_mouse_button_down(MouseButton::Left) {
+                    continue;
+                }
                 camera.yaw += input.mouse_delta.x * 0.5 * delta_time.0;
                 camera.pitch += input.mouse_delta.y * 0.5 * delta_time.0;
                 camera.pitch = camera.pitch
