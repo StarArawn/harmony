@@ -9,7 +9,7 @@ pub mod pbr;
 mod line;
 pub(crate) use line::LinePipelineDesc;
 
-pub(crate) mod mipmap;
+pub mod mipmap;
 
 pub(crate) mod brdf;
 
