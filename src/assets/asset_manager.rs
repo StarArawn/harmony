@@ -30,7 +30,7 @@ impl AssetManager {
         }
     }
 
-    pub(crate) fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
+    pub fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
         let mut init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
