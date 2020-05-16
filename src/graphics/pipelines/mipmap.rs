@@ -27,6 +27,9 @@ pub fn create(
         label: Some("mipmap"),
     });
 
+    //1 + floor(log2(max(w, h, d)))
+    let mip_map_count = (width.max(height) as f32).log2().floor() as u32;
+
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: None,
         size: wgpu::Extent3d {
@@ -34,7 +37,7 @@ pub fn create(
             height,
             depth,
         },
-        mip_level_count: 9,
+        mip_level_count: mip_map_count,
         sample_count: 1,
         dimension,
         format,
@@ -102,7 +105,7 @@ pub fn create(
     });
 
     for face_id in 0..depth {
-        for mip_id in 0..9 {
+        for mip_id in 0..mip_map_count {
             let view = original_texture.create_view(&wgpu::TextureViewDescriptor {
                 format,
                 dimension: wgpu::TextureViewDimension::D2,
