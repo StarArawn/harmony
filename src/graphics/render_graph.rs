@@ -62,13 +62,8 @@ impl RenderGraph {
         use_output_from_dependency: bool,
     ) {
         let name = name.into();
-        let pipeline = pipeline_desc.pipeline(
-            asset_manager,
-            device,
-            sc_desc,
-            resource_manager,
-            None,
-        );
+        let pipeline =
+            pipeline_desc.pipeline(asset_manager, device, sc_desc, resource_manager, None);
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&device, resource_manager));
         let node = RenderGraphNode {
@@ -211,8 +206,8 @@ impl RenderGraph {
         for order in ordering {
             while let Some(queue_item_index) = queue_items
                 .iter()
-                .position(|queue_item| queue_item.name == order) {
-
+                .position(|queue_item| queue_item.name == order)
+            {
                 let queue_item = queue_items.remove(queue_item_index);
                 command_buffers.push(queue_item.buffer);
             }

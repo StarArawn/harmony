@@ -1,34 +1,13 @@
 use legion::prelude::Resources;
-use nalgebra_glm::Mat4;
-use bytemuck::{Pod, Zeroable};
 
 use crate::{
-    AssetManager, 
     graphics::{
+        pipeline_manager::{PipelineDesc, PipelineManager},
         renderer::DEPTH_FORMAT,
-        pipeline_manager::{PipelineDesc, PipelineManager}, 
-        resources::{BindGroup, GPUResourceManager}
-    }
+        resources::GPUResourceManager,
+    },
+    AssetManager,
 };
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct SkyboxUniforms {
-    pub proj: Mat4,
-    pub view: Mat4,
-}
-
-impl Default for SkyboxUniforms {
-    fn default() -> Self {
-        Self {
-            proj: Mat4::identity(),
-            view: Mat4::identity(),
-        }
-    }
-}
-
-unsafe impl Zeroable for SkyboxUniforms {}
-unsafe impl Pod for SkyboxUniforms {}
 
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get::<AssetManager>().unwrap();
@@ -49,18 +28,6 @@ pub fn create(resources: &Resources) {
         stencil_read_mask: 0,
         stencil_write_mask: 0,
     });
-
-    // Create skybox bind group layouts.
-    let skybox_layout =
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            }],
-            label: None,
-        });
-    resource_manager.add_bind_group_layout("skybox_globals", skybox_layout);
 
     let skybox_material_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -83,28 +50,18 @@ pub fn create(resources: &Resources) {
             label: None,
         });
     resource_manager.add_bind_group_layout("skybox_material", skybox_material_layout);
-    skybox_desc.layouts = vec!["skybox_globals".to_string(), "skybox_material".to_string()];
+    skybox_desc.layouts = vec!["globals".to_string(), "skybox_material".to_string()];
     skybox_desc.cull_mode = wgpu::CullMode::None;
-    skybox_desc.vertex_state.set_index_format(wgpu::IndexFormat::Uint16);
-    
-    let skybox_globals_buffer = device.create_buffer_with_data(
-        bytemuck::bytes_of(&SkyboxUniforms::default()),
-        wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-    );
-    let skybox_layout = resource_manager.get_bind_group_layout("skybox_globals").unwrap();
-    let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: skybox_layout,
-        bindings: &[wgpu::Binding {
-            binding: 0,
-            resource: wgpu::BindingResource::Buffer {
-                buffer: &skybox_globals_buffer,
-                range: 0..std::mem::size_of::<SkyboxUniforms>() as u64,
-            },
-        }],
-        label: None,
-    });
-    resource_manager.add_single_bind_group("skybox_globals", BindGroup::new(0, global_bind_group));
-    resource_manager.add_buffer("skybox_buffer", skybox_globals_buffer);
+    skybox_desc
+        .vertex_state
+        .set_index_format(wgpu::IndexFormat::Uint16);
 
-    pipeline_manager.add("skybox", &skybox_desc, vec![], &device, &asset_manager, &resource_manager);
+    pipeline_manager.add_pipeline(
+        "skybox",
+        &skybox_desc,
+        vec!["globals"],
+        &device,
+        &asset_manager,
+        &resource_manager,
+    );
 }

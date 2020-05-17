@@ -9,14 +9,13 @@ pub mod pbr;
 mod line;
 pub(crate) use line::LinePipelineDesc;
 
-pub(crate) mod mipmap;
+pub mod mipmap;
 
 pub(crate) mod brdf;
 
 pub(crate) mod specular2;
 
 pub(crate) mod skybox;
-pub(crate) use skybox::{SkyboxUniforms};
 
 pub(crate) mod equirectangular;
 pub(crate) mod irradiance2;
@@ -27,6 +26,7 @@ pub struct GlobalUniform {
     pub view_projection: Mat4,
     pub camera_pos: Vec4,
     pub view: Mat4,
+    pub projection: Mat4,
 }
 
 impl Default for GlobalUniform {
@@ -35,6 +35,7 @@ impl Default for GlobalUniform {
             view_projection: Mat4::identity(),
             camera_pos: Vec4::zeros(),
             view: Mat4::identity(),
+            projection: Mat4::identity(),
         }
     }
 }

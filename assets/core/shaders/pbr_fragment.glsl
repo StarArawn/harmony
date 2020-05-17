@@ -173,8 +173,6 @@ void main() {
 
     // vec3 ambient = (ambient_irradiance * main_color.xyz * ambient_diffuse_fac) + (ambient_spec * (ambient_spec_fres * env_brdf.x + env_brdf.y));
 
-    float a = roughness * roughness;
-
     // Convert irradiance to radiance
     ambient_irradiance = (ambient_irradiance / 3.145) * 1.0; // 1.0 is enviroment scale
 

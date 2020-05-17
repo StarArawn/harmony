@@ -1,21 +1,34 @@
 use legion::prelude::Resources;
 
 use crate::{
-    AssetManager, 
     graphics::{
-        pipeline_manager::{PipelineDesc, PipelineManager}, 
-        resources::{GPUResourceManager}
-    }
+        pipeline_manager::{PipelineDesc, PipelineManager},
+        resources::GPUResourceManager,
+    },
+    AssetManager,
 };
 
 // mipmaps always run pretty much right away.
-pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: wgpu::TextureFormat, dimension: wgpu::TextureDimension, width: u32, height: u32, depth: u32) -> wgpu::Texture {
+pub fn create(
+    resources: &Resources,
+    original_texture: &wgpu::Texture,
+    format: wgpu::TextureFormat,
+    dimension: wgpu::TextureDimension,
+    width: u32,
+    height: u32,
+    depth: u32,
+) -> wgpu::Texture {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
     let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
     let device = resources.get::<wgpu::Device>().unwrap();
 
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("mipmap") });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("mipmap"),
+    });
+
+    //1 + floor(log2(max(w, h, d)))
+    let mip_map_count = (width.max(height) as f32).log2().floor() as u32;
 
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: None,
@@ -24,7 +37,7 @@ pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: w
             height,
             depth,
         },
-        mip_level_count: 9,
+        mip_level_count: mip_map_count,
         sample_count: 1,
         dimension,
         format,
@@ -34,7 +47,7 @@ pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: w
     });
 
     let mut bind_group_layout = resource_manager.get_bind_group_layout("mipmap");
-    
+
     // Create bind group layout and bind group for passing in texture to mip map shader.
     if bind_group_layout.is_none() {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -68,7 +81,14 @@ pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: w
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         mipmap_desc.layouts = vec!["mipmap".to_string()];
-        pipeline_manager.add("mipmap", &mipmap_desc, vec![], &device, &asset_manager, &resource_manager);
+        pipeline_manager.add_pipeline(
+            "mipmap",
+            &mipmap_desc,
+            vec![],
+            &device,
+            &asset_manager,
+            &resource_manager,
+        );
         pipeline = pipeline_manager.get("mipmap", None);
     }
 
@@ -85,7 +105,7 @@ pub fn create(resources: &Resources, original_texture: &wgpu::Texture, format: w
     });
 
     for face_id in 0..depth {
-        for mip_id in 0..9 {
+        for mip_id in 0..mip_map_count {
             let view = original_texture.create_view(&wgpu::TextureViewDescriptor {
                 format,
                 dimension: wgpu::TextureViewDimension::D2,

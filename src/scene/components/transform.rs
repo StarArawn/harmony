@@ -1,4 +1,7 @@
-use crate::{graphics::{resources::{BindGroup, GPUResourceManager}}, Application, TransformCount};
+use crate::{
+    graphics::resources::{BindGroup, GPUResourceManager},
+    Application, TransformCount,
+};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
 
@@ -103,8 +106,11 @@ impl Transform {
             label: None,
         });
 
-        resource_manager.add_multi_bind_group("transform", BindGroup::new(0, local_bind_group), index);
+        resource_manager.add_multi_bind_group(
+            "transform",
+            BindGroup::new(0, local_bind_group),
+            index,
+        );
         resource_manager.add_multi_buffer("transform", local_buffer, index);
-
     }
 }

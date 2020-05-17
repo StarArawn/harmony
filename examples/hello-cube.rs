@@ -8,10 +8,16 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::{resources::DeltaTime, components::{
-    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
-}, Scene};
-use harmony::{core::input::{Input, MouseButton}, WinitState, graphics::resources::{ProbeFormat, ProbeQuality}};
+use harmony::scene::{
+    components::{CameraData, DirectionalLightData, LightType, Material, Mesh, Transform},
+    resources::DeltaTime,
+    Scene,
+};
+use harmony::{
+    core::input::{Input, MouseButton},
+    graphics::resources::{ProbeFormat, ProbeQuality},
+    WinitState,
+};
 
 struct WindowSize {
     width: u32,
@@ -35,16 +41,12 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("Rotate Cube")
         .read_resource::<DeltaTime>()
         .with_query(<Write<Transform>>::query())
-        .build(|_,
-            mut world,
-            delta_time,
-            transform_query,
-        | {
+        .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
                 transform.rotate_on_y(-2.0 * delta_time.0);
                 transform.rotate_on_x(-1.0 * delta_time.0);
             }
-    })
+        })
 }
 
 fn create_camera_orbit_system() -> Box<dyn Schedulable> {
@@ -52,27 +54,24 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
         .read_resource::<DeltaTime>()
         .read_resource::<Input>()
         .with_query(<Write<CameraData>>::query())
-        .build(|_,
-            mut world,
-            (delta_time, input),
-            camera_query,
-        | {
+        .build(|_, mut world, (delta_time, input), camera_query| {
             for mut camera in camera_query.iter_mut(&mut world) {
                 if !input.is_mouse_button_down(MouseButton::Left) {
                     continue;
                 }
                 camera.yaw += input.mouse_delta.x * 0.5 * delta_time.0;
                 camera.pitch += input.mouse_delta.y * 0.5 * delta_time.0;
-                camera.pitch = camera.pitch
+                camera.pitch = camera
+                    .pitch
                     .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
                     .min(std::f32::consts::FRAC_PI_2 - 0.0001);
                 let eye = Vec3::new(0.0, 0.0, 0.0)
-                + (5.0
-                    * nalgebra::Vector3::new(
-                        camera.yaw.sin() * camera.pitch.cos(),
-                        camera.pitch.sin(),
-                        camera.yaw.cos() * camera.pitch.cos(),
-                    ));
+                    + (5.0
+                        * nalgebra::Vector3::new(
+                            camera.yaw.sin() * camera.pitch.cos(),
+                            camera.pitch.sin(),
+                            camera.yaw.cos() * camera.pitch.cos(),
+                        ));
                 camera.position = eye;
                 camera.update_view(eye, Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
             }
@@ -85,10 +84,16 @@ impl harmony::AppState for AppState {
             .add_system(create_rotate_system())
             .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
-        
+
         // We need to find the material index for the material that automatically gets created when loading in the GLTF.
         // It's easy enough:
-        let cube_material_index = app.resources.get::<harmony::AssetManager>().unwrap().get_mesh("cube.gltf").sub_meshes[0].material_index;
+        let cube_material_index = app
+            .resources
+            .get::<harmony::AssetManager>()
+            .unwrap()
+            .get_mesh("cube.gltf")
+            .sub_meshes[0]
+            .material_index;
 
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
@@ -109,12 +114,18 @@ impl harmony::AppState for AppState {
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
-        let skybox = harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+        let skybox =
+            harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
         // Skybox needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(skybox,)]);
 
         // Setup probe for PBR
-        harmony::scene::entities::probe::create(app, Vec3::zeros(), ProbeQuality::Low, ProbeFormat::RGBA32);
+        harmony::scene::entities::probe::create(
+            app,
+            Vec3::zeros(),
+            ProbeQuality::Low,
+            ProbeFormat::RGBA32,
+        );
 
         // Add directional light to our scene.
         let light_transform = Transform::new(app);
@@ -155,9 +166,9 @@ impl harmony::AppState for AppState {
         );
         camera_data.position = Vec3::new(0.0, 0.0, 5.0);
         camera_data.update_view(
-            camera_data.position, // This is our camera's "position".
-            Vec3::new(0.0, 0.0, 0.0),  // Where the camera is looking at.
-            Vec3::new(0.0, 1.0, 0.0),  // Our camera's up vector.
+            camera_data.position,     // This is our camera's "position".
+            Vec3::new(0.0, 0.0, 0.0), // Where the camera is looking at.
+            Vec3::new(0.0, 1.0, 0.0), // Our camera's up vector.
         );
         harmony::scene::entities::camera::create(&mut app.current_scene.world, camera_data);
     }

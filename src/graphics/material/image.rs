@@ -1,12 +1,12 @@
 use std::{fs, io};
 
 pub struct Image {
-    pub(crate) name: String,
-    pub(crate) texture: wgpu::Texture,
-    pub(crate) extent: wgpu::Extent3d,
-    pub(crate) sampler: wgpu::Sampler,
-    pub(crate) view: wgpu::TextureView,
-    pub(crate) format: wgpu::TextureFormat,
+    pub name: String,
+    pub texture: wgpu::Texture,
+    pub extent: wgpu::Extent3d,
+    pub sampler: wgpu::Sampler,
+    pub view: wgpu::TextureView,
+    pub format: wgpu::TextureFormat,
 }
 
 impl Image {
@@ -23,7 +23,9 @@ impl Image {
 
         let (image_bytes, texture_extent, format) = if path.ends_with(".hdr") {
             Self::create_hdr_image(path)
-        } else if path.to_lowercase().contains("_normal") || path.to_lowercase().contains("metallic") {
+        } else if path.to_lowercase().contains("_normal")
+            || path.to_lowercase().contains("metallic")
+        {
             Self::create_normal_image(path)
         } else {
             Self::create_color_image(path)
@@ -45,7 +47,9 @@ impl Image {
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
                 offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb || format == wgpu::TextureFormat::Rgba8Unorm {
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                    || format == wgpu::TextureFormat::Rgba8Unorm
+                {
                     4 * texture_extent.width
                 } else {
                     (4 * 4) * texture_extent.width
@@ -98,11 +102,7 @@ impl Image {
 
         let image_bytes: Vec<u8> = img.into_raw();
 
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba8Unorm,
-        )
+        (image_bytes, texture_extent, wgpu::TextureFormat::Rgba8Unorm)
     }
 
     fn create_color_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {

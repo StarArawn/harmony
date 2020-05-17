@@ -1,18 +1,12 @@
-use crate::{
-    graphics::{
-        pipeline::VertexStateBuilder,
-        resources::{GPUResourceManager},
-        SimplePipeline, SimplePipelineDesc,
-        renderer::DEPTH_FORMAT, mesh::MeshTangentLine,
-    },
+use crate::graphics::{
+    mesh::MeshTangentLine, pipeline::VertexStateBuilder, renderer::DEPTH_FORMAT,
+    resources::GPUResourceManager, SimplePipeline, SimplePipelineDesc,
 };
 
 #[derive(Debug)]
-pub struct LinePipeline {
-}
+pub struct LinePipeline {}
 
-impl SimplePipeline for LinePipeline {
-}
+impl SimplePipeline for LinePipeline {}
 
 #[derive(Debug, Default)]
 pub struct LinePipelineDesc;
@@ -88,6 +82,6 @@ impl SimplePipelineDesc for LinePipelineDesc {
         _device: &wgpu::Device,
         _resource_manager: &mut GPUResourceManager,
     ) -> LinePipeline {
-        LinePipeline { }
+        LinePipeline {}
     }
 }

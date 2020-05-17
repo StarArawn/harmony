@@ -92,7 +92,7 @@ impl Skybox {
         // futures::executor::block_on(Self::save(buffer_future));
 
         let color = graph.pull_render_target("cube_projection");
-        
+
         let color_view = color.texture.create_view(&wgpu::TextureViewDescriptor {
             format: wgpu::TextureFormat::Rgba32Float,
             dimension: wgpu::TextureViewDimension::Cube,
@@ -154,7 +154,9 @@ impl Skybox {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(self.cubemap_sampler.as_ref().unwrap()),
+                    resource: wgpu::BindingResource::Sampler(
+                        self.cubemap_sampler.as_ref().unwrap(),
+                    ),
                 },
             ],
             label: None,

@@ -1,18 +1,14 @@
-use legion::prelude::*;
 use crate::{
     graphics::{
-        RenderGraph,
-        CommandBufferQueue,
-        resources::GPUResourceManager,
-        renderer::DepthTexture,
-        render_graph::RenderGraphNode,
-        CommandQueueItem, pipelines::GlobalUniform
+        pipelines::GlobalUniform, render_graph::RenderGraphNode, renderer::DepthTexture,
+        resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph,
     },
     scene::components,
     AssetManager,
 };
-use std::sync::Arc;
+use legion::prelude::*;
 use nalgebra_glm::Vec4;
+use std::sync::Arc;
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_lines")
@@ -23,14 +19,21 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
         .read_resource::<DepthTexture>()
-        .with_query(<(Read<components::CameraData>, )>::query())
+        .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<Read<components::Mesh>>::query())
         .build(
             |_,
-                world,
-                (asset_manager, command_buffer_queue, render_graph, device, output, resource_manager, depth_texture),
-                (camera_data, mesh_query),
-            |{
+             world,
+             (
+                asset_manager,
+                command_buffer_queue,
+                render_graph,
+                device,
+                output,
+                resource_manager,
+                depth_texture,
+            ),
+             (camera_data, mesh_query)| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("line_renderer"),
                 });
@@ -39,7 +42,6 @@ pub fn create() -> Box<dyn Schedulable> {
                 // This section is meant to prepare our global uniforms and pass them to the GPU.
                 // ******************************************************************************
                 {
-
                     let filtered_camera_data: Vec<_> = camera_data
                         .iter(&world)
                         .filter(|(camera,)| camera.active)
@@ -57,8 +59,14 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     let uniforms = GlobalUniform {
                         view_projection: camera_matrix,
-                        camera_pos: Vec4::new(camera_data.position.x, camera_data.position.y, camera_data.position.z, 0.0),
+                        camera_pos: Vec4::new(
+                            camera_data.position.x,
+                            camera_data.position.y,
+                            camera_data.position.z,
+                            0.0,
+                        ),
                         view: camera_data.view,
+                        projection: camera_data.projection,
                     };
 
                     let constants_buffer = device.create_buffer_with_data(
@@ -91,15 +99,17 @@ pub fn create() -> Box<dyn Schedulable> {
                                 a: 0.0,
                             },
                         }],
-                        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                            attachment: &depth_texture.0,
-                            depth_load_op: wgpu::LoadOp::Load,
-                            depth_store_op: wgpu::StoreOp::Store,
-                            stencil_load_op: wgpu::LoadOp::Load,
-                            stencil_store_op: wgpu::StoreOp::Store,
-                            clear_depth: 1.0,
-                            clear_stencil: 0,
-                        }),
+                        depth_stencil_attachment: Some(
+                            wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                                attachment: &depth_texture.0,
+                                depth_load_op: wgpu::LoadOp::Load,
+                                depth_store_op: wgpu::StoreOp::Store,
+                                stencil_load_op: wgpu::LoadOp::Load,
+                                stencil_store_op: wgpu::StoreOp::Store,
+                                clear_depth: 1.0,
+                                clear_stencil: 0,
+                            },
+                        ),
                     });
 
                     render_pass.set_pipeline(&node.pipeline);
@@ -108,7 +118,12 @@ pub fn create() -> Box<dyn Schedulable> {
                     for mesh in mesh_query.iter(&world) {
                         let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
                         for sub_mesh in asset_mesh.sub_meshes.iter() {
-                            render_pass.set_vertex_buffer(0, sub_mesh.tangent_line_buffer.as_ref().unwrap(), 0, 0);
+                            render_pass.set_vertex_buffer(
+                                0,
+                                sub_mesh.tangent_line_buffer.as_ref().unwrap(),
+                                0,
+                                0,
+                            );
                             render_pass.draw(0..sub_mesh.tangent_lines.len() as u32, 0..1);
                         }
                     }
@@ -120,5 +135,6 @@ pub fn create() -> Box<dyn Schedulable> {
                         name: "line".to_string(),
                     })
                     .unwrap();
-        })
+            },
+        )
 }

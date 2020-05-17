@@ -1,8 +1,10 @@
 use ordered_float::OrderedFloat;
-use std::collections::{HashMap, hash_map::DefaultHasher};
+use std::collections::{hash_map::DefaultHasher, HashMap};
 use std::hash::{Hash, Hasher};
 
-use super::{resources::GPUResourceManager, VertexStateBuilder, renderer::FRAME_FORMAT, CommandBufferQueue};
+use super::{
+    renderer::FRAME_FORMAT, resources::GPUResourceManager, CommandBufferQueue, VertexStateBuilder,
+};
 use crate::AssetManager;
 use solvent::DepGraph;
 
@@ -57,7 +59,12 @@ impl PipelineDesc {
         s.finish()
     }
 
-    pub fn build(&self, asset_manager: &AssetManager, device: &wgpu::Device, gpu_resource_manager: &GPUResourceManager) -> Pipeline {
+    pub fn build(
+        &self,
+        asset_manager: &AssetManager,
+        device: &wgpu::Device,
+        gpu_resource_manager: &GPUResourceManager,
+    ) -> Pipeline {
         let shader = asset_manager.get_shader(self.shader.clone());
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
@@ -68,7 +75,15 @@ impl PipelineDesc {
             entry_point: "main",
         });
 
-        let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self.layouts.iter().map(|group_name| gpu_resource_manager.get_bind_group_layout(group_name).unwrap()).collect();
+        let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self
+            .layouts
+            .iter()
+            .map(|group_name| {
+                gpu_resource_manager
+                    .get_bind_group_layout(group_name)
+                    .unwrap()
+            })
+            .collect();
         let rasterization_state = wgpu::RasterizationStateDescriptor {
             front_face: self.front_face,
             cull_mode: self.cull_mode,
@@ -131,9 +146,13 @@ pub struct Pipeline {
     pub render_pipeline: wgpu::RenderPipeline,
 }
 
+pub enum PipelineType {
+    Pipeline(Pipeline),
+    Node,
+}
 
 pub struct PipelineManager {
-    pipelines: HashMap<String, HashMap<u64, Pipeline>>,
+    pipelines: HashMap<String, HashMap<u64, PipelineType>>,
     pub(crate) current_pipelines: HashMap<String, u64>,
     dep_graph: DepGraph<String>,
     order: Vec<String>,
@@ -154,10 +173,18 @@ impl PipelineManager {
     /// This lets you add new pipelines. Note: You can have multiple pipelines for the same shader. It's recomended that you store
     /// PipelineDesc and pass it in when retrieving the pipeline.
     /// Note: Pipeline's are considered a fairly costly operation, try not to create a new one every frame.
-    pub fn add<T: Into<String>>(&mut self, name: T, pipeline_desc: &PipelineDesc, dependency: Vec<&str>, device: &wgpu::Device, asset_manager: &AssetManager, gpu_resource_manager: &GPUResourceManager) {
+    pub fn add_pipeline<T: Into<String>>(
+        &mut self,
+        name: T,
+        pipeline_desc: &PipelineDesc,
+        dependency: Vec<&str>,
+        device: &wgpu::Device,
+        asset_manager: &AssetManager,
+        gpu_resource_manager: &GPUResourceManager,
+    ) {
         let hash = pipeline_desc.create_hash();
         let name = name.into();
-        
+
         if !self.pipelines.contains_key(&name) {
             let pipeline_hashmap = HashMap::new();
             self.pipelines.insert(name.clone(), pipeline_hashmap);
@@ -173,7 +200,44 @@ impl PipelineManager {
         }
 
         let pipeline = pipeline_desc.build(&asset_manager, &device, &gpu_resource_manager);
-        pipeline_hashmap.insert(hash, pipeline);
+        pipeline_hashmap.insert(hash, PipelineType::Pipeline(pipeline));
+
+        // Add to our graph
+        self.dep_graph.register_node(name.clone());
+
+        if dependency.len() > 0 {
+            let dependency = dependency
+                .iter()
+                .map(|name| name.to_string())
+                .collect::<Vec<String>>();
+            self.dep_graph
+                .register_dependencies(name.clone(), dependency);
+        }
+
+        // Recalculate order.
+        self.get_order();
+    }
+
+    // A node is an encoder you want to run at some step inside of the pipeline workflow.
+    pub fn add_node<T: Into<String>>(&mut self, name: T, dependency: Vec<&str>) {
+        let name = name.into();
+        let mut hasher = DefaultHasher::new();
+        name.hash(&mut hasher);
+        let hash = hasher.finish();
+
+        if !self.pipelines.contains_key(&name) {
+            let pipeline_hashmap = HashMap::new();
+            self.pipelines.insert(name.clone(), pipeline_hashmap);
+
+            // Save the first pipeline into our special hashmap for keeping track of that.
+            self.current_pipelines.insert(name.clone(), hash);
+        }
+
+        let pipeline_hashmap = self.pipelines.get_mut(&name).unwrap();
+        if pipeline_hashmap.contains_key(&hash) {
+            // Already exists do nothing in this case. Perhaps error?
+            return;
+        }
 
         // Add to our graph
         self.dep_graph.register_node(name.clone());
@@ -217,10 +281,16 @@ impl PipelineManager {
 
     /// Let's you retrieve a reference to a pipeline from the manager.
     /// Note if you don't pass in a pipeline description it defaults to whatever the current pipeline is.
-    pub fn get<T: Into<String>>(&self, name: T, pipeline_desc: Option<&PipelineDesc>) -> Option<&Pipeline> {
+    pub fn get<T: Into<String>>(
+        &self,
+        name: T,
+        pipeline_desc: Option<&PipelineDesc>,
+    ) -> Option<&Pipeline> {
         let name = name.into();
         let pipeline_hashmap = self.pipelines.get(&name);
-        if pipeline_hashmap.is_none() { return None; }
+        if pipeline_hashmap.is_none() {
+            return None;
+        }
 
         let hash = if pipeline_desc.is_some() {
             pipeline_desc.unwrap().create_hash()
@@ -228,7 +298,14 @@ impl PipelineManager {
             *self.current_pipelines.get(&name).unwrap()
         };
 
-        pipeline_hashmap.unwrap().get(&hash)
+        let pipeline_type = pipeline_hashmap.unwrap().get(&hash);
+        if pipeline_type.is_none() {
+            return None;
+        }
+        match pipeline_type.as_ref().unwrap() {
+            PipelineType::Pipeline(pipeline) => Some(pipeline),
+            _ => None,
+        }
     }
 
     // Get's the hash for the current pipeline being used.
@@ -255,8 +332,8 @@ impl PipelineManager {
         for order in self.order.iter() {
             while let Some(queue_item_index) = queue_items
                 .iter()
-                .position(|queue_item| &queue_item.name == order) {
-
+                .position(|queue_item| &queue_item.name == order)
+            {
                 let queue_item = queue_items.remove(queue_item_index);
                 command_buffers.push(queue_item.buffer);
             }
