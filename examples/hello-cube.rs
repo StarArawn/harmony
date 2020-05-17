@@ -14,7 +14,7 @@ use harmony::scene::{
     Scene,
 };
 use harmony::{
-    core::input::Input,
+    core::input::{Input, MouseButton},
     graphics::resources::{ProbeFormat, ProbeQuality},
     WinitState,
 };
@@ -56,6 +56,9 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
         .with_query(<Write<CameraData>>::query())
         .build(|_, mut world, (delta_time, input), camera_query| {
             for mut camera in camera_query.iter_mut(&mut world) {
+                if !input.is_mouse_button_down(MouseButton::Left) {
+                    continue;
+                }
                 camera.yaw += input.mouse_delta.x * 0.5 * delta_time.0;
                 camera.pitch += input.mouse_delta.y * 0.5 * delta_time.0;
                 camera.pitch = camera
