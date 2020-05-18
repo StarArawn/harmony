@@ -26,6 +26,7 @@ impl Image {
         } else if path.to_lowercase().contains("_normal")
             || path.to_lowercase().contains("metallic")
         {
+            dbg!(format!("Creating normal map for: {}", &path));
             Self::create_normal_image(path)
         } else {
             Self::create_color_image(path)
@@ -69,9 +70,9 @@ impl Image {
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
             address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Nearest,
+            mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
             compare: wgpu::CompareFunction::Undefined,

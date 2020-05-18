@@ -14,11 +14,12 @@ pub mod mipmap;
 pub(crate) mod brdf;
 
 pub(crate) mod specular2;
+pub(crate) mod irradiance;
 
 pub(crate) mod skybox;
+pub(crate) mod realtime_sky;
 
 pub(crate) mod equirectangular;
-pub(crate) mod irradiance2;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

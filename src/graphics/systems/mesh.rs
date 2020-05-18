@@ -11,7 +11,7 @@ use legion::prelude::*;
 use std::sync::Arc;
 
 pub fn create() -> Box<dyn Schedulable> {
-    SystemBuilder::new("render_skybox")
+    SystemBuilder::new("render_mesh")
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<RenderGraph>()

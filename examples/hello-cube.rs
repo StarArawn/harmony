@@ -43,8 +43,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         .with_query(<Write<Transform>>::query())
         .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
-                transform.rotate_on_y(-2.0 * delta_time.0);
-                transform.rotate_on_x(-1.0 * delta_time.0);
+                // transform.rotate_on_y(-0.5 * delta_time.0);
+                // transform.rotate_on_x(-0.5 * delta_time.0);
             }
         })
 }
@@ -113,9 +113,12 @@ impl harmony::AppState for AppState {
         );
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
-        // create skybox first for now this *has* to be done in load.
+        // let skybox =
+        //     harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+        // Or create a realtime skybox:
+        // Note: realtime skybox will use the first directional light as the sun position.
         let skybox =
-            harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+            harmony::graphics::material::Skybox::create_realtime();
         // Skybox needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(skybox,)]);
 
@@ -124,7 +127,7 @@ impl harmony::AppState for AppState {
             app,
             Vec3::zeros(),
             ProbeQuality::Low,
-            ProbeFormat::RGBA32,
+            ProbeFormat::RGBA16,
         );
 
         // Add directional light to our scene.
@@ -132,7 +135,7 @@ impl harmony::AppState for AppState {
         harmony::scene::entities::light::create(
             &mut app.current_scene.world,
             LightType::Directional(DirectionalLightData {
-                direction: Vec3::new(1.0, 0.0, 1.0),
+                direction: Vec3::new(0.0, 1.0, 0.0),
                 color: Vec3::new(0.9, 0.55, 0.42),
             }),
             light_transform,

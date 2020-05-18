@@ -34,27 +34,28 @@ pub fn create() -> Box<dyn Schedulable> {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
-
-                let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
-
+                
                 let view_attachment = if current_render_target.0.is_some() {
                     &current_render_target.0.as_ref().unwrap().1
                 } else {
                     &output.view
                 };
-
+                
                 let depth_attachment = if current_render_target.0.is_some() {
                     current_render_target
-                        .0
-                        .as_ref()
-                        .unwrap()
-                        .0
-                        .depth_texture_view
-                        .as_ref()
-                        .unwrap()
+                    .0
+                    .as_ref()
+                    .unwrap()
+                    .0
+                    .depth_texture_view
+                    .as_ref()
+                    .unwrap()
                 } else {
                     &depth_texture.0
                 };
+                
+                let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
+                let pipeline_realtime: &Pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
 
                 for (skybox,) in skyboxes.iter(&world) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -87,6 +88,15 @@ pub fn create() -> Box<dyn Schedulable> {
                         render_pass.set_pipeline(&pipeline.render_pipeline);
                         render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
 
+                        render_pass.set_bind_group(
+                            1,
+                            skybox.cubemap_bind_group.as_ref().unwrap(),
+                            &[],
+                        );
+                        render_pass.draw(0..3 as u32, 0..1);
+                    } else if skybox.skybox_type == SkyboxType::RealTime {
+                        render_pass.set_pipeline(&pipeline_realtime.render_pipeline);
+                        render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
                         render_pass.set_bind_group(
                             1,
                             skybox.cubemap_bind_group.as_ref().unwrap(),
