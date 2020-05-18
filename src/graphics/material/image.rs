@@ -26,7 +26,6 @@ impl Image {
         } else if path.to_lowercase().contains("_normal")
             || path.to_lowercase().contains("metallic")
         {
-            dbg!(format!("Creating normal map for: {}", &path));
             Self::create_normal_image(path)
         } else {
             Self::create_color_image(path)
