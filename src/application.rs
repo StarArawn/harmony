@@ -91,8 +91,6 @@ impl Application {
 
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
-            render_schedule_builder.add_system(crate::graphics::systems::globals::create());
-        render_schedule_builder =
             render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
@@ -265,6 +263,8 @@ impl Application {
 
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
+        crate::graphics::pipelines::realtime_sky::create(&self.resources);
+        
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
 
@@ -289,6 +289,13 @@ impl Application {
                         .get_bind_group_layout("skybox_material")
                         .unwrap();
                     skybox.create_bind_group2(&device, material_layout);
+                } else if skybox.skybox_type == SkyboxType::RealTime {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let asset_manager = self.resources.get::<AssetManager>().unwrap();
+                    let material_layout = resource_manager
+                        .get_bind_group_layout("realtime_skybox_material")
+                        .unwrap();
+                    skybox.create_realtime_bind_group(&device, &asset_manager, material_layout);
                 }
             }
         }

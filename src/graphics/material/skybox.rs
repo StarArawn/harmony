@@ -14,6 +14,7 @@ pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 pub enum SkyboxType {
     ClearColor,
     HdrCubemap,
+    RealTime,
 }
 
 pub struct Skybox {
@@ -138,6 +139,61 @@ impl Skybox {
             clear_color: color,
             skybox_type: SkyboxType::ClearColor,
         }
+    }
+
+    pub fn create_realtime() -> Self {
+        Self {
+            size: 0.0,
+            color_texture: None,
+            color_view: None,
+            cubemap_sampler: None,
+            cubemap_bind_group: None,
+            pbr_bind_group: None,
+            clear_color: Vec3::new(0.0, 0.0, 0.0),
+            skybox_type: SkyboxType::RealTime,
+        }
+    }
+
+    pub(crate) fn create_realtime_bind_group(
+        &mut self,
+        device: &wgpu::Device,
+        asset_manager: &AssetManager,
+        material_layout: &wgpu::BindGroupLayout,
+    ) {
+        let rayleigh_texture = asset_manager.get_image("rayleigh.hdr");
+        let mie_texture = asset_manager.get_image("mie.hdr");
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: wgpu::CompareFunction::Undefined,
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &material_layout,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&rayleigh_texture.view),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&mie_texture.view),
+                },
+            ],
+            label: None,
+        });
+        self.cubemap_bind_group = Some(bind_group);
     }
 
     pub(crate) fn create_bind_group2(

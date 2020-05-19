@@ -107,6 +107,7 @@ impl Probe {
 
         // Create the specular workflow pipeline
         crate::graphics::pipelines::specular2::create(resources, wgpu_format);
+        crate::graphics::pipelines::irradiance::create(resources, wgpu_format);
 
         let brdf_texture = {
             let device = resources.get::<wgpu::Device>().unwrap();
@@ -229,6 +230,7 @@ impl Probe {
         // TODO: Have more systems support our CurrentRenderTarget.
         let mut render_schedule =
             Schedule::builder() //create_render_schedule_builder()
+                .add_system(crate::graphics::systems::globals::create())
                 .add_system(crate::graphics::systems::skybox::create())
                 .flush()
                 .build();
@@ -242,9 +244,13 @@ impl Probe {
             let asset_manager = resources.get::<AssetManager>().unwrap();
             let resource_manager = resources.get::<GPUResourceManager>().unwrap();
             let skybox_pipeline = pipeline_manager.get("skybox", None).unwrap();
+            let realtime_skybox_pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
             let mut new_skybox_desc = skybox_pipeline.desc.clone();
+            let mut new_realtime_skybox_desc = realtime_skybox_pipeline.desc.clone();
             new_skybox_desc.color_state.format = self.format.into();
+            new_realtime_skybox_desc.color_state.format = self.format.into();
             let hash = new_skybox_desc.create_hash();
+            let realtime_hash = new_realtime_skybox_desc.create_hash();
             pipeline_manager.add_pipeline(
                 "skybox",
                 &new_skybox_desc,
@@ -253,7 +259,16 @@ impl Probe {
                 &asset_manager,
                 &resource_manager,
             );
+            pipeline_manager.add_pipeline(
+                "realtime_skybox",
+                &new_realtime_skybox_desc,
+                vec![],
+                &device,
+                &asset_manager,
+                &resource_manager,
+            );
             pipeline_manager.set_current_pipeline_hash("skybox", hash);
+            pipeline_manager.set_current_pipeline_hash("realtime_skybox", realtime_hash);
         }
 
         {
@@ -303,6 +318,13 @@ impl Probe {
                 }
                 // Tell the render target the current face..
                 render_schedule.execute(&mut scene.world, resources);
+
+                // Finally we submit our queue.
+                let mut queue_schedule = Schedule::builder()
+                    .flush()
+                    .add_thread_local_fn(crate::graphics::systems::render::create())
+                    .build();
+                queue_schedule.execute(&mut scene.world, resources);
             }
 
             // Reset pipelines.
@@ -310,13 +332,6 @@ impl Probe {
                 let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
                 pipeline_manager.current_pipelines = current_pipelines;
             }
-
-            // Finally we submit our queue.
-            let mut queue_schedule = Schedule::builder()
-                .flush()
-                .add_thread_local_fn(crate::graphics::systems::render::create())
-                .build();
-            queue_schedule.execute(&mut scene.world, resources);
         }
 
         // Remove camera_enttiy
@@ -366,7 +381,7 @@ impl Probe {
         probe_cube.texture_view = probe_cube
             .texture
             .create_view(&wgpu::TextureViewDescriptor {
-                format: wgpu::TextureFormat::Rgba32Float,
+                format: self.format.into(),
                 dimension: wgpu::TextureViewDimension::Cube,
                 aspect: wgpu::TextureAspect::default(),
                 base_mip_level: 0,
@@ -404,35 +419,17 @@ impl Probe {
         let asset_manager = resources.get::<AssetManager>().unwrap();
         let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
         let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-        let mut render_graph = resources.get_mut::<RenderGraph>().unwrap();
+        let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
 
         // create pipeline if we need to.
-        let graph_node = &render_graph.get_safe("irradiance2");
-        if graph_node.is_none() {
-            let pipeline_desc =
-                crate::graphics::pipelines::irradiance2::IrradiancePipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "irradiance2",
-                pipeline_desc,
-                vec![],
-                false,
-                None,
-                false,
-            );
-        }
-
-        let pipeline = &render_graph.get("irradiance2").pipeline;
-
+        let node_pipeline = pipeline_manager.get("irradiance", None).unwrap();
+        
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("irradiance"),
         });
 
         let global_bind_group = resource_manager
-            .get_bind_group_layout("irradiance2")
+            .get_bind_group_layout("irradiance")
             .unwrap();
 
         let output = RenderTarget::new(
@@ -509,7 +506,7 @@ impl Probe {
                 }],
                 depth_stencil_attachment: None,
             });
-            render_pass.set_pipeline(pipeline);
+            render_pass.set_pipeline(&node_pipeline.render_pipeline);
             render_pass.set_bind_group(0, &bind_group, &[]);
             render_pass.draw(0..6, 0..6);
         }
