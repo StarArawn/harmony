@@ -130,7 +130,7 @@ pub fn create(resources: &Resources) {
     pipeline_manager.add_pipeline(
         "pbr",
         &pbr_desc,
-        vec!["globals", "skybox"],
+        vec!["globals", "skybox", "mesh"],
         &device,
         &asset_manager,
         &resource_manager,
