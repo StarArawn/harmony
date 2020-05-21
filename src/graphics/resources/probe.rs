@@ -125,8 +125,6 @@ impl Probe {
 
         let device = resources.get::<wgpu::Device>().unwrap();
 
-        // TODO: Replace this one day with the correct format. Which means building out multiple same pipelines with only different formats.
-        // It really should be 16 or 32 bits per pixel for HDR..
         let mut probe_cube = RenderTarget::new(
             &device,
             probe_resoultion as f32,
