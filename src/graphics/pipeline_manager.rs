@@ -8,6 +8,9 @@ use super::{
 use crate::AssetManager;
 use solvent::DepGraph;
 
+/// A description of a render pipeline. 
+/// Note: You can call `default()` to get a base implementation.
+/// You'll still need to specify the correct shader at the very least.
 #[derive(Debug, Hash, Clone)]
 pub struct PipelineDesc {
     pub shader: String,
@@ -53,12 +56,14 @@ impl Default for PipelineDesc {
 }
 
 impl PipelineDesc {
+    /// Creates a hash of the pipeline.
     pub fn create_hash(&self) -> u64 {
         let mut s = DefaultHasher::new();
         self.hash(&mut s);
         s.finish()
     }
 
+    /// Builds a Pipeline from the description.
     pub fn build(
         &self,
         asset_manager: &AssetManager,
@@ -141,16 +146,23 @@ impl PipelineDesc {
     }
 }
 
+/// An actual Render Pipeline that should be stored in the manager.
+/// Also contains a description of the pipeline.
 pub struct Pipeline {
     pub desc: PipelineDesc,
     pub render_pipeline: wgpu::RenderPipeline,
 }
 
+/// The type of pipeline.
 pub enum PipelineType {
     Pipeline(Pipeline),
+    /// Node is used for things that run on the GPU without a pipeline. Such as globals.
     Node,
+    // TODO: Add group type.
 }
 
+/// This is essentially a render graph with additional features.
+/// It can also manage duplicate pipelines.
 pub struct PipelineManager {
     pipelines: HashMap<String, HashMap<u64, PipelineType>>,
     pub(crate) current_pipelines: HashMap<String, u64>,
@@ -159,6 +171,7 @@ pub struct PipelineManager {
 }
 
 impl PipelineManager {
+    /// Creates a new pipeline manager. 
     pub fn new() -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());
@@ -170,7 +183,7 @@ impl PipelineManager {
         }
     }
 
-    /// This lets you add new pipelines. Note: You can have multiple pipelines for the same shader. It's recomended that you store
+    /// This lets you add new pipelines. Note: You can have multiple pipelines for the same shader. It's recommended that you store
     /// PipelineDesc and pass it in when retrieving the pipeline.
     /// Note: Pipeline's are considered a fairly costly operation, try not to create a new one every frame.
     pub fn add_pipeline<T: Into<String>>(
@@ -218,7 +231,7 @@ impl PipelineManager {
         self.get_order();
     }
 
-    // A node is an encoder you want to run at some step inside of the pipeline workflow.
+    /// A node is an encoder you want to run at some step inside of the pipeline workflow.
     pub fn add_node<T: Into<String>>(&mut self, name: T, dependency: Vec<&str>) {
         let name = name.into();
         let mut hasher = DefaultHasher::new();
@@ -308,18 +321,20 @@ impl PipelineManager {
         }
     }
 
-    // Get's the hash for the current pipeline being used.
+    /// Get's the hash for the current pipeline being used.
     pub fn get_current_pipeline_hash<T: Into<String>>(&self, name: T) -> u64 {
         let name = name.into();
         *self.current_pipelines.get(&name).unwrap()
     }
 
+    /// Sets the current pipeline that is used based off a hash.
     pub fn set_current_pipeline_hash<T: Into<String>>(&mut self, name: T, hash: u64) {
         let name = name.into();
         self.current_pipelines.insert(name, hash);
     }
 
-    pub fn collect_buffers(
+    /// Collects command buffers for submission.
+    pub(crate) fn collect_buffers(
         &self,
         command_queue: &mut CommandBufferQueue,
     ) -> Vec<wgpu::CommandBuffer> {

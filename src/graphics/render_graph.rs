@@ -29,7 +29,9 @@ pub struct RenderGraph {
     dep_graph: DepGraph<String>,
 }
 
+/// DEPRECIATED DO NOT USE.
 impl RenderGraph {
+    /// DEPRECIATED DO NOT USE.
     pub(crate) fn new(resources: &mut Resources, create_command_queue: bool) -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());
@@ -48,6 +50,7 @@ impl RenderGraph {
 
     /// `input` - Optional view to render from. useful for post processing chains.
     /// 'output' - Optional view to render to. If none is set it will render to the latest frame buffer.
+    /// DEPRECIATED DO NOT USE.
     pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(
         &mut self,
         asset_manager: &AssetManager,
@@ -86,6 +89,7 @@ impl RenderGraph {
     }
 
     /// Allows you to take the output render target for a given node.
+    /// DEPRECIATED DO NOT USE.
     pub fn pull_render_target<T>(&mut self, name: T) -> RenderTarget
     where
         T: Into<String>,
@@ -96,6 +100,7 @@ impl RenderGraph {
     }
 
     /// Allows you to take the output render target for a given node.
+    /// DEPRECIATED DO NOT USE.
     pub fn get<T>(&self, name: T) -> &RenderGraphNode
     where
         T: Into<String>,
@@ -103,6 +108,7 @@ impl RenderGraph {
         self.nodes.get(&name.into()).unwrap()
     }
 
+    /// DEPRECIATED DO NOT USE.
     pub fn get_safe<T>(&self, name: T) -> Option<&RenderGraphNode>
     where
         T: Into<String>,
@@ -110,6 +116,7 @@ impl RenderGraph {
         self.nodes.get(&name.into())
     }
 
+    /// DEPRECIATED DO NOT USE.
     fn get_order(&self) -> Vec<String> {
         let mut order = Vec::new();
         for (name, _) in self.nodes.iter() {
@@ -131,6 +138,7 @@ impl RenderGraph {
         order
     }
 
+    /// DEPRECIATED DO NOT USE.
     pub(crate) fn render_one_time(
         &mut self,
         device: &wgpu::Device,
@@ -190,6 +198,7 @@ impl RenderGraph {
         encoder.finish()
     }
 
+    /// DEPRECIATED DO NOT USE.
     pub fn collect_buffers(
         &self,
         command_queue: &mut CommandBufferQueue,

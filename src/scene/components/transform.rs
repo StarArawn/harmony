@@ -21,6 +21,12 @@ impl Default for LocalUniform {
     }
 }
 
+/// A transform used to move entities around in the world. Consists of:
+/// index: Used internally
+/// position: A Vector3 representing it's world coordinates.
+/// scale: A Vector3 representing it's world scale.
+/// rotation: A quaternion representing it's world rotation.
+/// matrix: A world matrix.
 #[derive(Debug)]
 pub struct Transform {
     pub index: u32,
@@ -31,6 +37,7 @@ pub struct Transform {
 }
 
 impl Transform {
+    /// Creates a new transform with default values.
     pub fn new(app: &mut Application) -> Self {
         let mut index = app.resources.get_mut::<TransformCount>().unwrap();
         index.0 += 1;
@@ -45,23 +52,27 @@ impl Transform {
         }
     }
 
+    /// Lets you rotate the transform along a specific axis.
     pub fn rotate_on_axis<'a>(&'a mut self, axis: Vec3, angle: f32) -> &'a mut Self {
         self.rotation = self.rotation * nalgebra_glm::quat_angle_axis(angle, &axis);
         self
     }
 
+    /// Rotate the transform along the X axis.
     pub fn rotate_on_x<'a>(&'a mut self, angle: f32) -> &'a mut Self {
         self.rotation =
             self.rotation * nalgebra_glm::quat_angle_axis(angle, &Vec3::new(1.0, 0.0, 0.0));
         self
     }
 
+    /// Rotate the transform along the Y axis.
     pub fn rotate_on_y<'a>(&'a mut self, angle: f32) -> &'a mut Self {
         self.rotation =
             self.rotation * nalgebra_glm::quat_angle_axis(angle, &Vec3::new(0.0, 1.0, 0.0));
         self
     }
 
+    /// Rotate the transform along the Z axis.
     pub fn rotate_on_z<'a>(&'a mut self, angle: f32) -> &'a mut Self {
         self.rotation =
             self.rotation * nalgebra_glm::quat_angle_axis(angle, &Vec3::new(0.0, 0.0, 1.0));
@@ -77,6 +88,8 @@ impl Transform {
     //     Vec3::new(weird_rotation.z, weird_rotation.y, weird_rotation.x)
     // }
 
+    /// Used internally to recalculate the world matrix.
+    /// Can also be used if an updated world matrix is needed.
     pub fn update(&mut self) {
         let scale = nalgebra_glm::scaling(&self.scale);
         let rotation = nalgebra_glm::quat_to_mat4(&self.rotation);
