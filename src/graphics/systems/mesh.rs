@@ -236,7 +236,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 command_buffer_queue
                     .push(CommandQueueItem {
                         buffer: encoder.finish(),
-                        name: "pbr".to_string(),
+                        name: "mesh".to_string(),
                     })
                     .unwrap();
             },

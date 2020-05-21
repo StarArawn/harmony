@@ -30,7 +30,7 @@ pub fn create(resources: &Resources) {
         stencil_write_mask: 0,
     });
 
-    // Create skybox bind group layouts.
+    // Create pbr bind group layouts.
     let pbr_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry {
