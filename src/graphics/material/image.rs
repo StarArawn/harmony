@@ -1,9 +1,37 @@
-use std::{fs, io};
+use std::{fs, io, path::PathBuf};
+use serde::{ Deserialize, Serialize };
+use io::ErrorKind;
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum ImageFormat {
+    SRGB,
+    RGB,
+    HDR16,
+    HDR32,
+}
+
+impl Into<wgpu::TextureFormat> for ImageFormat {
+    fn into(self) -> wgpu::TextureFormat {
+        match self {
+            ImageFormat::HDR16 => wgpu::TextureFormat::Rgba16Float,
+            ImageFormat::HDR32 => wgpu::TextureFormat::Rgba32Float,
+            ImageFormat::RGB => wgpu::TextureFormat::Rgba8Unorm,
+            ImageFormat::SRGB => wgpu::TextureFormat::Rgba8UnormSrgb,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImageInfo {
+    /// Relative to where the ron file is located.
+    pub file: String, 
+    pub format: ImageFormat,
+}
 
 pub struct Image {
-    pub name: String,
-    pub texture: wgpu::Texture,
+    pub image_info: ImageInfo, 
     pub extent: wgpu::Extent3d,
+    pub texture: wgpu::Texture,
     pub sampler: wgpu::Sampler,
     pub view: wgpu::TextureView,
     pub format: wgpu::TextureFormat,
@@ -79,10 +107,14 @@ impl Image {
 
         let view = texture.create_default_view();
 
+        let file_name =  file_name.into();
         Self {
-            name: file_name.into().clone(),
-            texture,
+            image_info: ImageInfo {
+                file: file_name.clone(),
+                format: ImageFormat::SRGB,
+            },
             extent: texture_extent,
+            texture,
             sampler,
             view,
             format,
@@ -158,5 +190,37 @@ impl Image {
             texture_extent,
             wgpu::TextureFormat::Rgba32Float,
         )
+    }
+}
+
+impl assetmanage_rs::Asset for Image {
+    fn decode(path: &PathBuf, bytes: &[u8]) -> Result<Self, io::Error> {
+        let image_info = ron::de::from_bytes::<ImageInfo>(bytes)
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
+
+        let image_info = image_info.unwrap();
+
+        let wgpu_format: wgpu::TextureFormat = image_info.format.into();
+        dbg!(&wgpu_format);
+        
+        let full_path = path.clone().into_os_string().to_str().unwrap().to_string();
+        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
+        let image_path = str::replace(&full_path, &file_name, &image_info.file);
+        dbg!(&image_path);
+        let (image_bytes, width, height) = match image_info.format {
+            ImageFormat::SRGB => {
+                let img = image::open(&image_path)
+                    .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", image_path))
+                    .to_rgba();
+                let (width, height) = img.dimensions();
+                (img.into_raw(), width, height)
+            },
+            _ => panic!(""),
+        };
+        dbg!(image_bytes.len(), width, height);
+
+        // let image = image::load_from_memory(bytes).unwrap().to_rgba();
+        // dbg!(image.into_raw());
+        todo!()
     }
 }

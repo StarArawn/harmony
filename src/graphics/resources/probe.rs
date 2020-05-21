@@ -416,10 +416,8 @@ impl Probe {
 
     fn render_irradiance(&mut self, resources: &Resources) {
         let device = resources.get::<wgpu::Device>().unwrap();
-        let asset_manager = resources.get::<AssetManager>().unwrap();
-        let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-        let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-        let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
+        let resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+        let pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
 
         // create pipeline if we need to.
         let node_pipeline = pipeline_manager.get("irradiance", None).unwrap();
