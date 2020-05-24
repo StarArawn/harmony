@@ -1,36 +1,42 @@
-use crate::graphics::{
+use crate::{ImageAssetManager, graphics::{
     material::{skybox::SkyboxType, Skybox},
     pipeline_manager::{Pipeline, PipelineManager},
     renderer::DepthTexture,
     resources::{CurrentRenderTarget, GPUResourceManager},
     CommandBufferQueue, CommandQueueItem,
-};
+}, AssetManager};
 use legion::prelude::*;
 use std::sync::Arc;
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
+        .read_resource::<AssetManager>()
+        .read_resource::<ImageAssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<CurrentRenderTarget>()
-        .read_resource::<GPUResourceManager>()
-        .read_resource::<PipelineManager>()
+        .write_resource::<GPUResourceManager>()
+        .write_resource::<PipelineManager>()
         .read_resource::<wgpu::Device>()
+        .read_resource::<wgpu::Queue>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<DepthTexture>()
-        .with_query(<(Read<Skybox>,)>::query())
+        .with_query(<(Write<Skybox>,)>::query())
         .build(
             |_,
-             world,
-             (
+            mut world,
+            (
+                asset_manager,
+                image_asset_manager,
                 command_buffer_queue,
                 current_render_target,
                 resource_manager,
                 pipeline_manager,
                 device,
+                queue,
                 output,
                 depth_texture,
             ),
-             skyboxes| {
+            skyboxes| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
@@ -53,11 +59,21 @@ pub fn create() -> Box<dyn Schedulable> {
                 } else {
                     &depth_texture.0
                 };
-                
-                let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
-                let pipeline_realtime: &Pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
 
-                for (skybox,) in skyboxes.iter(&world) {
+                for (mut skybox,) in skyboxes.iter_mut(&mut world) {
+                    if skybox.skybox_type == SkyboxType::HdrCubemap {
+                        skybox.update_cubemap(
+                            device,
+                            queue,
+                            asset_manager,
+                            image_asset_manager,
+                            pipeline_manager,
+                            resource_manager,
+                        );
+                    }
+
+                    if !skybox.is_processed { continue; }
+
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: view_attachment,
@@ -85,6 +101,9 @@ pub fn create() -> Box<dyn Schedulable> {
                     });
 
                     if skybox.skybox_type == SkyboxType::HdrCubemap {
+                        let pipeline: &Pipeline = { 
+                            pipeline_manager.get("skybox", None).unwrap()
+                        };
                         render_pass.set_pipeline(&pipeline.render_pipeline);
                         render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
 
@@ -95,6 +114,9 @@ pub fn create() -> Box<dyn Schedulable> {
                         );
                         render_pass.draw(0..3 as u32, 0..1);
                     } else if skybox.skybox_type == SkyboxType::RealTime {
+                        let pipeline_realtime: &Pipeline = {
+                            pipeline_manager.get("realtime_skybox", None).unwrap()
+                        };
                         render_pass.set_pipeline(&pipeline_realtime.render_pipeline);
                         render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
                         render_pass.set_bind_group(

@@ -3,10 +3,12 @@ use nalgebra_glm::Vec3;
 use crate::{
     graphics::{
         resources::{GPUResourceManager, RenderTarget},
-        RenderGraph,
+        RenderGraph, pipeline_manager::PipelineManager,
     },
-    Application, AssetManager,
+    Application, AssetManager, ImageAssetManager,
 };
+use std::sync::Arc;
+use super::Image;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -21,6 +23,8 @@ pub struct Skybox {
     pub size: f32,
     pub skybox_type: SkyboxType,
     pub clear_color: Vec3,
+    pub is_processed: bool,
+    pub(crate) texture: Option<String>,
     pub(crate) color_texture: Option<wgpu::Texture>,
     pub(crate) color_view: Option<wgpu::TextureView>,
     pub(crate) cubemap_sampler: Option<wgpu::Sampler>,
@@ -33,98 +37,17 @@ impl Skybox {
     where
         T: Into<String>,
     {
-        // Create a new render graph for this process..
-        let mut graph = { RenderGraph::new(&mut app.resources, false) };
-
-        let asset_manager = app.resources.get::<AssetManager>().unwrap();
-        let device = app.resources.get::<wgpu::Device>().unwrap();
-        let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
-
-        let cube_map_target = RenderTarget::new(
-            &device,
-            size,
-            size * 6.0,
-            1,
-            1,
-            wgpu::TextureFormat::Rgba32Float,
-            wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        );
-
-        let cube_projection_pipeline_desc =
-            crate::graphics::pipelines::equirectangular::CubeProjectionPipelineDesc::new(
-                texture.into(),
-                size,
-            );
-        graph.add(
-            &asset_manager,
-            &device,
-            &sc_desc,
-            &mut resource_manager,
-            "cube_projection",
-            cube_projection_pipeline_desc,
-            vec![],
-            false,
-            Some(cube_map_target),
-            false,
-        );
-
-        // We need to convert our regular texture map to a cube texture map with 6 faces.
-        // Should be straight forward enough if we use equirectangular projection.
-        // First we need a custom pipeline that will run in here to do the conversion.
-        // let output = app.renderer.swap_chain.get_next_texture().unwrap();
-        let command_buffer = graph.render_one_time(
-            &device,
-            &asset_manager,
-            &mut resource_manager,
-            &mut app.current_scene.world,
-            None,
-            None,
-        );
-        // Push to all command buffers to the queue
-        let queue = app.resources.get::<wgpu::Queue>().unwrap();
-        queue.submit(vec![command_buffer]);
-
-        // Note that we're not calling `.await` here.
-        // let buffer_future = output_buffer.map_read(0, (specular_brdf_size * specular_brdf_size) as u64 * std::mem::size_of::<u32>() as u64);
-
-        device.poll(wgpu::Maintain::Wait);
-
-        // futures::executor::block_on(Self::save(buffer_future));
-
-        let color = graph.pull_render_target("cube_projection");
-
-        let color_view = color.texture.create_view(&wgpu::TextureViewDescriptor {
-            format: wgpu::TextureFormat::Rgba32Float,
-            dimension: wgpu::TextureViewDimension::Cube,
-            aspect: wgpu::TextureAspect::default(),
-            base_mip_level: 0,
-            level_count: 1,
-            base_array_layer: 0,
-            array_layer_count: 6,
-        });
-
-        let cubemap_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
-        });
-
         Self {
             size,
-            color_texture: Some(color.texture),
-            color_view: Some(color_view),
-            cubemap_sampler: Some(cubemap_sampler),
+            color_texture: None,
+            color_view: None,
+            cubemap_sampler: None,
             cubemap_bind_group: None,
             pbr_bind_group: None,
             clear_color: Vec3::zeros(),
             skybox_type: SkyboxType::HdrCubemap,
+            texture: Some(texture.into()),
+            is_processed: false,
         }
     }
 
@@ -138,6 +61,8 @@ impl Skybox {
             pbr_bind_group: None,
             clear_color: color,
             skybox_type: SkyboxType::ClearColor,
+            texture: None,
+            is_processed: true,
         }
     }
 
@@ -151,6 +76,69 @@ impl Skybox {
             pbr_bind_group: None,
             clear_color: Vec3::new(0.0, 0.0, 0.0),
             skybox_type: SkyboxType::RealTime,
+            texture: None,
+            is_processed: true,
+        }
+    }
+
+    pub fn update_cubemap(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        asset_manager: &AssetManager,
+        image_asset_manager: &ImageAssetManager,
+        pipeline_manager: &mut PipelineManager,
+        resource_manager: &mut GPUResourceManager,
+    ) {
+        if self.is_processed { return; }
+
+        let texture = image_asset_manager.get(self.texture.clone().unwrap());
+
+        if texture.is_some() {
+            log::info!("Creating skybox!");
+            self.is_processed = true;
+            let texture = texture.as_ref().unwrap();
+            assert!(texture.format == wgpu::TextureFormat::Rgba32Float);
+
+            let color = crate::graphics::pipelines::equirectangular2::create(
+                device,
+                queue,
+                asset_manager,
+                pipeline_manager,
+                resource_manager,
+                texture,
+                self.size,
+            );
+
+            device.poll(wgpu::Maintain::Wait);
+
+            let color_view = color.texture.create_view(&wgpu::TextureViewDescriptor {
+                format: wgpu::TextureFormat::Rgba32Float,
+                dimension: wgpu::TextureViewDimension::Cube,
+                aspect: wgpu::TextureAspect::default(),
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                array_layer_count: 6,
+            });
+
+            let cubemap_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Linear,
+                lod_min_clamp: -100.0,
+                lod_max_clamp: 100.0,
+                compare: wgpu::CompareFunction::Undefined,
+            });
+
+            self.color_view = Some(color_view);
+            self.cubemap_sampler = Some(cubemap_sampler);
+
+            let bind_group_layout = resource_manager.get_bind_group_layout("skybox_material").unwrap();
+            self.create_bind_group2(device, bind_group_layout);
         }
     }
 

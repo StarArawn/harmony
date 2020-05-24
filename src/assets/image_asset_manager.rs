@@ -5,10 +5,10 @@ use crate::graphics::material::{Image, image::{ImageInfo, ImageBuilder}};
 // Types
 pub(crate) type ImagePathQueue = ArrayQueue<String>;
 pub(crate) type ImageInfoQueue = ArrayQueue<(String, usize)>;
-pub(crate) type ImageBuilders = ArrayQueue<(String, Arc<ImageInfo>, usize)>; 
+pub(crate) type ImageBuilders = ArrayQueue<(String, String, Arc<ImageInfo>, usize)>; 
 pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo>;
 pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageBuilder>;
-pub(crate) type ImageStorage = HashMap<ImageInfo, Arc<Image>>;
+pub(crate) type ImageStorage = HashMap<String, Option<Arc<Image>>>;
 
 pub struct ImageAssetManager {
     pub(crate) asset_path: String,
@@ -40,7 +40,15 @@ impl ImageAssetManager {
 
     pub fn insert<T: Into<String>>(&mut self, path: T) {
         let path: String = path.into();
-        self.image_path_queue.push(format!("{}{}", self.asset_path, path)).unwrap();
+        let final_path = format!("{}{}", self.asset_path, path);
+        self.image_path_queue.push(final_path.clone()).unwrap();
+        self.image_storage.insert(final_path.clone(), None);
+    }
+
+    pub fn get<T: Into<String>>(&self, path: T) -> &Option<Arc<Image>> {
+        let path: String = path.into();
+        let final_path = format!("{}{}", self.asset_path, path);
+        self.image_storage.get(&final_path).unwrap()
     }
 
     pub fn update(&mut self, device: &wgpu::Device) -> wgpu::CommandBuffer {
@@ -67,9 +75,10 @@ impl ImageAssetManager {
                 let original_file_name = full_path.file_name().unwrap().to_str().unwrap();
                 let image_info: Arc<ImageInfo> = image_info.unwrap();
                 let image_path = format!("{}{}", str::replace(&item.0, original_file_name, ""), image_info.file);
+                dbg!(&image_path);
                 let image_builder_id = self.image_builder_manager.insert(PathBuf::from(image_path.clone()));
                 self.image_builder_manager.load(image_builder_id).unwrap();
-                self.image_builders_queue.push((image_path, image_info.clone(), image_builder_id)).unwrap();
+                self.image_builders_queue.push((item.0, image_path, image_info.clone(), image_builder_id)).unwrap();
             }
         }
 
@@ -77,16 +86,16 @@ impl ImageAssetManager {
         for _ in 0..self.image_builders_queue.len() {
             let data = self.image_builders_queue.pop().unwrap();
 
-            let image_builder = self.image_builder_manager.get(data.2);
+            let image_builder = self.image_builder_manager.get(data.3);
 
             if image_builder.is_none() {
                 image_builders_still_loading.push(data);
             } else {
                 let image_builder: Arc<ImageBuilder> = image_builder.unwrap();
-                let image = image_builder.build(&device, &mut encoder, &data.1);
+                let image = image_builder.build(&device, &mut encoder, &data.2);
                 // TODO: Store image somewhere that can be accessed by users easily.
-                log::info!("Loaded image: {}", data.1.file);
-                self.image_storage.insert((*data.1).clone(), Arc::new(image));
+                log::info!("Loaded image: {}", data.2.file);
+                self.image_storage.insert(data.0, Some(Arc::new(image)));
             }
         }
 

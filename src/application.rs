@@ -286,13 +286,7 @@ impl Application {
             let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
-                if skybox.skybox_type == SkyboxType::HdrCubemap {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
-                    let material_layout = resource_manager
-                        .get_bind_group_layout("skybox_material")
-                        .unwrap();
-                    skybox.create_bind_group2(&device, material_layout);
-                } else if skybox.skybox_type == SkyboxType::RealTime {
+                if skybox.skybox_type == SkyboxType::RealTime {
                     let device = self.resources.get::<wgpu::Device>().unwrap();
                     let asset_manager = self.resources.get::<AssetManager>().unwrap();
                     let material_layout = resource_manager

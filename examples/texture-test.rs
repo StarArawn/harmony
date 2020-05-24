@@ -38,12 +38,18 @@ impl harmony::AppState for AppState {
         // Clear color needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(clear_color,)]);
 
-        let mut image_asset_manager = app.resources.get_mut::<harmony::ImageAssetManager>().unwrap();
-        image_asset_manager.insert("/core/white.image.ron");
-        image_asset_manager.insert("/core/empty_normal.image.ron");
-        image_asset_manager.insert("/core/mie.image.ron");
-        image_asset_manager.insert("/core/rayleigh.image.ron");
-        image_asset_manager.insert("/core/brdf_texture.image.ron");
+        {
+            let mut image_asset_manager = app.resources.get_mut::<harmony::ImageAssetManager>().unwrap();
+            image_asset_manager.insert("/core/white.image.ron");
+            image_asset_manager.insert("/core/empty_normal.image.ron");
+            image_asset_manager.insert("/core/mie.image.ron");
+            image_asset_manager.insert("/core/rayleigh.image.ron");
+            image_asset_manager.insert("/core/brdf_texture.image.ron");
+            image_asset_manager.insert("/example/textures/georgentor.image.ron");
+        }
+
+        let skybox = harmony::graphics::material::Skybox::new_hdr(app, "/example/textures/georgentor.image.ron", 2048.0);
+        app.current_scene.world.insert((), vec![(skybox,)]);
     }
 }
 

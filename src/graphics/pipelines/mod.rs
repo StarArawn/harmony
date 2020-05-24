@@ -20,6 +20,7 @@ pub(crate) mod skybox;
 pub(crate) mod realtime_sky;
 
 pub(crate) mod equirectangular;
+pub(crate) mod equirectangular2;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
