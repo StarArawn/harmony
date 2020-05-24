@@ -87,25 +87,28 @@ impl Application {
 
         let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
-        let asset_manager = AssetManager::new(asset_path.into());
-
+        let asset_path = asset_path.into();
+        let asset_manager = AssetManager::new(asset_path.clone());
+        
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
-            render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
-
+        render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
+        
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
             render_schedule_builder = render_schedule_builder.add_system(system);
         }
-
+        
         let render_schedule = render_schedule_builder
-            .flush()
-            .add_thread_local_fn(graphics::systems::render::create())
-            .build();
+        .flush()
+        .add_thread_local_fn(graphics::systems::render::create())
+        .build();
+        
         resources.insert(asset_manager);
-
+        resources.insert(crate::assets::ImageAssetManager::new(asset_path.clone()));
         resources.insert(TransformCount(0));
         resources.insert(CurrentRenderTarget(None));
+
 
         resources.insert(Input::new());
 

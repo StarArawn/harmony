@@ -2,7 +2,7 @@ use std::{fs, io, path::PathBuf};
 use serde::{ Deserialize, Serialize };
 use io::ErrorKind;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageFormat {
     SRGB,
     RGB,
@@ -21,11 +21,119 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
     /// Relative to where the ron file is located.
     pub file: String, 
     pub format: ImageFormat,
+}
+
+pub(crate) struct ImageBuilder {
+    pub bytes: Vec<u8>,
+}
+
+fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, width: u32, height: u32, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler, wgpu::Extent3d) {
+    let texture_extent = wgpu::Extent3d {
+        width,
+        height,
+        depth: 1,
+    };
+    
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        size: texture_extent,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format,
+        usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+        label: None,
+    });
+
+    let temp_buf = device.create_buffer_with_data(&bytes, wgpu::BufferUsage::COPY_SRC);
+
+    encoder.copy_buffer_to_texture(
+        wgpu::BufferCopyView {
+            buffer: &temp_buf,
+            offset: 0,
+            // TODO: Figure out a better method of detecting bytes per row.
+            bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                || format == wgpu::TextureFormat::Rgba8Unorm
+            {
+                4 * texture_extent.width
+            } else {
+                (4 * 4) * texture_extent.width
+            },
+            rows_per_image: 0,
+        },
+        wgpu::TextureCopyView {
+            texture: &texture,
+            mip_level: 0,
+            array_layer: 0,
+            origin: wgpu::Origin3d::ZERO,
+        },
+        texture_extent,
+    );
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        lod_min_clamp: -100.0,
+        lod_max_clamp: 100.0,
+        compare: wgpu::CompareFunction::Undefined,
+    });
+
+    (texture, sampler, texture_extent)
+}
+
+impl ImageBuilder {
+    pub fn build(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, image_info: &ImageInfo) -> Image {
+        let (image_bytes, width, height) = match image_info.format {
+            ImageFormat::HDR16 |
+            ImageFormat::HDR32 => {
+                let decoder = image::hdr::HdrDecoder::new(self.bytes.as_slice()).unwrap();
+                let metadata = decoder.metadata();
+                let decoded = decoder.read_image_hdr().unwrap();
+
+                let image_data = decoded
+                    .iter()
+                    .flat_map(|pixel| vec![pixel[0], pixel[1], pixel[2], 1.0])
+                    .collect::<Vec<_>>();
+
+                let image_bytes = unsafe {
+                    std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
+                }
+                .to_vec();
+
+                (image_bytes, metadata.width, metadata.height)
+            },
+            ImageFormat::RGB | ImageFormat::SRGB => {
+                let image = image::load_from_memory(&self.bytes).unwrap().to_rgba();
+                let (width, height) = image.dimensions();
+
+                (image.into_raw(), width, height)
+            },
+            _ => panic!(""),
+        };
+
+        let format: wgpu::TextureFormat = image_info.format.into();
+
+        let (texture, sampler, extent) = create_texture(device, encoder, width, height, format, image_bytes);
+
+        let view = texture.create_default_view();
+
+        Image {
+            image_info: image_info.clone(),
+            extent,
+            texture,
+            sampler,
+            view,
+            format,
+        }
+    }
 }
 
 pub struct Image {
@@ -193,34 +301,17 @@ impl Image {
     }
 }
 
-impl assetmanage_rs::Asset for Image {
+impl assetmanage_rs::Asset for ImageBuilder {
+    fn decode(_path: &PathBuf, bytes: &[u8]) -> Result<Self, io::Error> {
+        Ok(ImageBuilder {
+            bytes: bytes.to_vec(),
+        })
+    }
+}
+
+impl assetmanage_rs::Asset for ImageInfo {
     fn decode(path: &PathBuf, bytes: &[u8]) -> Result<Self, io::Error> {
-        let image_info = ron::de::from_bytes::<ImageInfo>(bytes)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
-
-        let image_info = image_info.unwrap();
-
-        let wgpu_format: wgpu::TextureFormat = image_info.format.into();
-        dbg!(&wgpu_format);
-        
-        let full_path = path.clone().into_os_string().to_str().unwrap().to_string();
-        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
-        let image_path = str::replace(&full_path, &file_name, &image_info.file);
-        dbg!(&image_path);
-        let (image_bytes, width, height) = match image_info.format {
-            ImageFormat::SRGB => {
-                let img = image::open(&image_path)
-                    .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", image_path))
-                    .to_rgba();
-                let (width, height) = img.dimensions();
-                (img.into_raw(), width, height)
-            },
-            _ => panic!(""),
-        };
-        dbg!(image_bytes.len(), width, height);
-
-        // let image = image::load_from_memory(bytes).unwrap().to_rgba();
-        // dbg!(image.into_raw());
-        todo!()
+        ron::de::from_bytes::<ImageInfo>(bytes)
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
 }

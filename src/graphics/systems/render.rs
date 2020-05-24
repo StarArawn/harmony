@@ -5,12 +5,14 @@ pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
     let thread = Box::new(|_world: &mut World, resources: &mut Resources| {
         let mut command_buffers = Vec::new();
 
-        // Moved this out into application run loop.
-        //let _swap_chain_output = resources.remove::<Arc<wgpu::SwapChainOutput>>().unwrap();
+        let device = resources.get::<wgpu::Device>().unwrap();
         let queue = resources.get::<wgpu::Queue>().unwrap();
         let pipeline_manager = resources.get::<PipelineManager>().unwrap();
         let mut command_queue = resources.get_mut::<CommandBufferQueue>().unwrap();
         command_buffers.extend(pipeline_manager.collect_buffers(&mut command_queue));
+
+        let mut image_asset_manager = resources.get_mut::<crate::assets::ImageAssetManager>().unwrap();
+        command_buffers.push(image_asset_manager.update(&device));
 
         queue.submit(command_buffers);
     });
