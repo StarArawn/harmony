@@ -1,4 +1,4 @@
 ImageInfo(
-    file: "mie.hdr", 
-    format: HDR32,
+    file: "white.png", 
+    format: SRGB,
 )

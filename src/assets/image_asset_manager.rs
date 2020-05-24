@@ -85,7 +85,7 @@ impl ImageAssetManager {
                 let image_builder: Arc<ImageBuilder> = image_builder.unwrap();
                 let image = image_builder.build(&device, &mut encoder, &data.1);
                 // TODO: Store image somewhere that can be accessed by users easily.
-                log::info!("Loaded new image: {}", data.1.file);
+                log::info!("Loaded image: {}", data.1.file);
                 self.image_storage.insert((*data.1).clone(), Arc::new(image));
             }
         }

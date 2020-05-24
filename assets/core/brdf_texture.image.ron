@@ -1,0 +1,4 @@
+ImageInfo(
+    file: "brdf_texture.png", 
+    format: RGB,
+)
