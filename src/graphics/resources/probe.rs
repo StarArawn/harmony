@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::{BindGroup, GPUResourceManager, RenderTarget};
 use crate::{
-    graphics::{pipeline_manager::PipelineManager, RenderGraph},
+    graphics::{pipeline_manager::PipelineManager},
     scene::components::CameraData,
     AssetManager,
 };

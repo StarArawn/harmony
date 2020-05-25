@@ -1,5 +1,7 @@
 use crate::graphics::renderer::DEPTH_FORMAT;
 
+/// Used for rendering to a texture instead of to the frame buffer.
+/// Supports 2D and 3D textures or cube maps.
 pub struct RenderTarget {
     pub texture: wgpu::Texture,
     pub texture_view: wgpu::TextureView,

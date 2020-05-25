@@ -1,5 +1,7 @@
 use nalgebra_glm::{Vec2, Vec4};
 
+/// Used to style imgui.
+/// TODO: Add support to specify this theme inside of application..
 pub struct Theme {
     // Main theme settings
     alpha: f32,

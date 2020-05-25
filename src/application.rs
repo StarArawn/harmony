@@ -34,28 +34,36 @@ pub trait AppState {
     fn update(&mut self, _app: &mut Application) {}
     /// Called when the window resizes
     fn resize(&mut self, _app: &mut Application) {}
-
+    /// Used to update your app state for the UI.
+    // TODO: Maybe update should just be used instead.
     fn update_ui(&mut self, _app: &mut Application) {}
-    fn draw_ui(&mut self, _ui: &mut imgui::Ui<'_>, _screen_ize: Vec2) {}
+    /// A function to help draw your UI. PLease see hello-world for an example.
+    fn draw_ui(&mut self, _ui: &mut imgui::Ui<'_>, _screen_size: Vec2) {}
 }
 
 pub struct Application {
+    // TODO: Don't expose renderer outside of harmony?
     pub renderer: Renderer,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
+    /// Time last frame took.
     pub frame_time: f32,
+    /// Current delta time.
     pub delta_time: f32,
+    /// Current scene.
     pub current_scene: Scene,
+    /// A legion schedule that contains the systems used to render.
     pub render_schedule: Schedule,
+    /// Legion resources.
     pub resources: Resources,
+    /// The probe manager.
     pub probe_manager: ProbeManager,
     pub(crate) imgui: imgui::Context,
     pub(crate) platform: imgui_winit_support::WinitPlatform,
     pub(crate) imgui_renderer: imgui_wgpu::Renderer,
     last_cursor: Option<imgui::MouseCursor>,
     last_frame: Instant,
-    demo_open: bool,
 }
 
 impl Application {
@@ -172,7 +180,6 @@ impl Application {
             platform,
             imgui_renderer,
             last_frame,
-            demo_open: true,
             last_cursor: None,
         }
     }
