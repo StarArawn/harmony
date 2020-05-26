@@ -111,10 +111,7 @@ impl Transform {
             layout: bind_group_layout,
             bindings: &[wgpu::Binding {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &local_buffer,
-                    range: 0..std::mem::size_of::<LocalUniform>() as u64,
-                },
+                resource: wgpu::BindingResource::Buffer(local_buffer.slice(..)),
             }],
             label: None,
         });

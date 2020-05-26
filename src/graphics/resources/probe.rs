@@ -296,6 +296,7 @@ impl Probe {
                     .probe_cube
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor {
+                        label: None,
                         format: self.format.into(),
                         dimension: wgpu::TextureViewDimension::D2,
                         aspect: wgpu::TextureAspect::default(),
@@ -379,6 +380,7 @@ impl Probe {
         probe_cube.texture_view = probe_cube
             .texture
             .create_view(&wgpu::TextureViewDescriptor {
+                label: None,
                 format: self.format.into(),
                 dimension: wgpu::TextureViewDimension::Cube,
                 aspect: wgpu::TextureAspect::default(),
@@ -465,10 +467,7 @@ impl Probe {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &uniform_buf,
-                        range: 0..uniform_size,
-                    },
+                    resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -514,7 +513,6 @@ impl Probe {
                 wgpu::TextureCopyView {
                     texture: &output.texture,
                     mip_level: 0,
-                    array_layer: 0,
                     origin: wgpu::Origin3d {
                         x: 0,
                         y: self.irradiance_resoultion * i,
@@ -524,13 +522,12 @@ impl Probe {
                 wgpu::TextureCopyView {
                     texture: &self.irradiance_target.texture,
                     mip_level: 0,
-                    array_layer: i,
                     origin: wgpu::Origin3d::ZERO,
                 },
                 wgpu::Extent3d {
                     width: self.irradiance_resoultion as u32,
                     height: self.irradiance_resoultion as u32,
-                    depth: 1,
+                    depth: i,
                 },
             );
         }
@@ -574,10 +571,7 @@ impl Probe {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &buffer,
-                        range: 0..buffer_size,
-                    },
+                    resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
@@ -623,6 +617,7 @@ impl Probe {
             encoder.copy_buffer_to_buffer(&uniform_buf, 0, &buffer, 0, buffer_size);
 
             let new_view = output.texture.create_view(&wgpu::TextureViewDescriptor {
+                label: None,
                 format: self.format.into(),
                 dimension: wgpu::TextureViewDimension::D2,
                 aspect: wgpu::TextureAspect::default(),
@@ -663,7 +658,6 @@ impl Probe {
                     wgpu::TextureCopyView {
                         texture: &output.texture,
                         mip_level: mip_id,
-                        array_layer: 0,
                         origin: wgpu::Origin3d {
                             x: 0,
                             y: res as u32 * i,
@@ -673,13 +667,12 @@ impl Probe {
                     wgpu::TextureCopyView {
                         texture: &self.specular_target.texture,
                         mip_level: mip_id,
-                        array_layer: i,
                         origin: wgpu::Origin3d::ZERO,
                     },
                     wgpu::Extent3d {
                         width: res as u32,
                         height: res as u32,
-                        depth: 1,
+                        depth: i,
                     },
                 );
             }

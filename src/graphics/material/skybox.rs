@@ -95,6 +95,7 @@ impl Skybox {
         let color = graph.pull_render_target("cube_projection");
 
         let color_view = color.texture.create_view(&wgpu::TextureViewDescriptor {
+            label: None,
             format: wgpu::TextureFormat::Rgba32Float,
             dimension: wgpu::TextureViewDimension::Cube,
             aspect: wgpu::TextureAspect::default(),
@@ -105,6 +106,7 @@ impl Skybox {
         });
 
         let cubemap_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -164,6 +166,7 @@ impl Skybox {
         let mie_texture = asset_manager.get_image("mie.hdr");
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,

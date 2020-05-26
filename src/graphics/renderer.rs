@@ -39,7 +39,7 @@ impl Renderer {
                     anisotropic_filtering: false,
                 },
                 limits: wgpu::Limits::default(),
-            })
+            }, None)
             .await
             .unwrap();
 
