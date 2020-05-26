@@ -19,7 +19,7 @@ gltf="0.15.2"
 glyph_brush = "0.6"
 image = "0.23.4"
 imgui = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0" }
-imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="101b4048aaaf47210ea451bb1ecfc58e1e85782b" }
+imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="c647602f38943ef87155adcc7caa7d40800b96bb" }
 imgui-winit-support = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0", default-features = true }
 legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"
@@ -34,7 +34,7 @@ shaderc = "0.6"
 solvent = "0.8.1"
 stretch = "0.3.2"
 walkdir = "2"
-wgpu = { git = "https://github.com/StarArawn/wgpu-rs", rev="0a012c30780946532f9b2d711e98f7b75e184b5d" }
-wgpu_glyph = { git = "https://github.com/StarArawn/wgpu_glyph", rev="390d1894dd8d7ee88b40eb30fcea7fd0d2e78056" }
+wasm-bindgen = "0.2.62"
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="d12d1422a75e08fc2aee3691292a960bd47416e4" }
 winit = { version = "0.22.0", features = ["web-sys"] }
 zerocopy = "0.3"

@@ -41,6 +41,7 @@ impl RenderTarget {
         let mut texture_view = texture.create_default_view();
         if depth == 6 {
             texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                label: None,
                 format,
                 dimension: wgpu::TextureViewDimension::Cube,
                 aspect: wgpu::TextureAspect::default(),
@@ -54,6 +55,7 @@ impl RenderTarget {
             texture,
             texture_view,
             sampler: device.create_sampler(&wgpu::SamplerDescriptor {
+                label: None,
                 address_mode_u: wgpu::AddressMode::ClampToEdge,
                 address_mode_v: wgpu::AddressMode::ClampToEdge,
                 address_mode_w: wgpu::AddressMode::ClampToEdge,

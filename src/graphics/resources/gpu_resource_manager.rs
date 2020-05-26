@@ -60,17 +60,11 @@ impl GPUResourceManager {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &global_uniform_buffer,
-                        range: 0..std::mem::size_of::<GlobalUniform>() as u64,
-                    },
+                    resource: wgpu::BindingResource::Buffer(global_uniform_buffer.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &global_lighting_buffer,
-                        range: 0..std::mem::size_of::<LightingUniform>() as u64,
-                    },
+                    resource: wgpu::BindingResource::Buffer(global_lighting_buffer.slice(..)),
                 },
             ],
             label: Some("Globals"),

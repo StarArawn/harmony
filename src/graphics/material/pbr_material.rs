@@ -91,10 +91,7 @@ impl PBRMaterial {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: self.uniform_buf.as_ref().unwrap(),
-                        range: 0..material_uniform_size,
-                    },
+                    resource: wgpu::BindingResource::Buffer(self.uniform_buf.as_ref().unwrap().slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,
