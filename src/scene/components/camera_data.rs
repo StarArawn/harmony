@@ -161,7 +161,7 @@ mod tests {
         let fov = 70f32.to_radians();
         let (width, height) = (800f32, 600f32);
         let (z_near, z_far) = (0.01f32, 10f32);
-        let camera_data = CameraData::new_perspective(fov, width, height, z_near, z_far);
+        let camera_data = CameraData::new_perspective(70f32, width, height, z_near, z_far);
         assert_eq!(
             camera_data.projection,
             nalgebra_glm::perspective_fov_rh_no(fov, width, height, z_near, z_far)

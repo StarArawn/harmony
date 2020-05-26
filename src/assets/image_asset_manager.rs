@@ -114,9 +114,9 @@ mod tests {
                 .await
                 .unwrap();
 
-            let mut asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "\\assets\\").to_string();
+            let mut asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
             let mut iam = ImageAssetManager::new(asset_path.clone());
-            asset_path.push_str("core\\white.image.ron");
+            asset_path.push_str("core/white.image.ron");
             iam.insert(&asset_path).unwrap();
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
             iam.update(&device);
