@@ -2,13 +2,11 @@ use nalgebra_glm::Vec3;
 
 use crate::{
     graphics::{
-        resources::{GPUResourceManager, RenderTarget},
-        RenderGraph, pipeline_manager::PipelineManager,
+        resources::{GPUResourceManager},
+        pipeline_manager::PipelineManager,
     },
     Application, AssetManager, ImageAssetManager,
 };
-use std::sync::Arc;
-use super::Image;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 

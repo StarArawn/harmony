@@ -1,4 +1,4 @@
-use std::{fs, io, path::PathBuf};
+use std::{fs, io, path::PathBuf, sync::Arc};
 use serde::{ Deserialize, Serialize };
 use io::ErrorKind;
 
@@ -90,7 +90,7 @@ fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, wid
 }
 
 impl ImageBuilder {
-    pub fn build(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, image_info: &ImageInfo) -> Image {
+    pub fn build(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, image_info: Arc<ImageInfo>) -> Image {
         let (image_bytes, width, height) = match image_info.format {
             ImageFormat::HDR16 |
             ImageFormat::HDR32 => {
@@ -126,7 +126,7 @@ impl ImageBuilder {
         let view = texture.create_default_view();
 
         Image {
-            image_info: image_info.clone(),
+            image_info,
             extent,
             texture,
             sampler,
@@ -137,7 +137,7 @@ impl ImageBuilder {
 }
 
 pub struct Image {
-    pub image_info: ImageInfo, 
+    pub image_info: Arc<ImageInfo>, 
     pub extent: wgpu::Extent3d,
     pub texture: wgpu::Texture,
     pub sampler: wgpu::Sampler,
@@ -217,10 +217,10 @@ impl Image {
 
         let file_name =  file_name.into();
         Self {
-            image_info: ImageInfo {
+            image_info: Arc::new(ImageInfo {
                 file: file_name.clone(),
                 format: ImageFormat::SRGB,
-            },
+            }),
             extent: texture_extent,
             texture,
             sampler,
@@ -302,7 +302,7 @@ impl Image {
 }
 
 impl assetmanage_rs::Asset for ImageBuilder {
-    fn decode(_path: &PathBuf, bytes: &[u8]) -> Result<Self, io::Error> {
+    fn decode(bytes: &[u8]) -> Result<Self, io::Error> {
         Ok(ImageBuilder {
             bytes: bytes.to_vec(),
         })
@@ -310,7 +310,7 @@ impl assetmanage_rs::Asset for ImageBuilder {
 }
 
 impl assetmanage_rs::Asset for ImageInfo {
-    fn decode(path: &PathBuf, bytes: &[u8]) -> Result<Self, io::Error> {
+    fn decode(bytes: &[u8]) -> Result<Self, io::Error> {
         ron::de::from_bytes::<ImageInfo>(bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
