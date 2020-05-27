@@ -32,7 +32,7 @@ pub(crate) struct ImageBuilder {
     pub bytes: Vec<u8>,
 }
 
-fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, width: u32, height: u32, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler, wgpu::Extent3d) {
+fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height: u32, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler, wgpu::Extent3d) {
     let texture_extent = wgpu::Extent3d {
         width,
         height,
@@ -49,32 +49,28 @@ fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, wid
         label: None,
     });
 
-    let temp_buf = device.create_buffer_with_data(&bytes, wgpu::BufferUsage::COPY_SRC);
-
-    encoder.copy_buffer_to_texture(
-        wgpu::BufferCopyView {
-            buffer: &temp_buf,
-            layout: wgpu::TextureDataLayout {
-                offset: 0,
-                // TODO: Figure out a better method of detecting bytes per row.
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
-                    || format == wgpu::TextureFormat::Rgba8Unorm
-                {
-                    4 * texture_extent.width
-                } else {
-                    (4 * 4) * texture_extent.width
-                },
-                rows_per_image: 0,
-            }
-        },
+    queue.write_texture(
         wgpu::TextureCopyView {
             texture: &texture,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
         },
+        &bytes,
+        wgpu::TextureDataLayout {
+            offset: 0,
+            // TODO: Figure out a better method of detecting bytes per row.
+            bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                || format == wgpu::TextureFormat::Rgba8Unorm
+            {
+                4 * texture_extent.width
+            } else {
+                (4 * 4) * texture_extent.width
+            },
+            rows_per_image: 0,
+        },
         texture_extent,
     );
-
+    
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         label: None,
         address_mode_u: wgpu::AddressMode::Repeat,
@@ -92,7 +88,7 @@ fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, wid
 }
 
 impl ImageBuilder {
-    pub fn build(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, image_info: Arc<ImageInfo>) -> Image {
+    pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue, image_info: Arc<ImageInfo>) -> Image {
         let (image_bytes, width, height) = match image_info.format {
             ImageFormat::HDR16 |
             ImageFormat::HDR32 => {
@@ -123,7 +119,7 @@ impl ImageBuilder {
 
         let format: wgpu::TextureFormat = image_info.format.into();
 
-        let (texture, sampler, extent) = create_texture(device, encoder, width, height, format, image_bytes);
+        let (texture, sampler, extent) = create_texture(device, queue, width, height, format, image_bytes);
 
         let view = texture.create_default_view();
 

@@ -50,11 +50,7 @@ impl ImageAssetManager {
         self.image_storage.get(&path)?.clone()
     }
 
-    pub fn update(&mut self, device: &wgpu::Device) -> wgpu::CommandBuffer {
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("ImageUpload"),
-        });
-
+    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         self.image_info_manager.maintain();
         self.image_builder_manager.maintain();
 
@@ -78,7 +74,7 @@ impl ImageAssetManager {
             let image_builder = self.image_builder_manager.get(key).unwrap();
             let image_info_key = self.temp_image_info.remove(&key).unwrap();
             let image_info = self.image_info_manager.get(image_info_key).unwrap();
-            let image = image_builder.build(&device, &mut encoder, image_info);
+            let image = image_builder.build(device, queue, image_info);
             // TODO: Store image somewhere that can be accessed by users easily.
             log::info!("Loaded image: {}", image.image_info.file);
             let mut image_path = self.image_info_manager.path(image_info_key).unwrap().to_str().unwrap().to_string();
@@ -86,7 +82,6 @@ impl ImageAssetManager {
             self.image_storage
                 .insert(image_path, Some(Arc::new(image)));
         }
-        encoder.finish()
     }
 }
 
@@ -112,13 +107,13 @@ mod tests {
                 .await
                 .unwrap();
 
-            let (device, _queue) = adapter
+            let (device, queue) = adapter
                 .request_device(&wgpu::DeviceDescriptor {
                     extensions: wgpu::Extensions {
                         anisotropic_filtering: false,
                     },
                     limits: wgpu::Limits::default(),
-                })
+                }, None)
                 .await
                 .unwrap();
 
@@ -127,9 +122,9 @@ mod tests {
             asset_path.push_str("core/white.image.ron");
             iam.insert(&asset_path).unwrap();
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
-            iam.update(&device);
+            iam.update(&device, &queue);
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
-            iam.update(&device);
+            iam.update(&device, &queue);
             iam.get(&asset_path);
         });
     }

@@ -12,7 +12,7 @@ pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
         command_buffers.extend(pipeline_manager.collect_buffers(&mut command_queue));
 
         let mut image_asset_manager = resources.get_mut::<crate::assets::ImageAssetManager>().unwrap();
-        command_buffers.push(image_asset_manager.update(&device));
+        image_asset_manager.update(&device, &queue);
 
         queue.submit(command_buffers);
     });
