@@ -14,14 +14,13 @@ pub struct ImageAssetManager {
     image_info_manager: ImageInfoAssetManager,
     image_builder_manager: ImageBuilderManager,
     image_storage: ImageStorage,
-    temp_image_info: HashMap<usize, usize>,
 }
 
 impl ImageAssetManager {
     pub fn new<T: Into<PathBuf>>(asset_path: T) -> Self {
         let mut builder = assetmanage_rs::Builder::new();
-        let image_info_manager = builder.create_manager::<ImageInfo>();
-        let image_builder_manager = builder.create_manager::<ImageBuilder>();
+        let image_info_manager = builder.create_manager::<ImageInfo>(());
+        let image_builder_manager = builder.create_manager::<ImageBuilder>(());
         let loader = builder.finish_loader();
         async_std::task::spawn(loader.run());
         Self {
@@ -29,7 +28,6 @@ impl ImageAssetManager {
             image_info_manager,
             image_builder_manager,
             image_storage: HashMap::new(),
-            temp_image_info: HashMap::new(),
         }
     }
 
@@ -38,8 +36,8 @@ impl ImageAssetManager {
         let mut full_path = self.asset_path.clone();
         full_path = full_path.join(&path);
         dbg!(&full_path);
-        let id = self.image_info_manager.insert(PathBuf::from(full_path));
-        self.image_info_manager.load(id)?;
+        self.image_info_manager.insert(&path,());
+        self.image_info_manager.load(&path)?;
         Ok(())
     }
 
@@ -54,34 +52,30 @@ impl ImageAssetManager {
         self.image_info_manager.maintain();
         self.image_builder_manager.maintain();
 
-        for key in self.image_info_manager.get_loaded_once() {
-            let image_info = self.image_info_manager.get(key).unwrap();
-            let mut path = self.image_info_manager.path(key).unwrap().clone();
-            log::info!("Loaded image info: {}", path.to_str().unwrap());
-            path.set_file_name(&image_info.file);
-            let image_path = PathBuf::from(&self.asset_path).join(path);
-            let image_builder_key = self.image_builder_manager.insert(PathBuf::from(image_path));
-            if self.image_builder_manager.load(image_builder_key).is_err() {
-                log::warn!("Image info not found! {:?}", image_info.file);
+        for path in self.image_info_manager.get_loaded_once() {
+            let image_info = self.image_info_manager.get(&path).unwrap();
+            log::info!("Loaded image info: {}", &path.to_str().unwrap());
+            let mut image_path = path.clone();
+            image_path.set_file_name(&image_info.file);
+            self.image_builder_manager.insert(&image_path,image_info);
+            if self.image_builder_manager.load(&image_path).is_err() {
+                log::warn!("Image info not found! {:?}", &image_path);
                 // If we drop here the key will be reused. It may be cheaper to keep it and if the image gets requested by get(key) it returns none and default can be used
                 // self.image_info_manager.drop(key);
                 // self.image_builder_manager.drop(key);
-            } else {
-                self.temp_image_info.entry(image_builder_key).or_insert(key);
             }
         }
-        for key in self.image_builder_manager.get_loaded_once() {
-            let image_builder = self.image_builder_manager.get(key).unwrap();
-            let image_info_key = self.temp_image_info.remove(&key).unwrap();
-            let image_info = self.image_info_manager.get(image_info_key).unwrap();
-            let image = image_builder.build(device, queue, image_info);
+        for path in self.image_builder_manager.get_loaded_once() {
+
+            let image_builder = self.image_builder_manager.get(&path).unwrap();
+            
+
+            let image = image_builder.build(device, queue);
             // TODO: Store image somewhere that can be accessed by users easily.
             log::info!("Loaded image: {}", image.image_info.file);
-            let mut image_path = self.image_info_manager.path(image_info_key).unwrap().to_str().unwrap().to_string();
             let asset_path = self.asset_path.to_str().unwrap().to_string();
-            image_path = image_path.replace(&asset_path, "");
             self.image_storage
-                .insert(PathBuf::from(image_path), Some(Arc::new(image)));
+                .insert(path, Some(Arc::new(image)));
         }
     }
 }

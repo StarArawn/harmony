@@ -29,6 +29,7 @@ pub struct ImageInfo {
 }
 
 pub(crate) struct ImageBuilder {
+    pub image_info: Arc<ImageInfo>,
     pub bytes: Vec<u8>,
 }
 
@@ -88,8 +89,12 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height
 }
 
 impl ImageBuilder {
-    pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue, image_info: Arc<ImageInfo>) -> Image {
-        let (image_bytes, width, height) = match image_info.format {
+    pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self { Self { image_info, bytes } }
+
+
+
+    pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> Image {
+        let (image_bytes, width, height) = match self.image_info.format {
             ImageFormat::HDR16 |
             ImageFormat::HDR32 => {
                 let decoder = image::hdr::HdrDecoder::new(self.bytes.as_slice()).unwrap();
@@ -117,14 +122,14 @@ impl ImageBuilder {
             _ => panic!(""),
         };
 
-        let format: wgpu::TextureFormat = image_info.format.into();
+        let format: wgpu::TextureFormat = self.image_info.format.into();
 
         let (texture, sampler, extent) = create_texture(device, queue, width, height, format, image_bytes);
 
         let view = texture.create_default_view();
 
         Image {
-            image_info,
+            image_info: self.image_info.clone(),
             extent,
             texture,
             sampler,
@@ -301,16 +306,21 @@ impl Image {
     }
 }
 
+
 impl assetmanage_rs::Asset for ImageBuilder {
-    fn decode(bytes: &[u8]) -> Result<Self, io::Error> {
-        Ok(ImageBuilder {
-            bytes: bytes.to_vec(),
-        })
+    type DataAsset = Arc<ImageInfo>;
+    type DataManager = ();
+    type Output = ImageBuilder;
+    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
+        Ok(ImageBuilder::new(data_ass.clone(),bytes.into() ))
     }
 }
 
 impl assetmanage_rs::Asset for ImageInfo {
-    fn decode(bytes: &[u8]) -> Result<Self, io::Error> {
+    type DataAsset = ();
+    type DataManager = ();
+    type Output = Self;
+    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
         ron::de::from_bytes::<ImageInfo>(bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
     }
