@@ -23,7 +23,7 @@ use crate::{
 use graphics::{
     material::skybox::SkyboxType,
     pipelines::{LinePipelineDesc, UnlitPipelineDesc},
-    CommandBufferQueue, CommandQueueItem,
+    CommandBufferQueue, CommandQueueItem, renderer::{DEPTH_FORMAT, DepthTexture},
 };
 use nalgebra_glm::Vec2;
 
@@ -34,28 +34,36 @@ pub trait AppState {
     fn update(&mut self, _app: &mut Application) {}
     /// Called when the window resizes
     fn resize(&mut self, _app: &mut Application) {}
-
+    /// Used to update your app state for the UI.
+    // TODO: Maybe update should just be used instead.
     fn update_ui(&mut self, _app: &mut Application) {}
-    fn draw_ui(&mut self, _ui: &mut imgui::Ui<'_>, _screen_ize: Vec2) {}
+    /// A function to help draw your UI. PLease see hello-world for an example.
+    fn draw_ui(&mut self, _ui: &mut imgui::Ui<'_>, _screen_size: Vec2) {}
 }
 
 pub struct Application {
+    // TODO: Don't expose renderer outside of harmony?
     pub renderer: Renderer,
     clock: Instant,
     fixed_timestep: f32,
     elapsed_time: f32,
+    /// Time last frame took.
     pub frame_time: f32,
+    /// Current delta time.
     pub delta_time: f32,
+    /// Current scene.
     pub current_scene: Scene,
+    /// A legion schedule that contains the systems used to render.
     pub render_schedule: Schedule,
+    /// Legion resources.
     pub resources: Resources,
+    /// The probe manager.
     pub probe_manager: ProbeManager,
     pub(crate) imgui: imgui::Context,
     pub(crate) platform: imgui_winit_support::WinitPlatform,
     pub(crate) imgui_renderer: imgui_wgpu::Renderer,
     last_cursor: Option<imgui::MouseCursor>,
     last_frame: Instant,
-    demo_open: bool,
 }
 
 impl Application {
@@ -175,7 +183,6 @@ impl Application {
             platform,
             imgui_renderer,
             last_frame,
-            demo_open: true,
             last_cursor: None,
         }
     }
@@ -429,6 +436,26 @@ impl Application {
                     self.renderer.swap_chain =
                         device.create_swap_chain(&self.renderer.surface, &sc_desc);
                 }
+
+                // Resize depth buffer too
+                let depth_texture = {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    device.create_texture(&wgpu::TextureDescriptor {
+                        size: wgpu::Extent3d {
+                            width: size.width,
+                            height: size.height,
+                            depth: 1,
+                        },
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format: DEPTH_FORMAT,
+                        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+                        label: None,
+                    })
+                };
+                self.resources.insert(DepthTexture(depth_texture.create_default_view()));
+                
                 app_state.resize(self);
             }
             _ => (),

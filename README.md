@@ -28,6 +28,7 @@ Note: Currently this library is very early in development. Things are very likel
 7. [ ] Shadow Mapping
 8. [ ] Asset Bundling and custom assets types.
 9. [ ] More useful scene features
+10. [ ] WASM Support
 
 ## Long Term
 - [ ] Investigate using a hybrid rendering pipeline setup similar to halcyon, but without ray tracing(for now..). 
@@ -61,6 +62,9 @@ If more help is needed or you feel as though the issue you encountered is direct
 ## Screenshots
 ![Hello Cube](/screenshots/screen2.jpg?raw=true "Hello cube!")
 ![PBR](/screenshots/screen3.jpg?raw=true "PBR")
+
+## Known issues
+- No WASM support yet..
 
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr

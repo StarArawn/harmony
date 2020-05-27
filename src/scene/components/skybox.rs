@@ -1,3 +1,4 @@
+/// A reference to the texture for the sky-box.
 #[derive(Default)]
 pub struct SkyboxData {
     // We might have more than one material per mesh.

@@ -9,6 +9,7 @@ pub struct BindGroupWithData {
     pub(crate) bind_group: wgpu::BindGroup,
 }
 
+/// DEPRECIATED DO NOT USE.
 pub trait SimplePipeline: Send + Sync + 'static {
     fn prepare(
         &mut self,
@@ -41,6 +42,7 @@ pub trait SimplePipeline: Send + Sync + 'static {
     }
 }
 
+/// DEPRECIATED DO NOT USE.
 pub trait SimplePipelineDesc: std::fmt::Debug {
     type Pipeline: SimplePipeline;
 

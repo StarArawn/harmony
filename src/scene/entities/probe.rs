@@ -7,6 +7,9 @@ use crate::{
     Application,
 };
 
+/// Creates a new probe at a specific position.
+/// quality - Quality of the probe.
+/// format - Format of the probe: HDR16 or HDR32.
 pub fn create(
     app: &mut Application,
     position: Vec3,

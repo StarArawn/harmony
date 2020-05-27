@@ -93,6 +93,7 @@ pub fn create(
     }
 
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: None,
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -107,6 +108,7 @@ pub fn create(
     for face_id in 0..depth {
         for mip_id in 0..mip_map_count {
             let view = original_texture.create_view(&wgpu::TextureViewDescriptor {
+                label: None,
                 format,
                 dimension: wgpu::TextureViewDimension::D2,
                 aspect: wgpu::TextureAspect::default(),
@@ -117,6 +119,7 @@ pub fn create(
             });
 
             let new_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                label: None,
                 format,
                 dimension: wgpu::TextureViewDimension::D2,
                 aspect: wgpu::TextureAspect::default(),

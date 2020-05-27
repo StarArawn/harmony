@@ -63,10 +63,7 @@ impl UnlitMaterial {
             bindings: &[
                 wgpu::Binding {
                     binding: 0, // We'll use 1 for our local bindings.
-                    resource: wgpu::BindingResource::Buffer {
-                        buffer: &uniform_buf,
-                        range: 0..material_uniform_size,
-                    },
+                    resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
                 wgpu::Binding {
                     binding: 1,

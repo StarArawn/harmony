@@ -54,27 +54,29 @@ fn create_texture(device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder, wid
     encoder.copy_buffer_to_texture(
         wgpu::BufferCopyView {
             buffer: &temp_buf,
-            offset: 0,
-            // TODO: Figure out a better method of detecting bytes per row.
-            bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
-                || format == wgpu::TextureFormat::Rgba8Unorm
-            {
-                4 * texture_extent.width
-            } else {
-                (4 * 4) * texture_extent.width
-            },
-            rows_per_image: 0,
+            layout: wgpu::TextureDataLayout {
+                offset: 0,
+                // TODO: Figure out a better method of detecting bytes per row.
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                    || format == wgpu::TextureFormat::Rgba8Unorm
+                {
+                    4 * texture_extent.width
+                } else {
+                    (4 * 4) * texture_extent.width
+                },
+                rows_per_image: 0,
+            }
         },
         wgpu::TextureCopyView {
             texture: &texture,
             mip_level: 0,
-            array_layer: 0,
             origin: wgpu::Origin3d::ZERO,
         },
         texture_extent,
     );
 
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: None,
         address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::Repeat,
         address_mode_w: wgpu::AddressMode::Repeat,
@@ -182,26 +184,28 @@ impl Image {
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
                 buffer: &temp_buf,
-                offset: 0,
-                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
-                    || format == wgpu::TextureFormat::Rgba8Unorm
-                {
-                    4 * texture_extent.width
-                } else {
-                    (4 * 4) * texture_extent.width
+                layout: wgpu::TextureDataLayout {
+                    offset: 0,
+                    bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                        || format == wgpu::TextureFormat::Rgba8Unorm
+                    {
+                        4 * texture_extent.width
+                    } else {
+                        (4 * 4) * texture_extent.width
+                    },
+                    rows_per_image: 0,
                 },
-                rows_per_image: 0,
             },
             wgpu::TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
-                array_layer: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
             texture_extent,
         );
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
             address_mode_w: wgpu::AddressMode::Repeat,

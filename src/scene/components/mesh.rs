@@ -1,3 +1,4 @@
+/// A reference to the mesh.
 #[derive(Default)]
 pub struct Mesh {
     pub mesh_name: String,

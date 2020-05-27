@@ -139,7 +139,6 @@ pub fn create(
             wgpu::TextureCopyView {
                 texture: &cube_map_target.texture,
                 mip_level: 0,
-                array_layer: 0,
                 origin: wgpu::Origin3d {
                     x: 0,
                     y: size as u32 * i,
@@ -149,13 +148,12 @@ pub fn create(
             wgpu::TextureCopyView {
                 texture: &cube_map.texture,
                 mip_level: 0,
-                array_layer: i,
                 origin: wgpu::Origin3d::ZERO,
             },
             wgpu::Extent3d {
                 width: size as u32,
                 height: size as u32,
-                depth: 1,
+                depth: i,
             },
         );
     }
