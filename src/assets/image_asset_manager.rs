@@ -7,10 +7,10 @@ use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 // Types
 pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo>;
 pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageBuilder>;
-pub(crate) type ImageStorage = HashMap<String, Option<Arc<Image>>>;
+pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
 
 pub struct ImageAssetManager {
-    asset_path: String,
+    asset_path: PathBuf,
     image_info_manager: ImageInfoAssetManager,
     image_builder_manager: ImageBuilderManager,
     image_storage: ImageStorage,
@@ -18,14 +18,14 @@ pub struct ImageAssetManager {
 }
 
 impl ImageAssetManager {
-    pub fn new(asset_path: String) -> Self {
+    pub fn new<T: Into<PathBuf>>(asset_path: T) -> Self {
         let mut builder = assetmanage_rs::Builder::new();
         let image_info_manager = builder.create_manager::<ImageInfo>();
         let image_builder_manager = builder.create_manager::<ImageBuilder>();
         let loader = builder.finish_loader();
         async_std::task::spawn(loader.run());
         Self {
-            asset_path,
+            asset_path: asset_path.into(),
             image_info_manager,
             image_builder_manager,
             image_storage: HashMap::new(),
@@ -33,20 +33,20 @@ impl ImageAssetManager {
         }
     }
 
-    pub fn insert<T: Into<String>>(&mut self, path: T) -> Result<(), Box<dyn Error>> {
+    pub fn insert<T: Into<PathBuf>>(&mut self, path: T) -> Result<(), Box<dyn Error>> {
         let path = path.into();
         let mut full_path = self.asset_path.clone();
-        full_path.push_str(&path);
+        full_path = full_path.join(&path);
         dbg!(&full_path);
         let id = self.image_info_manager.insert(PathBuf::from(full_path));
         self.image_info_manager.load(id)?;
         Ok(())
     }
 
-    pub fn get<T: Into<String>>(&self, path: T) -> Option<Arc<Image>> {
+    pub fn get<T: Into<PathBuf>>(&self, path: T) -> Option<Arc<Image>> {
         let path = path.into();
         let mut full_path = self.asset_path.clone();
-        full_path.push_str(&path);
+        full_path = full_path.join(&path);
         self.image_storage.get(&path)?.clone()
     }
 
@@ -78,9 +78,10 @@ impl ImageAssetManager {
             // TODO: Store image somewhere that can be accessed by users easily.
             log::info!("Loaded image: {}", image.image_info.file);
             let mut image_path = self.image_info_manager.path(image_info_key).unwrap().to_str().unwrap().to_string();
-            image_path = image_path.replace(&self.asset_path, "");
+            let asset_path = self.asset_path.to_str().unwrap().to_string();
+            image_path = image_path.replace(&asset_path, "");
             self.image_storage
-                .insert(image_path, Some(Arc::new(image)));
+                .insert(PathBuf::from(image_path), Some(Arc::new(image)));
         }
     }
 }

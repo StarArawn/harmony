@@ -84,15 +84,15 @@ impl harmony::AppState for AppState {
         {
             // Test load in some random textures.
             let mut image_asset_manager = app.resources.get_mut::<harmony::ImageAssetManager>().unwrap();
-            image_asset_manager.insert("/core/white.image.ron").unwrap();
-            image_asset_manager.insert("/core/empty_normal.image.ron").unwrap();
-            image_asset_manager.insert("/core/mie.image.ron").unwrap();
-            image_asset_manager.insert("/core/rayleigh.image.ron").unwrap();
-            image_asset_manager.insert("/core/brdf_texture.image.ron").unwrap();
-            image_asset_manager.insert("/example/textures/georgentor.image.ron").unwrap();
+            image_asset_manager.insert("core/white.image.ron").unwrap();
+            image_asset_manager.insert("core/empty_normal.image.ron").unwrap();
+            image_asset_manager.insert("core/mie.image.ron").unwrap();
+            image_asset_manager.insert("core/rayleigh.image.ron").unwrap();
+            image_asset_manager.insert("core/brdf_texture.image.ron").unwrap();
+            image_asset_manager.insert("example/textures/georgentor.image.ron").unwrap();
         }
 
-        let skybox = harmony::graphics::material::Skybox::new_hdr(app, "/example/textures/georgentor.image.ron", 2048.0);
+        let skybox = harmony::graphics::material::Skybox::new_hdr(app, "example/textures/georgentor.image.ron", 2048.0);
         app.current_scene.world.insert((), vec![(skybox,)]);
 
         let actual_window_size = app.get_window_actual_size();
