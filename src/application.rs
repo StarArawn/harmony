@@ -23,7 +23,7 @@ use crate::{
 use graphics::{
     material::skybox::SkyboxType,
     pipelines::{LinePipelineDesc, UnlitPipelineDesc},
-    CommandBufferQueue, CommandQueueItem,
+    CommandBufferQueue, CommandQueueItem, renderer::{DEPTH_FORMAT, DepthTexture},
 };
 use nalgebra_glm::Vec2;
 
@@ -439,6 +439,26 @@ impl Application {
                     self.renderer.swap_chain =
                         device.create_swap_chain(&self.renderer.surface, &sc_desc);
                 }
+
+                // Resize depth buffer too
+                let depth_texture = {
+                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    device.create_texture(&wgpu::TextureDescriptor {
+                        size: wgpu::Extent3d {
+                            width: size.width,
+                            height: size.height,
+                            depth: 1,
+                        },
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format: DEPTH_FORMAT,
+                        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+                        label: None,
+                    })
+                };
+                self.resources.insert(DepthTexture(depth_texture.create_default_view()));
+                
                 app_state.resize(self);
             }
             _ => (),
