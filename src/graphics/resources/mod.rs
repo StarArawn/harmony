@@ -3,6 +3,7 @@ mod gpu_resource_manager;
 mod probe;
 mod probe_manager;
 mod render_target;
+mod gpu_image_manager;
 
 pub use bind_group::BindGroup;
 pub use gpu_resource_manager::GPUResourceManager;
