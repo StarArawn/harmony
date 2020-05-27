@@ -34,14 +34,19 @@ impl ImageAssetManager {
     }
 
     pub fn insert<T: Into<String>>(&mut self, path: T) -> Result<(), Box<dyn Error>> {
-        let id = self.image_info_manager.insert(PathBuf::from(path.into()));
+        let path = path.into();
+        let mut full_path = self.asset_path.clone();
+        full_path.push_str(&path);
+        dbg!(&full_path);
+        let id = self.image_info_manager.insert(PathBuf::from(full_path));
         self.image_info_manager.load(id)?;
         Ok(())
     }
 
     pub fn get<T: Into<String>>(&self, path: T) -> Option<Arc<Image>> {
-        let path: String = path.into();
-        //let final_path = format!("{}{}", self.asset_path, path);
+        let path = path.into();
+        let mut full_path = self.asset_path.clone();
+        full_path.push_str(&path);
         self.image_storage.get(&path)?.clone()
     }
 
@@ -56,6 +61,7 @@ impl ImageAssetManager {
         for key in self.image_info_manager.get_loaded_once() {
             let image_info = self.image_info_manager.get(key).unwrap();
             let mut path = self.image_info_manager.path(key).unwrap().clone();
+            log::info!("Loaded image info: {}", path.to_str().unwrap());
             path.set_file_name(&image_info.file);
             let image_path = PathBuf::from(&self.asset_path).join(path);
             let image_builder_key = self.image_builder_manager.insert(PathBuf::from(image_path));
@@ -74,9 +80,11 @@ impl ImageAssetManager {
             let image_info = self.image_info_manager.get(image_info_key).unwrap();
             let image = image_builder.build(&device, &mut encoder, image_info);
             // TODO: Store image somewhere that can be accessed by users easily.
-            log::warn!("Loaded image: {}", image.image_info.file);
+            log::info!("Loaded image: {}", image.image_info.file);
+            let mut image_path = self.image_info_manager.path(image_info_key).unwrap().to_str().unwrap().to_string();
+            image_path = image_path.replace(&self.asset_path, "");
             self.image_storage
-                .insert(image.image_info.file.clone(), Some(Arc::new(image)));
+                .insert(image_path, Some(Arc::new(image)));
         }
         encoder.finish()
     }

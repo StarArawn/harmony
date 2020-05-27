@@ -76,19 +76,19 @@ impl AssetManager {
                 self.meshes.insert(file_name.to_string(), mesh);
                 info!("Loaded mesh: {}", file_name);
             }
-            if //file_name.ends_with(".png")
-                //|| file_name.ends_with(".jpg")
-                file_name.ends_with(".hdr")
-            {
-                let image = Image::new(
-                    &device,
-                    &mut init_encoder,
-                    format!("{}{}", full_file_path, file_name),
-                    file_name.to_string(),
-                );
-                self.images.insert(file_name.to_string(), image);
-                info!("Loaded image: {}", file_name);
-            }
+            // if file_name.ends_with(".png")
+            //     || file_name.ends_with(".jpg")
+            //     file_name.ends_with(".hdr")
+            // {
+            //     let image = Image::new(
+            //         &device,
+            //         &mut init_encoder,
+            //         format!("{}{}", full_file_path, file_name),
+            //         file_name.to_string(),
+            //     );
+            //     self.images.insert(file_name.to_string(), image);
+            //     info!("Loaded image: {}", file_name);
+            // }
         }
         queue.submit(Some(init_encoder.finish()));
     }
