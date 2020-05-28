@@ -161,7 +161,7 @@ impl Application {
 
         let imgui_renderer = {
             let device = resources.get::<wgpu::Device>().unwrap();
-            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap();
+            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap(); // TODO:This never needs to be mutable. Its a bug in Imgui. We need to fetch the queue twice in the
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             imgui_wgpu::Renderer::new(&mut imgui, &device, &mut queue, sc_desc.format, None)
         };

@@ -24,10 +24,14 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
     /// Path of the ron file..
-    pub path: Option<String>,
+    pub path: Option<PathBuf>, 
     /// Relative to where the ron file is located.
     pub file: String, 
     pub format: ImageFormat,
+}
+
+impl ImageInfo {
+    pub fn new(file: String, format: ImageFormat) -> Self { Self { path: None, file, format } }
 }
 
 pub(crate) struct ImageBuilder {
@@ -93,8 +97,6 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height
 impl ImageBuilder {
     pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self { Self { image_info, bytes } }
 
-
-
     pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> Image {
         let (image_bytes, width, height) = match self.image_info.format {
             ImageFormat::HDR16 |
@@ -151,6 +153,7 @@ pub struct Image {
 }
 
 impl Image {
+    //TODO: when creating an image from memory, add its ImageInfo to the ImageInfoManager and pass the image to be loaded and build to the imagebuilder.
     pub fn new<T>(
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
@@ -206,7 +209,7 @@ impl Image {
             },
             texture_extent,
         );
-
+        //TODO: Dont construct a sampler for each image
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
@@ -223,12 +226,14 @@ impl Image {
         let view = texture.create_default_view();
 
         let file_name =  file_name.into();
+
+        let image_info = Arc::new(ImageInfo::new(
+            file_name.clone(),
+            ImageFormat::SRGB,
+        ));
+
         Self {
-            image_info: Arc::new(ImageInfo {
-                path: None,
-                file: file_name.clone(),
-                format: ImageFormat::SRGB,
-            }),
+            image_info,
             extent: texture_extent,
             texture,
             sampler,
@@ -309,12 +314,11 @@ impl Image {
     }
 }
 
-
 impl assetmanage_rs::Asset for ImageBuilder {
     type DataAsset = Arc<ImageInfo>;
     type DataManager = ();
-    type Output = ImageBuilder;
-    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
+    type Output = ImageBuilder; //TODO: return Image. explanation @ imageassetmanager
+    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
         Ok(ImageBuilder::new(data_ass.clone(), bytes.into() ))
     }
 }
@@ -323,12 +327,11 @@ impl assetmanage_rs::Asset for ImageInfo {
     type DataAsset = PathBuf;
     type DataManager = ();
     type Output = Self;
-    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
+    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
         let mut image_info = ron::de::from_bytes::<ImageInfo>(bytes)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
-        
-        let mut image_info = image_info.unwrap();
-        image_info.path = Some(data_ass.to_str().unwrap().to_string()); // Maybe image_info.path should be a PathBuf..
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
+
+        image_info.path = Some(data_ass.into());
 
         Ok(image_info)
     }

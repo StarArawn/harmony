@@ -8,6 +8,8 @@ use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo>;
 pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageBuilder>;
 pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
+// TODO: If we were able to pass the device and queue into the ImageBuilderManager on creation, we could build the image while decoding. The ImageBuilderManager could then become a ImageManager. ImageStorage could be removed. 
+//       Current Blocker: Imgui fetches the queue as mut in Application::new, so we cannot fetch it twice there.
 
 pub struct ImageAssetManager {
     asset_path: PathBuf,
@@ -67,18 +69,22 @@ impl ImageAssetManager {
                 // self.image_builder_manager.drop(key);
             }
         }
-        for path in self.image_builder_manager.get_loaded_once() {
 
+        for path in self.image_builder_manager.get_loaded_once() {
             let image_builder = self.image_builder_manager.get(&path).unwrap();
-            
             let image = image_builder.build(device, queue);
+            log::info!("Loaded image: {}", &image.image_info.file);
             // This needs to be a relative path from the exe folder(or in the examples case from the crate's folder).
             // To make this even more complex it seems like it's more user friendly to use the path of the image_info...
             // Ex. User loads: `example/textures/georgentor.image.ron` > which loads `georgentor_4k.hdr`
             // User requests image from manager using get() as if it was the ron file: `example/textures/georgentor.image.ron`.
-            let asset_relative_file_path = image.image_info.path.as_ref().unwrap();
-            log::info!("Loaded image: {}", image.image_info.file);
-            self.image_storage.insert(asset_relative_file_path.into(), Some(Arc::new(image)));
+            if let Some(asset_relative_file_path) = image.image_info.path.as_ref(){
+                self.image_storage.insert(asset_relative_file_path.into(), Some(Arc::new(image)));
+            } else {
+                //The Image has no associated ron -> The ImageInfo was constructed from memory and has the same path as the image.
+                self.image_storage.insert(path, Some(Arc::new(image)));
+                unimplemented!();
+            }
         }
     }
 }
@@ -86,6 +92,7 @@ impl ImageAssetManager {
 #[cfg(test)]
 mod tests {
     use crate::ImageAssetManager;
+    use std::path::PathBuf;
     #[test]
     fn it_works() {
         env_logger::init_from_env(
@@ -115,15 +122,17 @@ mod tests {
                 .await
                 .unwrap();
 
-            let mut asset_path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/").to_string();
+            let mut asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            asset_path.push("assets");
             let mut iam = ImageAssetManager::new(asset_path.clone());
-            asset_path.push_str("core/white.image.ron");
+            asset_path.push("core");
+            asset_path.push("white.image.ron");
             iam.insert(&asset_path).unwrap();
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
             iam.update(&device, &queue);
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
             iam.update(&device, &queue);
-            iam.get(&asset_path);
+            assert!(iam.get(&asset_path).is_some());
         });
     }
 }
