@@ -320,12 +320,18 @@ impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
 }
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
-    type DataAsset = PathBuf; //Imagefilepath
+    type DataAsset = PathBuf; //Relative path
     type DataManager = ();
     type Structure = Self;
-    fn construct(bytes: Vec<u8>, _data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
-        let image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
+    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
+        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
+        
+        // add relative path of the ron to the imagepath inside the ron
+        let mut path = data_ass.clone();
+        path.pop();
+        image_info.file = path.join(image_info.file);
+        
         Ok(image_info)
     }
 }

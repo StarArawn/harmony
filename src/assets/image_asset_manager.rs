@@ -33,12 +33,7 @@ impl ImageAssetManager {
 
     pub fn insert<T: Into<PathBuf>>(&mut self, rel_path: T) -> Result<(), Box<dyn Error>> {
         let rel_path = rel_path.into();
-        let mut full_path = self.asset_path.clone();
-        full_path = full_path.join(&rel_path);
-        println!("{:?}",&full_path);
-        
-        println!("{:?}",rel_path);
-        println!("{:?}",full_path);
+        let full_path = self.asset_path.join(&rel_path);
         self.image_info_manager.insert(&full_path, rel_path);
         self.image_info_manager.load(&full_path)?;
         Ok(())
@@ -46,13 +41,15 @@ impl ImageAssetManager {
 
     pub fn get<T: Into<PathBuf>>(&self, rel_path: T) -> Option<Arc<Image>> {
         let rel_path = rel_path.into();
-        let rel_image_path = self.image_info_manager.data_asset(&self.asset_path.join(&rel_path))?;
+        let image_info = self.image_info_manager.get(&self.asset_path.join(&rel_path))?;
+        let rel_image_path = &image_info.file;
         let image = self.image_manager.get(self.asset_path.join(rel_image_path))?;
         Some(image)
     }
     pub fn status<T: Into<PathBuf>>(&self, rel_path: T) -> Option<assetmanage_rs::LoadStatus> {
         let rel_path = rel_path.into();
-        let rel_image_path = self.image_info_manager.data_asset(&self.asset_path.join(&rel_path))?;
+        let image_info = self.image_info_manager.get(&self.asset_path.join(&rel_path))?;
+        let rel_image_path = &image_info.file;
         self.image_manager.status(self.asset_path.join(rel_image_path))
     }
 
