@@ -23,15 +23,13 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
-    /// Path of the ron file..
-    pub path: Option<PathBuf>, 
     /// Relative to where the ron file is located.
-    pub file: String, 
+    pub file: PathBuf, 
     pub format: ImageFormat,
 }
 
 impl ImageInfo {
-    pub fn new(file: String, format: ImageFormat) -> Self { Self { path: None, file, format } }
+    pub fn new(file: PathBuf,format: ImageFormat) -> Self { Self {file, format } }
 }
 
 pub(crate) struct ImageBuilder {
@@ -225,10 +223,8 @@ impl Image {
 
         let view = texture.create_default_view();
 
-        let file_name =  file_name.into();
-
         let image_info = Arc::new(ImageInfo::new(
-            file_name.clone(),
+            PathBuf::from(&file_name.into()),
             ImageFormat::SRGB,
         ));
 
@@ -324,14 +320,12 @@ impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
 }
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
-    type DataAsset = PathBuf;
+    type DataAsset = PathBuf; //Imagefilepath
     type DataManager = ();
     type Structure = Self;
-    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
-        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
+    fn construct(bytes: Vec<u8>, _data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
+        let image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
-        image_info.path = Some(data_ass.into());
-
         Ok(image_info)
     }
 }

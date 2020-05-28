@@ -36,6 +36,9 @@ impl ImageAssetManager {
         let mut full_path = self.asset_path.clone();
         full_path = full_path.join(&rel_path);
         println!("{:?}",&full_path);
+        
+        println!("{:?}",rel_path);
+        println!("{:?}",full_path);
         self.image_info_manager.insert(&full_path, rel_path);
         self.image_info_manager.load(&full_path)?;
         Ok(())
@@ -43,19 +46,14 @@ impl ImageAssetManager {
 
     pub fn get<T: Into<PathBuf>>(&self, rel_path: T) -> Option<Arc<Image>> {
         let rel_path = rel_path.into();
-        let mut full_path = self.asset_path.clone();
-        full_path = full_path.join(&rel_path);
-        
-        println!("{:?}",&full_path);
-        Some(self.image_manager.get(&full_path)?.clone())
+        let rel_image_path = self.image_info_manager.data_asset(&self.asset_path.join(&rel_path))?;
+        let image = self.image_manager.get(self.asset_path.join(rel_image_path))?;
+        Some(image)
     }
     pub fn status<T: Into<PathBuf>>(&self, rel_path: T) -> Option<assetmanage_rs::LoadStatus> {
         let rel_path = rel_path.into();
-        let mut full_path = self.asset_path.clone();
-        full_path = full_path.join(&rel_path);
-        
-        println!("{:?}",&full_path);
-        Some(self.image_manager.status(&full_path)?.clone())
+        let rel_image_path = self.image_info_manager.data_asset(&self.asset_path.join(&rel_path))?;
+        self.image_manager.status(self.asset_path.join(rel_image_path))
     }
 
     pub fn update(&mut self) {
@@ -65,22 +63,20 @@ impl ImageAssetManager {
         for path in self.image_info_manager.get_loaded_once() {
             let image_info = self.image_info_manager.get(&path).unwrap();
             log::info!("Loaded image info: {}", &path.to_str().unwrap());
-            let mut image_path = path.clone();
-            // We do need to erase the file name, but..
-            image_path.set_file_name("");
-            // set_file_name wont work here since we want image_info.file to be a relative path to the image from where the image_info is located.
-            image_path = image_path.join(&image_info.file);
-            
-            self.image_manager.insert(&image_path, image_info);
-            if self.image_manager.load(&image_path).is_err() {
-                log::warn!("Image info not found! {:?}", &image_path);
+            let rel_image_path = &image_info.file;
+            let abs_image_path = self.asset_path.join(rel_image_path);
+            self.image_manager.insert(&abs_image_path, image_info);
+            println!("{:?}",&abs_image_path);
+
+            if self.image_manager.load(&abs_image_path).is_err() {
+                log::warn!("Image info not found! {:?}", &abs_image_path);
                 // If we drop here the key will be reused. It may be cheaper to keep it and if the image gets requested by get(key) it returns none and default can be used
                 // self.image_info_manager.drop(key);
                 // self.image_builder_manager.drop(key);
             }
         }
         for path in self.image_manager.get_loaded_once(){
-            log::info!("Loaded image: {:?}", self.image_manager.status(path));
+            log::info!("Loaded image:{:?}   {:?}", &path, self.image_manager.status(&path));
         }
         //for path in self.image_builder_manager.get_loaded_once() {
         //    let image = self.image_builder_manager.get(&path).unwrap();
@@ -146,7 +142,7 @@ mod tests {
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
             iam.update();
             
-            println!("{:?}",iam.status(&image_path));
+            println!("{:?}",iam.get(&image_path).is_some());
         });
     }
 }
