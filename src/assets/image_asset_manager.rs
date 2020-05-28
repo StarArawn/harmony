@@ -44,8 +44,6 @@ impl ImageAssetManager {
 
     pub fn get<T: Into<PathBuf>>(&self, path: T) -> Option<Arc<Image>> {
         let path = path.into();
-        dbg!(self.image_storage.keys());
-        dbg!(&path);
         self.image_storage.get(&path)?.clone()
     }
 
