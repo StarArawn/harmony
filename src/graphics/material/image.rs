@@ -23,6 +23,8 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
+    /// Path of the ron file..
+    pub path: Option<String>,
     /// Relative to where the ron file is located.
     pub file: String, 
     pub format: ImageFormat,
@@ -223,6 +225,7 @@ impl Image {
         let file_name =  file_name.into();
         Self {
             image_info: Arc::new(ImageInfo {
+                path: None,
                 file: file_name.clone(),
                 format: ImageFormat::SRGB,
             }),
@@ -312,16 +315,21 @@ impl assetmanage_rs::Asset for ImageBuilder {
     type DataManager = ();
     type Output = ImageBuilder;
     fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
-        Ok(ImageBuilder::new(data_ass.clone(),bytes.into() ))
+        Ok(ImageBuilder::new(data_ass.clone(), bytes.into() ))
     }
 }
 
 impl assetmanage_rs::Asset for ImageInfo {
-    type DataAsset = ();
+    type DataAsset = PathBuf;
     type DataManager = ();
     type Output = Self;
     fn decode(bytes: &[u8], data_ass: &Self::DataAsset, data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
-        ron::de::from_bytes::<ImageInfo>(bytes)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))
+        let mut image_info = ron::de::from_bytes::<ImageInfo>(bytes)
+            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e));
+        
+        let mut image_info = image_info.unwrap();
+        image_info.path = Some(data_ass.to_str().unwrap().to_string()); // Maybe image_info.path should be a PathBuf..
+
+        Ok(image_info)
     }
 }

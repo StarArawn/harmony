@@ -35,16 +35,15 @@ impl ImageAssetManager {
         let path = path.into();
         let mut full_path = self.asset_path.clone();
         full_path = full_path.join(&path);
-        dbg!(&full_path);
-        self.image_info_manager.insert(&path,());
-        self.image_info_manager.load(&path)?;
+        self.image_info_manager.insert(&full_path, path);
+        self.image_info_manager.load(&full_path)?;
         Ok(())
     }
 
     pub fn get<T: Into<PathBuf>>(&self, path: T) -> Option<Arc<Image>> {
         let path = path.into();
-        let mut full_path = self.asset_path.clone();
-        full_path = full_path.join(&path);
+        dbg!(self.image_storage.keys());
+        dbg!(&path);
         self.image_storage.get(&path)?.clone()
     }
 
@@ -56,8 +55,11 @@ impl ImageAssetManager {
             let image_info = self.image_info_manager.get(&path).unwrap();
             log::info!("Loaded image info: {}", &path.to_str().unwrap());
             let mut image_path = path.clone();
-            image_path.set_file_name(&image_info.file);
-            self.image_builder_manager.insert(&image_path,image_info);
+            // We do need to erase the file name, but..
+            image_path.set_file_name("");
+            // set_file_name wont work here since we want image_info.file to be a relative path to the image from where the image_info is located.
+            image_path = image_path.join(&image_info.file);
+            self.image_builder_manager.insert(&image_path, image_info);
             if self.image_builder_manager.load(&image_path).is_err() {
                 log::warn!("Image info not found! {:?}", &image_path);
                 // If we drop here the key will be reused. It may be cheaper to keep it and if the image gets requested by get(key) it returns none and default can be used
@@ -69,13 +71,14 @@ impl ImageAssetManager {
 
             let image_builder = self.image_builder_manager.get(&path).unwrap();
             
-
             let image = image_builder.build(device, queue);
-            // TODO: Store image somewhere that can be accessed by users easily.
+            // This needs to be a relative path from the exe folder(or in the examples case from the crate's folder).
+            // To make this even more complex it seems like it's more user friendly to use the path of the image_info...
+            // Ex. User loads: `example/textures/georgentor.image.ron` > which loads `georgentor_4k.hdr`
+            // User requests image from manager using get() as if it was the ron file: `example/textures/georgentor.image.ron`.
+            let asset_relative_file_path = image.image_info.path.as_ref().unwrap();
             log::info!("Loaded image: {}", image.image_info.file);
-            let asset_path = self.asset_path.to_str().unwrap().to_string();
-            self.image_storage
-                .insert(path, Some(Arc::new(image)));
+            self.image_storage.insert(asset_relative_file_path.into(), Some(Arc::new(image)));
         }
     }
 }
