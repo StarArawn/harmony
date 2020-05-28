@@ -163,7 +163,7 @@ impl Application {
             let device = resources.get::<wgpu::Device>().unwrap();
             let mut queue = resources.get_mut::<wgpu::Queue>().unwrap(); // TODO:This never needs to be mutable. Its a bug in Imgui. We need to fetch the queue twice in the
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-            imgui_wgpu::Renderer::new(&mut imgui, &device, &mut queue, sc_desc.format, None)
+            imgui_wgpu::Renderer::new(&mut imgui, &device, &queue, sc_desc.format, None)
         };
 
         let last_frame = Instant::now();
@@ -219,7 +219,7 @@ impl Application {
             let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
             let device = self.resources.get::<wgpu::Device>().unwrap();
             let mut queue = self.resources.get_mut::<wgpu::Queue>().unwrap();
-            asset_manager.load(&device, &mut queue);
+            asset_manager.load(&device, &queue);
         }
 
         {
