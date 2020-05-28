@@ -314,12 +314,12 @@ impl Image {
     }
 }
 
-impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder {
+impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
     type DataAsset = Arc<ImageInfo>;
-    type DataManager = ();
-    type Structure = ImageBuilder; //TODO: return Image. explanation @ imageassetmanager
-    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
-        Ok(ImageBuilder::new(data_ass.clone(), bytes ))
+    type DataManager = (wgpu::Device, wgpu::Queue);
+    type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
+    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, (device, queue): &Self::DataManager) -> Result<Self::Structure, io::Error> {
+        Ok(ImageBuilder::new(data_ass.clone(), bytes).build(device, queue))
     }
 }
 

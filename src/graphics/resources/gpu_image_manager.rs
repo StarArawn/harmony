@@ -41,34 +41,34 @@ impl Source for GPUImageSource{
 pub struct GPUImageLoader {
     to_load: Receiver<(usize, PathBuf)>,
     loaded: Vec<Sender<(PathBuf, <<Self as assetmanage_rs::Loader>::Source as Source>::Output)>>,
-    imageassetmanager: assetmanage_rs::Manager<ImageBuilder, MemoryLoader>,
+    //imageassetmanager: assetmanage_rs::Manager<ImageBuilder, MemoryLoader>,
 }
 
-impl GPUImageLoader{
-    /// run the async load loop
-    #[allow(unused)]
-    pub async fn run(mut self) {
-        let mut loading = FuturesUnordered::new();
-        let mut to_load = FuturesUnordered::new();
-        loop {
-            self.to_load.try_iter().for_each(|(id, p)| {
-                match self.imageassetmanager.get(p){
-                    Some(asset) => {                
-                        loading.push(async move {
-                        (id, p, <<Self as Loader>::Source as Source>::load(asset))
-                    })}
-                    None => {}
-                }
-            });
-
-            if let Some((manager_idx, path, Ok(bytes))) = loading.next().await {
-                if let Some(sender) = self.loaded.get_mut(manager_idx) {
-                    if sender.send((path, bytes)).is_err() {}
-                }
-            }
-        }
-    }
-}
+//impl GPUImageLoader{
+//    /// run the async load loop
+//    #[allow(unused)]
+//    pub async fn run(mut self) {
+//        let mut loading = FuturesUnordered::new();
+//        //let mut to_load = FuturesUnordered::new();
+//        loop {
+//            self.to_load.try_iter().for_each(|(id, p)| {
+//                match self.imageassetmanager.get(p){
+//                    Some(asset) => {                
+//                        loading.push(async move {
+//                        (id, p, <<Self as Loader>::Source as Source>::load(asset))
+//                    })}
+//                    None => {}
+//                }
+//            });
+//
+//            if let Some((manager_idx, path, Ok(bytes))) = loading.next().await {
+//                if let Some(sender) = self.loaded.get_mut(manager_idx) {
+//                    if sender.send((path, bytes)).is_err() {}
+//                }
+//            }
+//        }
+//    }
+//}
 
 impl assetmanage_rs::Loader for GPUImageLoader{
     type Source = GPUImageSource;

@@ -14,22 +14,20 @@ pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
 pub struct ImageAssetManager {
     asset_path: PathBuf,
     image_info_manager: ImageInfoAssetManager,
-    image_builder_manager: ImageBuilderManager,
-    image_storage: ImageStorage,
+    image_manager: ImageBuilderManager,
 }
 
 impl ImageAssetManager {
-    pub fn new<T: Into<PathBuf>>(asset_path: T) -> Self {
+    pub fn new<T: Into<PathBuf>>(asset_path: T, device: wgpu::Device, queue: wgpu::Queue) -> Self {
         let mut builder = assetmanage_rs::Builder::new();
         let image_info_manager = builder.create_manager::<ImageInfo>(());
-        let image_builder_manager = builder.create_manager::<ImageBuilder>(());
+        let image_manager = builder.create_manager::<ImageBuilder>((device, queue));
         let loader = builder.finish_loader();
         async_std::task::spawn(loader.run());
         Self {
             asset_path: asset_path.into(),
             image_info_manager,
-            image_builder_manager,
-            image_storage: HashMap::new(),
+            image_manager,
         }
     }
 
@@ -44,12 +42,12 @@ impl ImageAssetManager {
 
     pub fn get<T: Into<PathBuf>>(&self, path: T) -> Option<Arc<Image>> {
         let path = path.into();
-        self.image_storage.get(&path)?.clone()
+        Some(self.image_manager.get(&path)?.clone())
     }
 
-    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+    pub fn update(&mut self) {
         self.image_info_manager.maintain();
-        self.image_builder_manager.maintain();
+        self.image_manager.maintain();
 
         for path in self.image_info_manager.get_loaded_once() {
             let image_info = self.image_info_manager.get(&path).unwrap();
@@ -59,8 +57,8 @@ impl ImageAssetManager {
             image_path.set_file_name("");
             // set_file_name wont work here since we want image_info.file to be a relative path to the image from where the image_info is located.
             image_path = image_path.join(&image_info.file);
-            self.image_builder_manager.insert(&image_path, image_info);
-            if self.image_builder_manager.load(&image_path).is_err() {
+            self.image_manager.insert(&image_path, image_info);
+            if self.image_manager.load(&image_path).is_err() {
                 log::warn!("Image info not found! {:?}", &image_path);
                 // If we drop here the key will be reused. It may be cheaper to keep it and if the image gets requested by get(key) it returns none and default can be used
                 // self.image_info_manager.drop(key);
@@ -68,22 +66,21 @@ impl ImageAssetManager {
             }
         }
 
-        for path in self.image_builder_manager.get_loaded_once() {
-            let image_builder = self.image_builder_manager.get(&path).unwrap();
-            let image = image_builder.build(device, queue);
-            log::info!("Loaded image: {}", &image.image_info.file);
-            // This needs to be a relative path from the exe folder(or in the examples case from the crate's folder).
-            // To make this even more complex it seems like it's more user friendly to use the path of the image_info...
-            // Ex. User loads: `example/textures/georgentor.image.ron` > which loads `georgentor_4k.hdr`
-            // User requests image from manager using get() as if it was the ron file: `example/textures/georgentor.image.ron`.
-            if let Some(asset_relative_file_path) = image.image_info.path.as_ref(){
-                self.image_storage.insert(asset_relative_file_path.into(), Some(Arc::new(image)));
-            } else {
-                //The Image has no associated ron -> The ImageInfo was constructed from memory and has the same path as the image.
-                self.image_storage.insert(path, Some(Arc::new(image)));
-                unimplemented!();
-            }
-        }
+        //for path in self.image_builder_manager.get_loaded_once() {
+        //    let image = self.image_builder_manager.get(&path).unwrap();
+        //    log::info!("Loaded image: {}", &image.image_info.file);
+        //    // This needs to be a relative path from the exe folder(or in the examples case from the crate's folder).
+        //    // To make this even more complex it seems like it's more user friendly to use the path of the image_info...
+        //    // Ex. User loads: `example/textures/georgentor.image.ron` > which loads `georgentor_4k.hdr`
+        //    // User requests image from manager using get() as if it was the ron file: `example/textures/georgentor.image.ron`.
+        //    if let Some(asset_relative_file_path) = image.image_info.path.as_ref(){
+        //        self.image_storage.insert(asset_relative_file_path.into(), Some(Arc::new(image)));
+        //    } else {
+        //        //The Image has no associated ron -> The ImageInfo was constructed from memory and has the same path as the image.
+        //        self.image_storage.insert(path, Some(Arc::new(image)));
+        //        unimplemented!();
+        //    }
+        //}
     }
 }
 
@@ -122,14 +119,14 @@ mod tests {
 
             let mut asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             asset_path.push("assets");
-            let mut iam = ImageAssetManager::new(asset_path.clone());
+            let mut iam = ImageAssetManager::new(asset_path.clone(), device, queue);
             asset_path.push("core");
             asset_path.push("white.image.ron");
             iam.insert(&asset_path).unwrap();
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
-            iam.update(&device, &queue);
+            iam.update();
             async_std::task::sleep(std::time::Duration::from_millis(50)).await;
-            iam.update(&device, &queue);
+            iam.update();
             assert!(iam.get(&asset_path).is_some());
         });
     }

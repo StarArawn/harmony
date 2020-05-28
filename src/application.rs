@@ -93,7 +93,7 @@ impl Application {
         resources.insert(crate::scene::resources::DeltaTime(0.05));
         resources.insert(PipelineManager::new());
 
-        let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
+        let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources)); //TODO: use only one executor
 
         let asset_path = asset_path.into();
         let asset_manager = AssetManager::new(asset_path.clone());
@@ -112,11 +112,15 @@ impl Application {
         .add_thread_local_fn(graphics::systems::render::create())
         .build();
         
+        
         resources.insert(asset_manager);
-        resources.insert(crate::assets::ImageAssetManager::new(asset_path.clone()));
+        resources.insert({
+            let device = resources.get::<wgpu::Device>().unwrap();
+            let queue = resources.get::<wgpu::Queue>().unwrap(); 
+            crate::assets::ImageAssetManager::new(asset_path.clone(), device, queue)
+        });
         resources.insert(TransformCount(0));
         resources.insert(CurrentRenderTarget(None));
-
 
         resources.insert(Input::new());
 
@@ -161,7 +165,8 @@ impl Application {
 
         let imgui_renderer = {
             let device = resources.get::<wgpu::Device>().unwrap();
-            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap(); // TODO:This never needs to be mutable. Its a bug in Imgui. We need to fetch the queue twice in the
+            let queue = resources.get::<wgpu::Queue>().unwrap(); 
+            
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             imgui_wgpu::Renderer::new(&mut imgui, &device, &queue, sc_desc.format, None)
         };
