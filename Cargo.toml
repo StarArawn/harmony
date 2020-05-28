@@ -21,7 +21,7 @@ gltf="0.15.2"
 glyph_brush = "0.6"
 image = "0.23.4"
 imgui = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0" }
-imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="c647602f38943ef87155adcc7caa7d40800b96bb" }
+imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="8b6349b6d7b8ade0ec8c7c70b9cd83a9db691979" }
 imgui-winit-support = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0", default-features = true }
 legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"

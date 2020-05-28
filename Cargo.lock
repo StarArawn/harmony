@@ -972,7 +972,7 @@ dependencies = [
 [[package]]
 name = "imgui-wgpu"
 version = "0.6.0"
-source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=c647602f38943ef87155adcc7caa7d40800b96bb#c647602f38943ef87155adcc7caa7d40800b96bb"
+source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=8b6349b6d7b8ade0ec8c7c70b9cd83a9db691979#8b6349b6d7b8ade0ec8c7c70b9cd83a9db691979"
 dependencies = [
  "imgui",
  "log",

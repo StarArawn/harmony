@@ -41,7 +41,6 @@ fn test_image() {
     image_info_manager.load(key).unwrap();
 
     let image_info = image_info_manager.get_blocking(key);
-    dbg!(&image_info);
     assert!(image_info.is_some());
 
     let image_info = image_info.unwrap();
