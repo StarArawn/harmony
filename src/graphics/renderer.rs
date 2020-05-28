@@ -1,5 +1,6 @@
 use super::resources::GPUResourceManager;
 use legion::systems::resource::Resources;
+use std::sync::Arc;
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 pub const FRAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb;
@@ -42,7 +43,8 @@ impl Renderer {
             }, None)
             .await
             .unwrap();
-
+        let device = Arc::new(device);
+        let queue = Arc::new(queue);
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: FRAME_FORMAT,

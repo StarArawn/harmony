@@ -31,7 +31,7 @@ impl AssetManager {
     }
 
     pub fn load(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
-        let mut init_encoder =
+        let init_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         for entry in WalkDir::new(&self.path) {

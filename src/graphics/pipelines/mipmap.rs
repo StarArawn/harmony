@@ -7,6 +7,7 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 // mipmaps always run pretty much right away.
 pub fn create(
@@ -21,7 +22,7 @@ pub fn create(
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
     let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<wgpu::Device>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("mipmap"),

@@ -5,7 +5,7 @@ use super::{
 use crate::AssetManager;
 use legion::systems::resource::Resources;
 use solvent::DepGraph;
-use std::collections::HashMap;
+use std::{sync::Arc, collections::HashMap};
 
 use crossbeam::queue::ArrayQueue;
 
@@ -54,7 +54,7 @@ impl RenderGraph {
     pub fn add<T: SimplePipelineDesc + Sized + 'static, T2: Into<String>>(
         &mut self,
         asset_manager: &AssetManager,
-        device: &wgpu::Device,
+        device: &Arc<wgpu::Device>,
         sc_desc: &wgpu::SwapChainDescriptor,
         resource_manager: &mut GPUResourceManager,
         name: T2,

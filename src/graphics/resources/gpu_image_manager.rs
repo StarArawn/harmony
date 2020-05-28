@@ -1,13 +1,13 @@
 
 use std::sync::mpsc::{Receiver, Sender};
 use std::{path::PathBuf, sync::Arc};
-use crate::graphics::material::image::{ImageBuilder};
+use crate::graphics::material::image::{Image};
 use assetmanage_rs::*;
 use futures::stream::{FuturesUnordered,StreamExt};
 
-pub struct GPUImageHandle {
+pub(crate) struct GPUImageHandle {
     // TODO: Rename ImageBuilder?
-    image: Arc<ImageBuilder>,
+    image: Arc<Image>,
     texture: Option<wgpu::Texture>,
     view: Option<wgpu::TextureView>,
     base_mip_layer: u32,
@@ -15,7 +15,7 @@ pub struct GPUImageHandle {
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
     type DataManager = ();
-    type DataAsset = Arc<ImageBuilder>; //asset unique data
+    type DataAsset = Arc<Image>; //asset unique data
     type Structure = GPUImageHandle;
     fn construct(
         data_load: GPUImageHandle,
@@ -26,10 +26,10 @@ impl Asset<GPUImageLoader> for GPUImageHandle{
     }
 }
 
-pub struct GPUImageSource;
+pub(crate) struct GPUImageSource;
 
 impl Source for GPUImageSource{
-    type Input = Arc<ImageBuilder>;
+    type Input = Arc<Image>;
     type Output = GPUImageHandle;
     fn load(item: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>> {
         //Input is the Arc<Image>/Texture that will be loaded to the GPU
@@ -38,7 +38,7 @@ impl Source for GPUImageSource{
     }
 }
 
-pub struct GPUImageLoader {
+pub(crate) struct GPUImageLoader {
     to_load: Receiver<(usize, PathBuf)>,
     loaded: Vec<Sender<(PathBuf, <<Self as assetmanage_rs::Loader>::Source as Source>::Output)>>,
     //imageassetmanager: assetmanage_rs::Manager<ImageBuilder, MemoryLoader>,

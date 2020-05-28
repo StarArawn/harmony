@@ -59,6 +59,7 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
 }
 
 struct AppState {
+    #[allow(unused)]
     frame_time: f32,
 }
 

@@ -238,7 +238,7 @@ impl Probe {
         {
             let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
             current_pipelines = pipeline_manager.current_pipelines.clone();
-            let device = resources.get::<wgpu::Device>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let asset_manager = resources.get::<AssetManager>().unwrap();
             let resource_manager = resources.get::<GPUResourceManager>().unwrap();
             let skybox_pipeline = pipeline_manager.get("skybox", None).unwrap();
@@ -355,7 +355,7 @@ impl Probe {
         // Generate mip maps for the resulting cube map
         let probe_resoultion = self.quality.get_probe_resoultion();
         let mut probe_cube = {
-            let device = resources.get::<wgpu::Device>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             RenderTarget::new(
                 &device,
                 probe_resoultion as f32,

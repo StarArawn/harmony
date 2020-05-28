@@ -123,7 +123,7 @@ impl ImageBuilder {
 
                 (image.into_raw(), width, height)
             },
-            _ => panic!(""),
+            //_ => panic!(""),
         };
 
         let format: wgpu::TextureFormat = self.image_info.format.into();
@@ -316,7 +316,7 @@ impl Image {
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
     type DataAsset = Arc<ImageInfo>;
-    type DataManager = (wgpu::Device, wgpu::Queue);
+    type DataManager = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
     fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, (device, queue): &Self::DataManager) -> Result<Self::Structure, io::Error> {
         Ok(ImageBuilder::new(data_ass.clone(), bytes).build(device, queue))

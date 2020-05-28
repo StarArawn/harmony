@@ -18,7 +18,7 @@ pub struct ImageAssetManager {
 }
 
 impl ImageAssetManager {
-    pub fn new<T: Into<PathBuf>>(asset_path: T, device: wgpu::Device, queue: wgpu::Queue) -> Self {
+    pub fn new<T: Into<PathBuf>>(asset_path: T, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
         let mut builder = assetmanage_rs::Builder::new();
         let image_info_manager = builder.create_manager::<ImageInfo>(());
         let image_manager = builder.create_manager::<ImageBuilder>((device, queue));
@@ -65,7 +65,9 @@ impl ImageAssetManager {
                 // self.image_builder_manager.drop(key);
             }
         }
-
+        for path in self.image_manager.get_loaded_once(){
+            log::info!("Loaded image: {}", self.image_manager.status(path));
+        }
         //for path in self.image_builder_manager.get_loaded_once() {
         //    let image = self.image_builder_manager.get(&path).unwrap();
         //    log::info!("Loaded image: {}", &image.image_info.file);
@@ -87,7 +89,7 @@ impl ImageAssetManager {
 #[cfg(test)]
 mod tests {
     use crate::ImageAssetManager;
-    use std::path::PathBuf;
+    use std::{sync::Arc, path::PathBuf};
     #[test]
     fn it_works() {
         env_logger::init_from_env(
@@ -116,10 +118,11 @@ mod tests {
                 }, None)
                 .await
                 .unwrap();
-
+            let arc_device = Arc::new(device);
+            let arc_queue = Arc::new(queue);
             let mut asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             asset_path.push("assets");
-            let mut iam = ImageAssetManager::new(asset_path.clone(), device, queue);
+            let mut iam = ImageAssetManager::new(asset_path.clone(), arc_device, arc_queue);
             asset_path.push("core");
             asset_path.push("white.image.ron");
             iam.insert(&asset_path).unwrap();
