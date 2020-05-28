@@ -314,23 +314,22 @@ impl Image {
     }
 }
 
-impl assetmanage_rs::Asset for ImageBuilder {
+impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder {
     type DataAsset = Arc<ImageInfo>;
     type DataManager = ();
-    type Output = ImageBuilder; //TODO: return Image. explanation @ imageassetmanager
-    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
-        Ok(ImageBuilder::new(data_ass.clone(), bytes.into() ))
+    type Structure = ImageBuilder; //TODO: return Image. explanation @ imageassetmanager
+    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
+        Ok(ImageBuilder::new(data_ass.clone(), bytes ))
     }
 }
 
-impl assetmanage_rs::Asset for ImageInfo {
+impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
     type DataAsset = PathBuf;
     type DataManager = ();
-    type Output = Self;
-    fn decode(bytes: &[u8], data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Output, io::Error> {
-        let mut image_info = ron::de::from_bytes::<ImageInfo>(bytes)
+    type Structure = Self;
+    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
+        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
-
         image_info.path = Some(data_ass.into());
 
         Ok(image_info)

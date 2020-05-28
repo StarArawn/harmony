@@ -5,8 +5,8 @@ use crate::graphics::material::{
 use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
 // Types
-pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo>;
-pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageBuilder>;
+pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo,assetmanage_rs::MemoryLoader>;
+pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageBuilder,assetmanage_rs::MemoryLoader>;
 pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
 // TODO: If we were able to pass the device and queue into the ImageBuilderManager on creation, we could build the image while decoding. The ImageBuilderManager could then become a ImageManager. ImageStorage could be removed. 
 //       Current Blocker: Imgui fetches the queue as mut in Application::new, so we cannot fetch it twice there.
