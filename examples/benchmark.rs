@@ -92,6 +92,12 @@ impl harmony::AppState for AppState {
         // Skybox needs to be added as an entity in legion. (we only should have one).
         app.current_scene.world.insert((), vec![(skybox,)]);
 
+        // let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(
+        //     0.0125, 0.0125, 0.0125,
+        // ));
+        // Clear color needs to be added as an entity in legion (we only should have one for now..).
+        //app.current_scene.world.insert((), vec![(clear_color,)]);
+
         // Setup probe for PBR
         harmony::scene::entities::probe::create(
             app,
