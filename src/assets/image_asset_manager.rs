@@ -22,7 +22,7 @@ impl ImageAssetManager {
         let mut builder = assetmanage_rs::Builder::new();
         let image_info_manager = builder.create_manager::<ImageInfo>(());
         let image_manager = builder.create_manager::<ImageBuilder>((device, queue));
-        let loader = builder.finish_loader();
+        let loader = builder.finish_loader(());
         async_std::task::spawn(loader.run());
         Self {
             asset_path: asset_path.into(),

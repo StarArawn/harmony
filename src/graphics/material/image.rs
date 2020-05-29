@@ -311,19 +311,19 @@ impl Image {
 }
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
-    type DataAsset = Arc<ImageInfo>;
-    type DataManager = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
+    type AssetSupplement = Arc<ImageInfo>;
+    type ManagerSupplement = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
-    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, (device, queue): &Self::DataManager) -> Result<Self::Structure, io::Error> {
+    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, (device, queue): &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
         Ok(ImageBuilder::new(data_ass.clone(), bytes).build(device, queue))
     }
 }
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
-    type DataAsset = PathBuf; //Relative path
-    type DataManager = ();
+    type AssetSupplement = PathBuf; //Relative path
+    type ManagerSupplement = ();
     type Structure = Self;
-    fn construct(bytes: Vec<u8>, data_ass: &Self::DataAsset, _data_mgr: &Self::DataManager) -> Result<Self::Structure, io::Error> {
+    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, _data_mgr: &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
         let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
             .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
         

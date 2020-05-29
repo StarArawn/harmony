@@ -1,7 +1,7 @@
 
 use std::sync::mpsc::{Receiver, Sender};
 use std::{path::PathBuf, sync::Arc};
-use crate::graphics::material::image::{Image};
+use crate::{ImageAssetManager, graphics::material::image::{Image}};
 use assetmanage_rs::*;
 use futures::stream::{FuturesUnordered,StreamExt};
 
@@ -14,13 +14,13 @@ pub(crate) struct GPUImageHandle {
     sampler_hash: u32,
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
-    type DataManager = ();
-    type DataAsset = Arc<Image>; //asset unique data
+    type ManagerSupplement = ();
+    type AssetSupplement = Arc<Image>; //asset unique data
     type Structure = GPUImageHandle;
     fn construct(
         data_load: GPUImageHandle,
-        _data_ass: &Self::DataAsset,
-        _data_mgr: &Self::DataManager,
+        _data_ass: &Self::AssetSupplement,
+        _data_mgr: &Self::ManagerSupplement,
     ) -> Result<Self::Structure, std::io::Error> {
         Ok(data_load)
     }
@@ -41,7 +41,7 @@ impl Source for GPUImageSource{
 pub(crate) struct GPUImageLoader {
     to_load: Receiver<(usize, PathBuf)>,
     loaded: Vec<Sender<(PathBuf, <<Self as assetmanage_rs::Loader>::Source as Source>::Output)>>,
-    //imageassetmanager: assetmanage_rs::Manager<ImageBuilder, MemoryLoader>,
+    image_asset_manager: ImageAssetManager,
 }
 
 //impl GPUImageLoader{
@@ -72,11 +72,13 @@ pub(crate) struct GPUImageLoader {
 
 impl assetmanage_rs::Loader for GPUImageLoader{
     type Source = GPUImageSource;
+    type Supplement = ImageAssetManager;
     fn new(
         to_load: Receiver<(usize, PathBuf)>,
         loaded: Vec<Sender<(PathBuf, <Self::Source as Source>::Output)>>,
+        image_asset_manager: Self::Supplement,
     ) -> Self {
-        Self {to_load,loaded}
+        Self {to_load, loaded, image_asset_manager}
     }
 }
 
@@ -85,15 +87,58 @@ impl assetmanage_rs::Loader for GPUImageLoader{
 #[cfg(test)]
 mod tests{
     use super::GPUImageHandle;
+    use crate::ImageAssetManager;
+    use std::{path::PathBuf, sync::Arc};
 
     #[test]
     fn initial(){
 
-        let mut builder = assetmanage_rs::Builder::new();
+        env_logger::init_from_env(
+            env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"),
+        );
 
-        let gpu_manager = builder.create_manager::<GPUImageHandle>(());
+        async_std::task::block_on(async {
+            let instance = wgpu::Instance::new(); 
+            let adapter = instance
+                .request_adapter(
+                    &wgpu::RequestAdapterOptions {
+                        power_preference: wgpu::PowerPreference::Default,
+                        compatible_surface: None,
+                    },
+                    wgpu::BackendBit::PRIMARY,
+                )
+                .await
+                .unwrap();
 
-        let loader = builder.finish_loader();
+            let (device, queue) = adapter
+                .request_device(&wgpu::DeviceDescriptor {
+                    extensions: wgpu::Extensions {
+                        anisotropic_filtering: false,
+                    },
+                    limits: wgpu::Limits::default(),
+                }, None)
+                .await
+                .unwrap();
+            let arc_device = Arc::new(device);
+            let arc_queue = Arc::new(queue);
+            let mut asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            asset_path.push("assets");
+            let mut iam = ImageAssetManager::new(asset_path.clone(), arc_device, arc_queue);
+
+
+            let mut builder = assetmanage_rs::Builder::new();
+            let gpu_manager = builder.create_manager::<GPUImageHandle>(());
+            let loader = builder.finish_loader(iam);
+
+
+            let mut image_path = PathBuf::new();
+            image_path.push("core");
+            image_path.push("white.image.ron");
+            
+            //println!("{:?}",iam.get(&image_path).is_some());
+        });
+
+
         
     }
 }
