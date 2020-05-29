@@ -1,4 +1,4 @@
-use crate::graphics::{pipeline_manager::PipelineManager, CommandBufferQueue};
+use crate::{graphics::{pipeline_manager::PipelineManager, CommandBufferQueue}};
 use legion::prelude::*;
 use std::sync::Arc;
 
@@ -12,8 +12,8 @@ pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
         let mut command_queue = resources.get_mut::<CommandBufferQueue>().unwrap();
         command_buffers.extend(pipeline_manager.collect_buffers(&mut command_queue));
 
-        let mut image_asset_manager = resources.get_mut::<crate::assets::ImageAssetManager>().unwrap();
-        image_asset_manager.update();
+        //let mut image_asset_manager = resources.get_mut::<ImageManager>().unwrap();
+        //image_asset_manager.update();
 
         queue.submit(command_buffers);
     });

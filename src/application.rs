@@ -117,7 +117,7 @@ impl Application {
         resources.insert({
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let queue = resources.get::<Arc<wgpu::Queue>>().unwrap(); 
-            crate::assets::ImageAssetManager::new(asset_path.clone(), device.clone(), queue.clone())
+            //crate::assets::ImageAssetManager::new(asset_path.clone(), device.clone(), queue.clone())
         });
         resources.insert(TransformCount(0));
         resources.insert(CurrentRenderTarget(None));

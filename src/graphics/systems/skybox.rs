@@ -1,4 +1,4 @@
-use crate::{ImageAssetManager, graphics::{
+use crate::{graphics::{
     material::{skybox::SkyboxType, Skybox},
     pipeline_manager::{Pipeline, PipelineManager},
     renderer::DepthTexture,
@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
         .read_resource::<AssetManager>()
-        .read_resource::<ImageAssetManager>()
+        //.read_resource::<ImageAssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<CurrentRenderTarget>()
         .write_resource::<GPUResourceManager>()
@@ -26,7 +26,7 @@ pub fn create() -> Box<dyn Schedulable> {
             mut world,
             (
                 asset_manager,
-                image_asset_manager,
+                //image_asset_manager,
                 command_buffer_queue,
                 current_render_target,
                 resource_manager,
@@ -66,7 +66,7 @@ pub fn create() -> Box<dyn Schedulable> {
                             device,
                             queue,
                             asset_manager,
-                            image_asset_manager,
+                            //image_asset_manager,
                             pipeline_manager,
                             resource_manager,
                         );

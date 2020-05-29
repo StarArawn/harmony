@@ -32,7 +32,7 @@ impl ImageInfo {
     pub fn new(file: PathBuf,format: ImageFormat) -> Self { Self {file, format } }
 }
 
-pub(crate) struct ImageBuilder {
+pub(crate) struct ImageData {
     pub image_info: Arc<ImageInfo>,
     pub bytes: Vec<u8>,
 }
@@ -92,7 +92,7 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height
     (texture, sampler, texture_extent)
 }
 
-impl ImageBuilder {
+impl ImageData {
     pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self { Self { image_info, bytes } }
 
     pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> Image {
@@ -310,28 +310,28 @@ impl Image {
     }
 }
 
-impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageBuilder{
+impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageData{
     type AssetSupplement = Arc<ImageInfo>;
     type ManagerSupplement = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
     fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, (device, queue): &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
-        Ok(ImageBuilder::new(data_ass.clone(), bytes).build(device, queue))
+        Ok(ImageData::new(data_ass.clone(), bytes).build(device, queue))
     }
 }
 
-impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
-    type AssetSupplement = PathBuf; //Relative path
-    type ManagerSupplement = ();
-    type Structure = Self;
-    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, _data_mgr: &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
-        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
-            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
-        
-        // add relative path of the ron to the imagepath inside the ron
-        let mut path = data_ass.clone();
-        path.pop();
-        image_info.file = path.join(image_info.file);
-        
-        Ok(image_info)
-    }
-}
+//impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageInfo {
+//    type AssetSupplement = PathBuf; //Relative path
+//    type ManagerSupplement = ();
+//    type Structure = Self;
+//    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, _data_mgr: &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
+//        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
+//            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
+//        
+//        // add relative path of the ron to the imagepath inside the ron
+//        let mut path = data_ass.clone();
+//        path.pop();
+//        image_info.file = path.join(image_info.file);
+//        
+//        Ok(image_info)
+//    }
+//}
