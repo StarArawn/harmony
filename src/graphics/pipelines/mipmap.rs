@@ -165,7 +165,7 @@ pub fn create(
     let queue = resources.get::<wgpu::Queue>().unwrap();
     queue.submit(Some(encoder.finish()));
 
-    device.poll(wgpu::Maintain::Wait);
+    // device.poll(wgpu::Maintain::Wait);
 
     texture
 }

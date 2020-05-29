@@ -103,7 +103,11 @@ impl SimplePipeline for CubeProjectionPipeline {
                 wgpu::TextureCopyView {
                     texture: &cube_map.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i,
+                    },
                 },
                 wgpu::Extent3d {
                     width: self.size as u32,
