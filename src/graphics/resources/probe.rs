@@ -231,6 +231,7 @@ impl Probe {
                 .add_system(crate::graphics::systems::globals::create())
                 .add_system(crate::graphics::systems::skybox::create())
                 .flush()
+                .add_thread_local_fn(crate::graphics::systems::render::create())
                 .build();
 
         // First we need to create new pipelines using the correct texture format
@@ -315,15 +316,9 @@ impl Probe {
                         Self::update_camera(self.position, &mut camera_data, i);
                     }
                 }
-                // Tell the render target the current face..
+                
+                // Submit our queue.
                 render_schedule.execute(&mut scene.world, resources);
-
-                // Finally we submit our queue.
-                let mut queue_schedule = Schedule::builder()
-                    .flush()
-                    .add_thread_local_fn(crate::graphics::systems::render::create())
-                    .build();
-                queue_schedule.execute(&mut scene.world, resources);
             }
 
             // Reset pipelines.
