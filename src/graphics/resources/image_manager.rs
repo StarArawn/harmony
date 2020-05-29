@@ -8,12 +8,12 @@ pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageSource>;
 
 
 pub(crate) struct GPUImageHandle {
-    // image: Arc<Image>,
-    // texture: Option<wgpu::Texture>,
-    // view: Option<wgpu::TextureView>,
-    // sampler: Option<wgpu::Sampler>,
-    // base_mip_layer: u32,
-    // sampler_hash: u32,
+    pub(crate) image: Arc<Image>,
+    pub(crate) texture: wgpu::Texture,
+    pub(crate) view: wgpu::TextureView,
+    pub(crate) sampler: wgpu::Sampler, // TODO: remove sampler and put it someplace else?
+    pub(crate) base_mip_layer: u32,
+    pub(crate) sampler_hash: u32,
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
     type ManagerSupplement = ();
@@ -33,13 +33,19 @@ pub(crate) struct GPUImageSource;
 impl Source for GPUImageSource {
     type Input = (Arc<Image>, Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type Output = GPUImageHandle;
-    fn load(item: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>> {
-        //Input is the Arc<Image>/Texture that will be loaded to the GPU
-        //Output will be the GPUImageHandle that will be returned
+    fn load((image, device, queue): Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>> {
+        let (texture, view, sampler) = image.create_gpu_texture(device, queue);
+        
+        let handle = GPUImageHandle {
+            image,
+            texture,
+            view,
+            sampler,
+            base_mip_layer: 0,
+            sampler_hash: 0, // TODO: Use this instead of sampler.
+        };
 
-        //let something = item.build()
-
-        Ok(Self::Output{})
+        Ok(handle)
     }
 }
 

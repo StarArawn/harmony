@@ -34,7 +34,7 @@ pub(crate) struct ImageData {
     pub bytes: Vec<u8>,
 }
 
-fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: &Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
+fn create_texture(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: &Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
@@ -139,7 +139,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn create_gpu_texture(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
+    pub fn create_gpu_texture(&self, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
         let (texture, sampler) = create_texture(device, queue, self.extent, self.format, &self.data);
 
         let view = texture.create_default_view();
