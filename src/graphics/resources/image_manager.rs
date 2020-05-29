@@ -1,16 +1,13 @@
 
 use std::sync::mpsc::{Receiver, Sender};
 use std::{path::PathBuf, sync::Arc};
-use crate::{ graphics::material::image::{Image, ImageData}};
+use crate::{ graphics::material::image::{Image, ImageData, ImageInfo}};
 use assetmanage_rs::*;
 use futures::stream::{FuturesUnordered,StreamExt};
 use futures::task::Poll;
 use async_std::future::poll_fn;
 pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageSource>;
 
-struct ImageInfo{
-
-}
 
 pub(crate) struct GPUImageHandle {
     //image: Arc<Image>,
@@ -21,7 +18,7 @@ pub(crate) struct GPUImageHandle {
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
     type ManagerSupplement = ();
-    type AssetSupplement = ImageInfo; //asset unique data
+    type AssetSupplement = (); //asset unique data
     type Structure = GPUImageHandle;
     fn construct(
         data_load: GPUImageHandle,
@@ -45,7 +42,7 @@ impl Source for GPUImageSource{
 }
 
 pub(crate) struct GPUImageLoader {
-    to_load: Receiver<(usize, PathBuf)>,
+    to_load: Receiver<(usize, PathBuf, <Self as Loader>::TransferSupplement)>,
     loaded: Vec<Sender<(PathBuf, <<Self as Loader>::Source as Source>::Output)>>,
     image_asset_manager: Manager<ImageData, MemoryLoader>,
 }
@@ -56,25 +53,28 @@ impl GPUImageLoader{
     pub async fn run(mut self) {
         let mut gpu_loading = FuturesUnordered::new();
         let mut still_loading = Vec::new();
-        let mut not_loading = Vec::new();
 
         let fut_generator = |id, path, image | async move {
             (id, path, <<Self as Loader>::Source as Source>::load(image))
         };
         //let mut to_load = FuturesUnordered::new();
         loop {
-            self.to_load.try_iter().for_each(|(id, p)| {
+            self.to_load.try_iter()
+            .collect::<Vec<(usize, PathBuf, <Self as Loader>::TransferSupplement)>>()
+            .into_iter()
+            .for_each(|(id, p,t)| {
                 match self.image_asset_manager.status(&p){
                     Some(load_status) => match load_status{
-                        LoadStatus::NotLoaded => not_loading.push((id, p)),
+                        LoadStatus::NotLoaded => self.image_asset_manager.load(&p, ()).unwrap(),
                         LoadStatus::Loading => still_loading.push((id, p)),
                         LoadStatus::Loaded => {
                             let image = self.image_asset_manager.get(&p).unwrap();
                             gpu_loading.push(fut_generator(id, p, image));
                         },
-                    }
+                    },
                     None => {
-                        log::warn!("Image not found at: {:?}", p)
+                        self.image_asset_manager.insert(&p,t);
+                        still_loading.push((id, p))
                     }
                 }
             });
@@ -85,14 +85,6 @@ impl GPUImageLoader{
                     None => Some((id, p)),
                 }}).collect();
 
-            not_loading.drain(..).for_each(
-                |(id,p)| {
-                    if self.image_asset_manager.load(&p).is_err() {
-                        log::warn!("Image got removed from Disk?!")
-                    };
-                    still_loading.push((id,p))
-                });
-    
             if let Some((manager_idx, path, Ok(output))) = gpu_loading.next().await {
                 if let Some(sender) = self.loaded.get_mut(manager_idx) {
                     if sender.send((path, output)).is_err() {}
@@ -104,11 +96,12 @@ impl GPUImageLoader{
 
 impl assetmanage_rs::Loader for GPUImageLoader{
     type Source = GPUImageSource;
-    type Supplement = Manager<ImageData, MemoryLoader>;
+    type LoaderSupplement = Manager<ImageData, MemoryLoader>;
+    type TransferSupplement = Arc<ImageInfo>;
     fn new(
-        to_load: Receiver<(usize, PathBuf)>,
+        to_load: Receiver<(usize, PathBuf, Self::TransferSupplement)>,
         loaded: Vec<Sender<(PathBuf, <Self::Source as Source>::Output)>>,
-        image_asset_manager: Self::Supplement,
+        image_asset_manager: Self::LoaderSupplement,
     ) -> Self {
         Self {to_load, loaded, image_asset_manager}
     }
@@ -118,7 +111,7 @@ impl assetmanage_rs::Loader for GPUImageLoader{
 mod tests{
     use super::{GPUImageHandle, ImageInfo};
     use std::{path::PathBuf, sync::Arc};
-    use crate::graphics::material::image::ImageData;
+    use crate::graphics::material::image::{ImageFormat, ImageData};
 
     #[test]
     fn initial(){
@@ -168,11 +161,15 @@ mod tests{
         async_std::task::spawn(gpu_loader.run());
 
 
-        let mut image_path = PathBuf::new();
-        image_path.push("core");
-        image_path.push("white.image.ron");
-
-        image_manager.insert(asset_path.join(&image_path), ImageInfo{})
-        
+        let mut rel_image_path = PathBuf::new();
+        rel_image_path.push("core");
+        rel_image_path.push("white.png");
+        let abs_image_path = asset_path.join(&rel_image_path);
+        image_manager.insert(&abs_image_path,());
+        println!("{:?}",image_manager.status(&abs_image_path));
+        assert!(image_manager.load(&abs_image_path, Arc::new(ImageInfo::new(ImageFormat::SRGB))).is_ok());
+        println!("{:?}",image_manager.status(&abs_image_path));
+        let t = image_manager.get_blocking(&abs_image_path);
+        assert!(t.is_some());
     }
 }

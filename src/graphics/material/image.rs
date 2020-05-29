@@ -23,13 +23,11 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
-    /// Relative to where the ron file is located.
-    pub file: PathBuf, 
     pub format: ImageFormat,
 }
 
 impl ImageInfo {
-    pub fn new(file: PathBuf,format: ImageFormat) -> Self { Self {file, format } }
+    pub fn new(format: ImageFormat) -> Self { Self { format } }
 }
 
 pub(crate) struct ImageData {
@@ -224,7 +222,6 @@ impl Image {
         let view = texture.create_default_view();
 
         let image_info = Arc::new(ImageInfo::new(
-            PathBuf::from(&file_name.into()),
             ImageFormat::SRGB,
         ));
 
