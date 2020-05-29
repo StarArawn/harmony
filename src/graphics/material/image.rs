@@ -1,6 +1,5 @@
-use std::{fs, io, path::PathBuf, sync::Arc};
+use std::{io, sync::Arc};
 use serde::{ Deserialize, Serialize };
-use io::ErrorKind;
 
 #[derive(Eq, PartialEq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageFormat {
@@ -35,13 +34,7 @@ pub(crate) struct ImageData {
     pub bytes: Vec<u8>,
 }
 
-fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height: u32, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler, wgpu::Extent3d) {
-    let texture_extent = wgpu::Extent3d {
-        width,
-        height,
-        depth: 1,
-    };
-    
+fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
@@ -87,7 +80,7 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height
         compare: wgpu::CompareFunction::Undefined,
     });
 
-    (texture, sampler, texture_extent)
+    (texture, sampler)
 }
 
 impl ImageData {
@@ -119,21 +112,20 @@ impl ImageData {
 
                 (image.into_raw(), width, height)
             },
-            //_ => panic!(""),
+        };
+
+        let texture_extent = wgpu::Extent3d {
+            width,
+            height,
+            depth: 1,
         };
 
         let format: wgpu::TextureFormat = self.image_info.format.into();
 
-        let (texture, sampler, extent) = create_texture(device, queue, width, height, format, image_bytes);
-
-        let view = texture.create_default_view();
-
         Image {
             image_info: self.image_info.clone(),
-            extent,
-            texture,
-            sampler,
-            view,
+            data: image_bytes,
+            extent: texture_extent,
             format,
         }
     }
@@ -142,168 +134,16 @@ impl ImageData {
 pub struct Image {
     pub image_info: Arc<ImageInfo>, 
     pub extent: wgpu::Extent3d,
-    pub texture: wgpu::Texture,
-    pub sampler: wgpu::Sampler,
-    pub view: wgpu::TextureView,
+    pub data: Vec<u8>,
     pub format: wgpu::TextureFormat,
 }
 
 impl Image {
-    //TODO: when creating an image from memory, add its ImageInfo to the ImageInfoManager and pass the image to be loaded and build to the imagebuilder.
-    pub fn new<T>(
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        path: T,
-        file_name: T,
-    ) -> Self
-    where
-        T: Into<String>,
-    {
-        let path = path.into();
-
-        let (image_bytes, texture_extent, format) = if path.ends_with(".hdr") {
-            Self::create_hdr_image(path)
-        } else if path.to_lowercase().contains("_normal")
-            || path.to_lowercase().contains("metallic")
-        {
-            Self::create_normal_image(path)
-        } else {
-            Self::create_color_image(path)
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: texture_extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
-            label: None,
-        });
-
-        let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
-
-        encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &temp_buf,
-                layout: wgpu::TextureDataLayout {
-                    offset: 0,
-                    bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
-                        || format == wgpu::TextureFormat::Rgba8Unorm
-                    {
-                        4 * texture_extent.width
-                    } else {
-                        (4 * 4) * texture_extent.width
-                    },
-                    rows_per_image: 0,
-                },
-            },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            texture_extent,
-        );
-        //TODO: Dont construct a sampler for each image
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
-        });
+    pub fn create_gpu_texture(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
+        let (texture, sampler) = create_texture(device, queue, self.extent, self.format, self.data);
 
         let view = texture.create_default_view();
-
-        let image_info = Arc::new(ImageInfo::new(
-            ImageFormat::SRGB,
-        ));
-
-        Self {
-            image_info,
-            extent: texture_extent,
-            texture,
-            sampler,
-            view,
-            format,
-        }
-    }
-
-    fn create_normal_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
-        let img = image::open(&path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
-            .to_rgba();
-        let (width, height) = img.dimensions();
-        let texture_extent = wgpu::Extent3d {
-            width,
-            height,
-            depth: 1,
-        };
-
-        let image_bytes: Vec<u8> = img.into_raw();
-
-        (image_bytes, texture_extent, wgpu::TextureFormat::Rgba8Unorm)
-    }
-
-    fn create_color_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
-        let img = image::open(&path)
-            .unwrap_or_else(|_| panic!("Image: Unable to open the file: {}", path))
-            .to_rgba();
-        let (width, height) = img.dimensions();
-        let texture_extent = wgpu::Extent3d {
-            width,
-            height,
-            depth: 1,
-        };
-
-        let image_bytes: Vec<u8> = img.into_raw();
-
-        // TODO: Fix loading of images. We should use SRGB for textures and Unorm for roughness/normal maps/etc.
-        // Should be done with a material loader perhaps?
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-        )
-    }
-
-    fn create_hdr_image(path: String) -> (Vec<u8>, wgpu::Extent3d, wgpu::TextureFormat) {
-        // Load the image
-        let decoder =
-            image::hdr::HdrDecoder::new(io::BufReader::new(fs::File::open(&path).unwrap()))
-                .unwrap();
-        let metadata = decoder.metadata();
-        let decoded = decoder.read_image_hdr().unwrap();
-
-        let (w, h) = (metadata.width, metadata.height);
-
-        let texture_extent = wgpu::Extent3d {
-            width: w,
-            height: h,
-            depth: 1,
-        };
-
-        let image_data = decoded
-            .iter()
-            .flat_map(|pixel| vec![pixel[0], pixel[1], pixel[2], 1.0])
-            .collect::<Vec<_>>();
-
-        let image_bytes = unsafe {
-            std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
-        }
-        .to_vec();
-
-        (
-            image_bytes,
-            texture_extent,
-            wgpu::TextureFormat::Rgba32Float,
-        )
+        (texture, view, sampler)
     }
 }
 

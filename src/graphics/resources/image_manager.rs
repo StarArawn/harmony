@@ -11,6 +11,7 @@ pub(crate) struct GPUImageHandle {
     //image: Arc<Image>,
     //texture: Option<wgpu::Texture>,
     //view: Option<wgpu::TextureView>,
+    //sampler: Option<wgpu::Sampler>
     //base_mip_layer: u32,
     //sampler_hash: u32,
 }
