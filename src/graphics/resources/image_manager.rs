@@ -16,7 +16,7 @@ pub(crate) struct GPUImageHandle {
     // sampler_hash: u32,
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
-    type ManagerSupplement = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
+    type ManagerSupplement = ();
     type AssetSupplement = (); //asset unique data
     type Structure = GPUImageHandle;
     fn construct(
@@ -65,35 +65,35 @@ impl GPUImageLoader {
             self.to_load.try_iter()
             .collect::<Vec<(usize, PathBuf, <Self as Loader>::TransferSupplement)>>()
             .into_iter()
-            .for_each(|(id, p,t)| {
+            .for_each(|(id, p,(t_imageinfo, t_device, t_queue))| {
                 match self.image_asset_manager.status(&p){
                     Some(load_status) => match load_status{
                         LoadStatus::NotLoaded => {
                             self.image_asset_manager.load(&p, ()).unwrap();
-                            still_loading.push((id, p));
+                            still_loading.push((id, p, t_device, t_queue));
                         },
-                        LoadStatus::Loading => still_loading.push((id, p)),
+                        LoadStatus::Loading => still_loading.push((id, p, t_device, t_queue)),
                         LoadStatus::Loaded => {
                             let image = self.image_asset_manager.get(&p).unwrap();
-                            gpu_loading.push(fut_generator(id, p, image));
+                            gpu_loading.push(fut_generator(id, p, image, t_device, t_queue ));
                         },
                     },
                     None => {
-                        self.image_asset_manager.insert(&p,t);
+                        self.image_asset_manager.insert(&p, t_imageinfo);
                         self.image_asset_manager.load(&p, ()).unwrap();
-                        still_loading.push((id, p))
+                        still_loading.push((id, p, t_device, t_queue))
                     }
                 }
             });
             still_loading = still_loading.into_iter()
-            .filter_map(|(id, p)| {
+            .filter_map(|(id, p, t_device, t_queue)| {
                 match self.image_asset_manager.get(&p){
                     Some(image) => { 
                         log::warn!("{:?}, went to GPULoader", &p);
-                        gpu_loading.push(fut_generator(id, p, image)); 
+                        gpu_loading.push(fut_generator(id, p, image, t_device, t_queue)); 
                         None 
                     },
-                    None => Some((id, p)),
+                    None => Some((id, p, t_device, t_queue)),
                 }}).collect();
             
 
@@ -112,7 +112,7 @@ impl GPUImageLoader {
 impl assetmanage_rs::Loader for GPUImageLoader{
     type Source = GPUImageSource;
     type LoaderSupplement = Manager<ImageData, MemoryLoader>;
-    type TransferSupplement = Arc<ImageInfo>;
+    type TransferSupplement = (Arc<ImageInfo>,Arc<wgpu::Device>, Arc<wgpu::Queue>);
     fn new(
         to_load: Receiver<(usize, PathBuf, Self::TransferSupplement)>,
         loaded: Vec<Sender<(PathBuf, <Self::Source as Source>::Output)>>,
@@ -171,7 +171,7 @@ mod tests{
         async_std::task::spawn(file_loader.run());
 
         let mut builder = assetmanage_rs::Builder::new();
-        let mut image_manager = builder.create_manager::<GPUImageHandle>((device, queue));
+        let mut image_manager = builder.create_manager::<GPUImageHandle>(());
         let gpu_loader = builder.finish_loader(image_file_manager);
         async_std::task::spawn(gpu_loader.run());
 
@@ -182,7 +182,7 @@ mod tests{
         let abs_image_path = asset_path.join(&rel_image_path);
         image_manager.insert(&abs_image_path,());
         println!("{:?}",image_manager.status(&abs_image_path));
-        assert!(image_manager.load(&abs_image_path, Arc::new(ImageInfo::new(ImageFormat::SRGB))).is_ok());
+        assert!(image_manager.load(&abs_image_path, (Arc::new(ImageInfo::new(ImageFormat::SRGB)), device, queue)).is_ok());
         println!("{:?}",image_manager.status(&abs_image_path));
         let t = image_manager.get_blocking(&abs_image_path);
         assert!(t.is_some());
