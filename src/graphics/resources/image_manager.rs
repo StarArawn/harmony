@@ -4,8 +4,6 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{ graphics::material::image::{Image, ImageData, ImageInfo}};
 use assetmanage_rs::*;
 use futures::stream::{FuturesUnordered,StreamExt};
-use futures::task::Poll;
-use async_std::future::poll_fn;
 pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageSource>;
 
 
@@ -37,7 +35,7 @@ impl Source for GPUImageSource{
     fn load(item: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>> {
         //Input is the Arc<Image>/Texture that will be loaded to the GPU
         //Output will be the GPUImageHandle that will be returned
-        Ok(GPUImageHandle{})
+        Ok(Self::Output{})
     }
 }
 
@@ -57,6 +55,7 @@ impl GPUImageLoader{
         let fut_generator = |id, path, image | async move {
             (id, path, <<Self as Loader>::Source as Source>::load(image))
         };
+
         //let mut to_load = FuturesUnordered::new();
         loop {
             self.to_load.try_iter()
@@ -65,7 +64,10 @@ impl GPUImageLoader{
             .for_each(|(id, p,t)| {
                 match self.image_asset_manager.status(&p){
                     Some(load_status) => match load_status{
-                        LoadStatus::NotLoaded => self.image_asset_manager.load(&p, ()).unwrap(),
+                        LoadStatus::NotLoaded => {
+                            self.image_asset_manager.load(&p, ()).unwrap();
+                            still_loading.push((id, p));
+                        },
                         LoadStatus::Loading => still_loading.push((id, p)),
                         LoadStatus::Loaded => {
                             let image = self.image_asset_manager.get(&p).unwrap();
@@ -74,22 +76,31 @@ impl GPUImageLoader{
                     },
                     None => {
                         self.image_asset_manager.insert(&p,t);
+                        self.image_asset_manager.load(&p, ()).unwrap();
                         still_loading.push((id, p))
                     }
                 }
             });
             still_loading = still_loading.into_iter()
-            .filter_map(|(id,p)| {
+            .filter_map(|(id, p)| {
                 match self.image_asset_manager.get(&p){
-                    Some(image) =>{gpu_loading.push(fut_generator(id, p, image)); None},
+                    Some(image) => { 
+                        log::warn!("{:?}, went to GPULoader", &p);
+                        gpu_loading.push(fut_generator(id, p, image)); 
+                        None 
+                    },
                     None => Some((id, p)),
                 }}).collect();
+            
 
             if let Some((manager_idx, path, Ok(output))) = gpu_loading.next().await {
                 if let Some(sender) = self.loaded.get_mut(manager_idx) {
-                    if sender.send((path, output)).is_err() {}
+                    if sender.send((path, output)).is_err() {
+                        log::warn!("Could not send")
+                    }
                 }
             }
+            self.image_asset_manager.maintain();
         }
     }
 }
