@@ -169,14 +169,14 @@ impl Skybox {
                     binding: 0,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&rayleigh_texture.view),
-                },
-                wgpu::Binding {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&mie_texture.view),
-                },
+                // wgpu::Binding {
+                //     binding: 1,
+                //     resource: wgpu::BindingResource::TextureView(&rayleigh_texture.view),
+                // },
+                // wgpu::Binding {
+                //     binding: 2,
+                //     resource: wgpu::BindingResource::TextureView(&mie_texture.view),
+                // },
             ],
             label: None,
         });

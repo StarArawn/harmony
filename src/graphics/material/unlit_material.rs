@@ -65,14 +65,14 @@ impl UnlitMaterial {
                     binding: 0, // We'll use 1 for our local bindings.
                     resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&image.view),
-                },
-                wgpu::Binding {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&image.sampler),
-                },
+                // wgpu::Binding {
+                //     binding: 1,
+                //     resource: wgpu::BindingResource::TextureView(&image.view),
+                // },
+                // wgpu::Binding {
+                //     binding: 2,
+                //     resource: wgpu::BindingResource::Sampler(&image.sampler),
+                // },
             ],
             label: None,
         });

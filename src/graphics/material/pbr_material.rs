@@ -93,22 +93,22 @@ impl PBRMaterial {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(self.uniform_buf.as_ref().unwrap().slice(..)),
                 },
-                wgpu::Binding {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&main_image.sampler),
-                },
-                wgpu::Binding {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&main_image.view),
-                },
-                wgpu::Binding {
-                    binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&normal_image.view),
-                },
-                wgpu::Binding {
-                    binding: 4,
-                    resource: wgpu::BindingResource::TextureView(&roughness_image.view),
-                },
+                // wgpu::Binding {
+                //     binding: 1,
+                //     resource: wgpu::BindingResource::Sampler(&main_image.sampler),
+                // },
+                // wgpu::Binding {
+                //     binding: 2,
+                //     resource: wgpu::BindingResource::TextureView(&main_image.view),
+                // },
+                // wgpu::Binding {
+                //     binding: 3,
+                //     resource: wgpu::BindingResource::TextureView(&normal_image.view),
+                // },
+                // wgpu::Binding {
+                //     binding: 4,
+                //     resource: wgpu::BindingResource::TextureView(&roughness_image.view),
+                // },
             ],
             label: None,
         });

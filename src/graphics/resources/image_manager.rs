@@ -8,15 +8,15 @@ pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageSource>;
 
 
 pub(crate) struct GPUImageHandle {
-    //image: Arc<Image>,
-    //texture: Option<wgpu::Texture>,
-    //view: Option<wgpu::TextureView>,
-    //sampler: Option<wgpu::Sampler>
-    //base_mip_layer: u32,
-    //sampler_hash: u32,
+    // image: Arc<Image>,
+    // texture: Option<wgpu::Texture>,
+    // view: Option<wgpu::TextureView>,
+    // sampler: Option<wgpu::Sampler>,
+    // base_mip_layer: u32,
+    // sampler_hash: u32,
 }
 impl Asset<GPUImageLoader> for GPUImageHandle{
-    type ManagerSupplement = ();
+    type ManagerSupplement = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type AssetSupplement = (); //asset unique data
     type Structure = GPUImageHandle;
     fn construct(
@@ -30,12 +30,15 @@ impl Asset<GPUImageLoader> for GPUImageHandle{
 
 pub(crate) struct GPUImageSource;
 
-impl Source for GPUImageSource{
-    type Input = Arc<Image>;
+impl Source for GPUImageSource {
+    type Input = (Arc<Image>, Arc<wgpu::Device>, Arc<wgpu::Queue>);
     type Output = GPUImageHandle;
     fn load(item: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>> {
         //Input is the Arc<Image>/Texture that will be loaded to the GPU
         //Output will be the GPUImageHandle that will be returned
+
+        //let something = item.build()
+
         Ok(Self::Output{})
     }
 }
@@ -46,15 +49,15 @@ pub(crate) struct GPUImageLoader {
     image_asset_manager: Manager<ImageData, MemoryLoader>,
 }
 
-impl GPUImageLoader{
+impl GPUImageLoader {
     /// run the async load loop
     #[allow(unused)]
     pub async fn run(mut self) {
         let mut gpu_loading = FuturesUnordered::new();
         let mut still_loading = Vec::new();
 
-        let fut_generator = |id, path, image | async move {
-            (id, path, <<Self as Loader>::Source as Source>::load(image))
+        let fut_generator = |id, path, image, device, queue| async move {
+            (id, path, <<Self as Loader>::Source as Source>::load((image, device, queue)))
         };
 
         //let mut to_load = FuturesUnordered::new();
@@ -163,12 +166,12 @@ mod tests{
         asset_path.push("assets");
 
         let mut builder = assetmanage_rs::Builder::new();
-        let image_file_manager = builder.create_manager::<ImageData>((device, queue));
+        let image_file_manager = builder.create_manager::<ImageData>(());
         let file_loader = builder.finish_loader(());
         async_std::task::spawn(file_loader.run());
 
         let mut builder = assetmanage_rs::Builder::new();
-        let mut image_manager = builder.create_manager::<GPUImageHandle>(());
+        let mut image_manager = builder.create_manager::<GPUImageHandle>((device, queue));
         let gpu_loader = builder.finish_loader(image_file_manager);
         async_std::task::spawn(gpu_loader.run());
 

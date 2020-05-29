@@ -91,14 +91,14 @@ pub fn create(
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: global_bind_group,
         bindings: &[
-            wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&image.view),
-            },
-            wgpu::Binding {
-                binding: 1,
-                resource: wgpu::BindingResource::Sampler(&image.sampler),
-            },
+            // wgpu::Binding {
+            //     binding: 0,
+            //     resource: wgpu::BindingResource::TextureView(&image.view),
+            // },
+            // wgpu::Binding {
+            //     binding: 1,
+            //     resource: wgpu::BindingResource::Sampler(&image.sampler),
+            // },
         ],
         label: None,
     });

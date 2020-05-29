@@ -34,7 +34,7 @@ pub(crate) struct ImageData {
     pub bytes: Vec<u8>,
 }
 
-fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
+fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: &Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
@@ -51,7 +51,7 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wg
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
         },
-        &bytes,
+        bytes,
         wgpu::TextureDataLayout {
             offset: 0,
             // TODO: Figure out a better method of detecting bytes per row.
@@ -86,7 +86,7 @@ fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, texture_extent: wg
 impl ImageData {
     pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self { Self { image_info, bytes } }
 
-    pub fn build(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> Image {
+    pub fn build(&self) -> Image {
         let (image_bytes, width, height) = match self.image_info.format {
             ImageFormat::HDR16 |
             ImageFormat::HDR32 => {
@@ -140,7 +140,7 @@ pub struct Image {
 
 impl Image {
     pub fn create_gpu_texture(&self, device: &wgpu::Device, queue: &wgpu::Queue) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
-        let (texture, sampler) = create_texture(device, queue, self.extent, self.format, self.data);
+        let (texture, sampler) = create_texture(device, queue, self.extent, self.format, &self.data);
 
         let view = texture.create_default_view();
         (texture, view, sampler)
@@ -149,10 +149,10 @@ impl Image {
 
 impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageData{
     type AssetSupplement = Arc<ImageInfo>;
-    type ManagerSupplement = (Arc<wgpu::Device>, Arc<wgpu::Queue>);
+    type ManagerSupplement = ();
     type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
-    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, (device, queue): &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
-        Ok(ImageData::new(data_ass.clone(), bytes).build(device, queue))
+    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, (): &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
+        Ok(ImageData::new(data_ass.clone(), bytes).build())
     }
 }
 
