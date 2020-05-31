@@ -4,7 +4,8 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{ graphics::material::image::{Image, ImageData, ImageInfo}};
 use assetmanage_rs::*;
 use futures::stream::{FuturesUnordered,StreamExt};
-pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageSource>;
+
+pub(crate) type ImageManager = Manager<GPUImageHandle, GPUImageLoader>;
 
 
 pub(crate) struct GPUImageHandle {
@@ -15,6 +16,7 @@ pub(crate) struct GPUImageHandle {
     pub(crate) base_mip_layer: u32,
     pub(crate) sampler_hash: u32,
 }
+
 impl Asset<GPUImageLoader> for GPUImageHandle{
     type ManagerSupplement = ();
     type AssetSupplement = (); //asset unique data
