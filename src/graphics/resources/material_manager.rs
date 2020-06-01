@@ -33,23 +33,11 @@ impl MaterialManager{
     pub fn get<T: Into<PathBuf>>(&mut self, abs_path: T) -> Option<Arc<NewMaterial>> {
         let abs_path = abs_path.into();
         self.material_cache.get(&abs_path).cloned()
-        .or(match self.ron_manager.status(&abs_path){
-                        Some(s) => match s{
-                            LoadStatus::NotLoaded => { //RON not loaded
-                                if self.ron_manager.load(&abs_path,()).is_err(){};
-                                None//or return default?
-                            }
-                            LoadStatus::Loading => {None} // ron loading
-                            LoadStatus::Loaded => {
-                                // ron loaded
-                                let mat_ron = self.ron_manager.get(&abs_path).unwrap();
-                                self.try_construct(mat_ron)
-                            } 
-                        }
-                        None => {None} //ron not inserted.
-                    }
-                )
-            }
+        //if Ron not inserted return None
+        //if Ron not loaded return None
+        //if Ron loading return None
+        //if Ron loaded dont construct here. Will be constructed on next call to maintain. return None
+    }
         
     
     pub fn maintain(&mut self){
@@ -57,6 +45,8 @@ impl MaterialManager{
         for mat_ron in self.ron_manager.get_loaded_once(){
             let ron = self.ron_manager.get(mat_ron).unwrap();
             //TODO: load images
+
+            self.try_construct(mat_ron)
         }
     }
     fn try_construct(&self, mat_ron: Arc<MaterialRon>) -> Option<Arc<NewMaterial>>{
