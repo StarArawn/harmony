@@ -2,7 +2,7 @@ pub(crate) mod shader;
 pub use shader::Shader;
 
 pub(crate) mod image;
-pub use self::image::Image;
+pub use self::image::{Image, ImageInfo, ImageFormat};
 
 pub(crate) mod skybox;
 pub use self::skybox::Skybox;

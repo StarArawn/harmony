@@ -73,7 +73,7 @@ dependencies = [
 [[package]]
 name = "assetmanage-rs"
 version = "0.1.0"
-source = "git+https://github.com/floatingmountain/assetmanage-rs/?rev=a6452e5b5346789024841c3de95769bd4d39d47a#a6452e5b5346789024841c3de95769bd4d39d47a"
+source = "git+https://github.com/floatingmountain/assetmanage-rs/?rev=e3a2a78ec1f4e7b9bae97faa382223c2ed9d5cda#e3a2a78ec1f4e7b9bae97faa382223c2ed9d5cda"
 dependencies = [
  "futures",
 ]

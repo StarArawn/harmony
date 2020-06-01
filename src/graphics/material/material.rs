@@ -1,79 +1,68 @@
 use nalgebra_glm::Vec4;
 use std::{sync::Arc, path::PathBuf};
 
-use super::Image;
+use super::{image::{ImageFormat, ImageInfo}, Image};
 use assetmanage_rs::{Loader, MemoryLoader, Source};
-
-pub(crate) struct PBRMaterial {
-    pub index: u32,
-    pub main_texture: Arc<Image>,
-    pub roughness_texture: Arc<Image>,
-    pub normal_texture: Arc<Image>,
-    pub roughness: f32,
-    pub metallic: f32,
-    pub color: Vec4,
-    pub uniform_buf: Option<wgpu::Buffer>,
-}
+use crate::graphics::resources::{GPUImageHandle, ImageManager};
 
 pub(crate) enum NewMaterial {
     PBRMaterial {
-        index: u32,
-        main_texture: Arc<Image>,
-        roughness_texture: Arc<Image>,
-        normal_texture: Arc<Image>,
+        main_texture: Arc<GPUImageHandle>,
+        roughness_texture: Arc<GPUImageHandle>,
+        normal_texture: Arc<GPUImageHandle>,
         roughness: f32,
         metallic: f32,
         color: Vec4,
         uniform_buf: Option<wgpu::Buffer>,
-    },
+    }, 
     Test{
         id: u32
     },
 }
 
-//impl Material {
-//    pub fn ready(&self, gpu_image_manager: GPUImageManager, gpu_resource_manager: GPUResourceManager) -> bool {
-//        match self {
-//            Material::PBR(data) => {
-//                let color_image: Option<GPUImageHandle> = None; //gpu_image_manager.get(data.main_texture);
-//                let normal_image: Option<GPUImageHandle> = None; //gpu_image_manager.get(data.normal_texture);
-//                let roughness_texture: Option<GPUImageHandle> = None; //gpu_image_manager.get(data.roughness_texture);
-//                
-//                let images_ready = color_image.is_some() && normal_image.is_some() && roughness_texture.is_some();
-//
-//                // Create bind group here if we are ready?
-//
-//                return images_ready;
-//            },
-//        }
-//    }
-//}
-
-pub(crate) struct MaterialNode {
-    pub material: NewMaterial,
-    pub can_render: bool,
-}
-
-//impl MaterialManager {
-//    pub fn update(&mut self, gpu_image_manager: GPUImageManager, gpu_resource_manager: GPUResourceManager) {
-//        for material in self.internal_materials.values_mut() {
-//            // Maybe this should be async?
-//            let is_ready = material.material.ready(gpu_image_manager, gpu_resource_manager);
-//            material.can_render = is_ready;
-//        }
-//    }
-//}
-
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize,serde::Serialize)]
 pub(crate) enum MaterialRon{
     PBRMaterial{
         main_texture: PathBuf,
+        main_texture_info: ImageInfo,
         roughness_texture: PathBuf,
+        roughness_texture_info: ImageInfo,
         normal_texture: PathBuf,
+        normal_texture_info: ImageInfo,
         roughness: f32,
         metallic: f32,
         color: [f32;4],
     },
+}
+impl MaterialRon{
+    pub(crate) fn try_construct(&self,base:PathBuf, iam: &ImageManager) -> Option<NewMaterial>{
+        match self{
+            MaterialRon::PBRMaterial {
+                 main_texture, 
+                 main_texture_info, 
+                 roughness_texture, 
+                 roughness_texture_info, 
+                 normal_texture, 
+                 normal_texture_info, 
+                 roughness, 
+                 metallic, 
+                 color } => {
+                    let main_texture = iam.get(base.join(main_texture))?;
+                    let roughness_texture = iam.get(base.join(roughness_texture))?;
+                    let normal_texture = iam.get(base.join(normal_texture))?;
+                    Some(NewMaterial::PBRMaterial{
+                        main_texture,
+                        roughness_texture,
+                        normal_texture,
+                        roughness: *roughness,
+                        metallic: *metallic,
+                        color: Vec4::from_column_slice(color),
+                        uniform_buf: None
+                    })
+                 }
+            }
+        
+    }
 }
 
 impl assetmanage_rs::Asset<MemoryLoader> for MaterialRon{
@@ -85,6 +74,9 @@ impl assetmanage_rs::Asset<MemoryLoader> for MaterialRon{
         data_ass: &Self::AssetSupplement,
         data_mgr: &Self::ManagerSupplement,
     ) -> Result<Self::Structure, std::io::Error> {
-        todo!()
+        ron::de::from_bytes(&data_load).map_err(|e| 
+            std::io::Error::new(std::io::ErrorKind::InvalidData, e))
     }
 }
+
+

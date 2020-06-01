@@ -19,7 +19,7 @@ pub(crate) struct GPUImageHandle {
 
 impl Asset<GPUImageLoader> for GPUImageHandle{
     type ManagerSupplement = ();
-    type AssetSupplement = (); //asset unique data
+    type AssetSupplement = PathBuf; //material path
     type Structure = GPUImageHandle;
     fn construct(
         data_load: GPUImageHandle,
@@ -188,7 +188,7 @@ mod tests{
         rel_image_path.push("core");
         rel_image_path.push("white.png");
         let abs_image_path = asset_path.join(&rel_image_path);
-        image_manager.insert(&abs_image_path,());
+        image_manager.insert(&abs_image_path,PathBuf::new());
         println!("{:?}",image_manager.status(&abs_image_path));
         assert!(image_manager.load(&abs_image_path, (Arc::new(ImageInfo::new(ImageFormat::SRGB)), device, queue)).is_ok());
         println!("{:?}",image_manager.status(&abs_image_path));

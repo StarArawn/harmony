@@ -12,7 +12,7 @@ default = []
 [dependencies]
 async-std = "1.5.0"
 arrayvec = "0.5.1"
-assetmanage-rs = { git = "https://github.com/floatingmountain/assetmanage-rs/", rev = "a6452e5b5346789024841c3de95769bd4d39d47a"}
+assetmanage-rs = { git = "https://github.com/floatingmountain/assetmanage-rs/", rev = "e3a2a78ec1f4e7b9bae97faa382223c2ed9d5cda"}
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
 crossbeam = "0.7.3"
 env_logger = "0.7.1"
