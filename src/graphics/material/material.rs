@@ -72,6 +72,7 @@ impl NewMaterial {
 #[derive(serde::Deserialize, serde::Serialize)]
 pub(crate) enum MaterialRon {
     PBRMaterial {
+        //TODO: PathBuf into info
         main_texture: PathBuf,
         main_texture_info: ImageInfo,
         roughness_texture: PathBuf,
@@ -107,7 +108,7 @@ impl MaterialRon {
                 let normal_texture = iam.get(base.join(normal_texture))?;
 
                 let uniform = PBRMaterialUniform {
-                    color: Vec4::new(color[0], color[1], color[2], color[3]), // TODO: Change this
+                    color: Vec4::from_column_slice(color),
                     info: Vec4::new(*metallic, *roughness, 0.0, 0.0),
                 };
 
@@ -127,7 +128,7 @@ impl MaterialRon {
                     color: Vec4::from_column_slice(color),
                     uniform_buf: uniform_buf,
                 })
-            }
+            },
         }
     }
 }

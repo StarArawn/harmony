@@ -191,11 +191,9 @@ mod tests {
         material_manager.insert(&rel_image_path);
         material_manager.load(&rel_image_path).unwrap();
 
-        std::thread::sleep(Duration::from_millis(50));
+        std::thread::sleep(Duration::from_millis(16));
         material_manager.maintain(device.clone(), queue.clone());
-        std::thread::sleep(Duration::from_millis(50));
-        material_manager.maintain(device.clone(), queue.clone());
-        std::thread::sleep(Duration::from_millis(50));
+        std::thread::sleep(Duration::from_millis(16));
         material_manager.maintain(device.clone(), queue.clone());
 
         let t = material_manager.get(&rel_image_path);
