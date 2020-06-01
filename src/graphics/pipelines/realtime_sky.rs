@@ -60,7 +60,10 @@ pub fn create(resources: &Resources) {
             label: None,
         });
     resource_manager.add_bind_group_layout("realtime_skybox_material", skybox_material_layout);
-    skybox_desc.layouts = vec!["globals".to_string(), "realtime_skybox_material".to_string()];
+    skybox_desc.layouts = vec![
+        "globals".to_string(),
+        "realtime_skybox_material".to_string(),
+    ];
     skybox_desc.cull_mode = wgpu::CullMode::None;
     skybox_desc
         .vertex_state

@@ -1,6 +1,6 @@
-use log;
 use legion::prelude::*;
-use nalgebra_glm::{Vec3};
+use log;
+use nalgebra_glm::Vec3;
 
 use winit::{
     dpi::LogicalSize,
@@ -8,15 +8,11 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::{
-    components::{CameraData},
-    resources::DeltaTime,
-    Scene,
-};
+use harmony::scene::{components::CameraData, resources::DeltaTime, Scene};
 
 use harmony::{
     core::input::{Input, MouseButton},
-    WinitState
+    WinitState,
 };
 
 struct WindowSize {
@@ -71,14 +67,12 @@ impl AppState {
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        let scheduler_builder = Schedule::builder()
-            .add_system(create_camera_orbit_system());
+        let scheduler_builder = Schedule::builder().add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
-        
+
         // Create a clear color
-        let clear_color = harmony::graphics::material::Skybox::create_clear_color(Vec3::new(
-            0.0, 0.0, 0.0,
-        ));
+        let clear_color =
+            harmony::graphics::material::Skybox::create_clear_color(Vec3::new(0.0, 0.0, 0.0));
         // Clear color needs to be added as an entity in legion (we only should have one for now..).
         app.current_scene.world.insert((), vec![(clear_color,)]);
 
@@ -93,7 +87,11 @@ impl harmony::AppState for AppState {
             //image_asset_manager.insert("example/textures/georgentor.image.ron").unwrap();
         }
 
-        let skybox = harmony::graphics::material::Skybox::new_hdr(app, "example/textures/georgentor.image.ron", 2048.0);
+        let skybox = harmony::graphics::material::Skybox::new_hdr(
+            app,
+            "example/textures/georgentor.image.ron",
+            2048.0,
+        );
         app.current_scene.world.insert((), vec![(skybox,)]);
 
         let actual_window_size = app.get_window_actual_size();

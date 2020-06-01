@@ -5,7 +5,7 @@ use super::{
 use crate::AssetManager;
 use legion::systems::resource::Resources;
 use solvent::DepGraph;
-use std::{sync::Arc, collections::HashMap};
+use std::{collections::HashMap, sync::Arc};
 
 use crossbeam::queue::ArrayQueue;
 

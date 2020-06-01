@@ -24,7 +24,7 @@ fn map_mouse_button(button: winit::event::MouseButton) -> Option<MouseButton> {
         winit::event::MouseButton::Middle => Some(MouseButton::Middle),
         winit::event::MouseButton::Other(8) => Some(MouseButton::X1),
         winit::event::MouseButton::Other(9) => Some(MouseButton::X2),
-        _ => None
+        _ => None,
     }
 }
 
@@ -108,23 +108,24 @@ impl Input {
                             self.keys_released.insert(input.virtual_keycode.unwrap());
                         }
                     }
-                },
-                winit::event::WindowEvent::MouseInput { device_id: _, state, button, ..} => {
+                }
+                winit::event::WindowEvent::MouseInput {
+                    device_id: _,
+                    state,
+                    button,
+                    ..
+                } => {
                     if let Some(mouse_button) = map_mouse_button(*button) {
                         if *state == winit::event::ElementState::Pressed {
                             self.mouse_buttons_down.insert(mouse_button);
                             self.mouse_buttons_pressed.insert(mouse_button);
-                        }
-                        else if *state == winit::event::ElementState::Released {
+                        } else if *state == winit::event::ElementState::Released {
                             self.mouse_buttons_down.remove(&mouse_button);
                             self.mouse_buttons_released.insert(mouse_button);
                         }
                     }
                 }
-                winit::event::WindowEvent::CursorMoved {
-                    position,
-                    ..
-                } => {
+                winit::event::WindowEvent::CursorMoved { position, .. } => {
                     self.mouse_position = Vec2::new(position.x as f32, position.y as f32);
                 }
                 _ => (),

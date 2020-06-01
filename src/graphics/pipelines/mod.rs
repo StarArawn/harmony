@@ -13,11 +13,11 @@ pub mod mipmap;
 
 pub(crate) mod brdf;
 
-pub(crate) mod specular2;
 pub(crate) mod irradiance;
+pub(crate) mod specular2;
 
-pub(crate) mod skybox;
 pub(crate) mod realtime_sky;
+pub(crate) mod skybox;
 
 pub(crate) mod equirectangular2;
 

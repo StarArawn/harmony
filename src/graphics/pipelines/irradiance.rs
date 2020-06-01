@@ -3,7 +3,7 @@ use legion::prelude::Resources;
 use crate::{
     graphics::{
         pipeline_manager::{PipelineDesc, PipelineManager},
-        resources::{GPUResourceManager},
+        resources::GPUResourceManager,
     },
     AssetManager,
 };

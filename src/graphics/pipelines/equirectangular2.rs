@@ -2,9 +2,10 @@ use legion::prelude::Resources;
 
 use crate::{
     graphics::{
+        material::Image,
         pipeline_manager::{PipelineDesc, PipelineManager},
         renderer::DEPTH_FORMAT,
-        resources::{RenderTarget, GPUResourceManager}, material::Image,
+        resources::{GPUResourceManager, RenderTarget},
     },
     AssetManager,
 };
@@ -17,7 +18,7 @@ pub fn create(
     pipeline_manager: &mut PipelineManager,
     resource_manager: &mut GPUResourceManager,
     image: &Arc<Image>,
-    size: f32
+    size: f32,
 ) -> RenderTarget {
     let mut pipeline = pipeline_manager.get("cubemap", None);
 
@@ -148,11 +149,7 @@ pub fn create(
             wgpu::TextureCopyView {
                 texture: &cube_map.texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d {
-                    x: 0,
-                    y: 0,
-                    z: i,
-                },
+                origin: wgpu::Origin3d { x: 0, y: 0, z: i },
             },
             wgpu::Extent3d {
                 width: size as u32,

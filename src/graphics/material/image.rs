@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::{io, sync::Arc};
-use serde::{ Deserialize, Serialize };
 
 #[derive(Eq, PartialEq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageFormat {
@@ -26,7 +26,9 @@ pub struct ImageInfo {
 }
 
 impl ImageInfo {
-    pub fn new(format: ImageFormat) -> Self { Self { format } }
+    pub fn new(format: ImageFormat) -> Self {
+        Self { format }
+    }
 }
 
 pub(crate) struct ImageData {
@@ -34,7 +36,13 @@ pub(crate) struct ImageData {
     pub bytes: Vec<u8>,
 }
 
-fn create_texture(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, texture_extent: wgpu::Extent3d, format: wgpu::TextureFormat, bytes: &Vec<u8>) -> (wgpu::Texture, wgpu::Sampler) {
+fn create_texture(
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
+    texture_extent: wgpu::Extent3d,
+    format: wgpu::TextureFormat,
+    bytes: &Vec<u8>,
+) -> (wgpu::Texture, wgpu::Sampler) {
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         size: texture_extent,
         mip_level_count: 1,
@@ -66,7 +74,7 @@ fn create_texture(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, texture_ex
         },
         texture_extent,
     );
-    
+
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         label: None,
         address_mode_u: wgpu::AddressMode::Repeat,
@@ -84,12 +92,13 @@ fn create_texture(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, texture_ex
 }
 
 impl ImageData {
-    pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self { Self { image_info, bytes } }
+    pub(crate) fn new(image_info: Arc<ImageInfo>, bytes: Vec<u8>) -> Self {
+        Self { image_info, bytes }
+    }
 
     pub fn build(&self) -> Image {
         let (image_bytes, width, height) = match self.image_info.format {
-            ImageFormat::HDR16 |
-            ImageFormat::HDR32 => {
+            ImageFormat::HDR16 | ImageFormat::HDR32 => {
                 let decoder = image::hdr::HdrDecoder::new(self.bytes.as_slice()).unwrap();
                 let metadata = decoder.metadata();
                 let decoded = decoder.read_image_hdr().unwrap();
@@ -100,18 +109,21 @@ impl ImageData {
                     .collect::<Vec<_>>();
 
                 let image_bytes = unsafe {
-                    std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
+                    std::slice::from_raw_parts(
+                        image_data.as_ptr() as *const u8,
+                        image_data.len() * 4,
+                    )
                 }
                 .to_vec();
 
                 (image_bytes, metadata.width, metadata.height)
-            },
+            }
             ImageFormat::RGB | ImageFormat::SRGB => {
                 let image = image::load_from_memory(&self.bytes).unwrap().to_rgba();
                 let (width, height) = image.dimensions();
 
                 (image.into_raw(), width, height)
-            },
+            }
         };
 
         let texture_extent = wgpu::Extent3d {
@@ -132,26 +144,35 @@ impl ImageData {
 }
 
 pub struct Image {
-    pub image_info: Arc<ImageInfo>, 
+    pub image_info: Arc<ImageInfo>,
     pub extent: wgpu::Extent3d,
     pub data: Vec<u8>,
     pub format: wgpu::TextureFormat,
 }
 
 impl Image {
-    pub fn create_gpu_texture(&self, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
-        let (texture, sampler) = create_texture(device, queue, self.extent, self.format, &self.data);
+    pub fn create_gpu_texture(
+        &self,
+        device: Arc<wgpu::Device>,
+        queue: Arc<wgpu::Queue>,
+    ) -> (wgpu::Texture, wgpu::TextureView, wgpu::Sampler) {
+        let (texture, sampler) =
+            create_texture(device, queue, self.extent, self.format, &self.data);
 
         let view = texture.create_default_view();
         (texture, view, sampler)
     }
 }
 
-impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageData{
+impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageData {
     type AssetSupplement = Arc<ImageInfo>;
     type ManagerSupplement = ();
     type Structure = Image; //TODO: return Image. explanation @ imageassetmanager
-    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, (): &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
+    fn construct(
+        bytes: Vec<u8>,
+        data_ass: &Self::AssetSupplement,
+        (): &Self::ManagerSupplement,
+    ) -> Result<Self::Structure, io::Error> {
         Ok(ImageData::new(data_ass.clone(), bytes).build())
     }
 }
@@ -163,12 +184,12 @@ impl assetmanage_rs::Asset<assetmanage_rs::MemoryLoader> for ImageData{
 //    fn construct(bytes: Vec<u8>, data_ass: &Self::AssetSupplement, _data_mgr: &Self::ManagerSupplement) -> Result<Self::Structure, io::Error> {
 //        let mut image_info = ron::de::from_bytes::<ImageInfo>(&bytes)
 //            .map_err(|e| std::io::Error::new(ErrorKind::InvalidData, e))?;
-//        
+//
 //        // add relative path of the ron to the imagepath inside the ron
 //        let mut path = data_ass.clone();
 //        path.pop();
 //        image_info.file = path.join(image_info.file);
-//        
+//
 //        Ok(image_info)
 //    }
 //}

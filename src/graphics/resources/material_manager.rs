@@ -1,16 +1,20 @@
-use assetmanage_rs::*;
-use std::{error::Error, path::PathBuf, sync::Arc, collections::HashMap};
 use super::ImageManager;
-use crate::graphics::material::{NewMaterial, MaterialRon};
+use crate::graphics::material::{MaterialRon, NewMaterial};
+use assetmanage_rs::*;
+use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 pub(crate) struct MaterialManager {
     base_path: PathBuf,
-    
-    ron_manager: Manager<MaterialRon,MemoryLoader>,
+
+    ron_manager: Manager<MaterialRon, MemoryLoader>,
     image_manager: ImageManager,
     material_cache: HashMap<PathBuf, Arc<NewMaterial>>,
 }
-impl MaterialManager{
-    pub(crate) fn new<T: Into<PathBuf>>(base_path: T, ron_manager: Manager<MaterialRon, MemoryLoader>, image_manager: ImageManager) -> Self {
+impl MaterialManager {
+    pub(crate) fn new<T: Into<PathBuf>>(
+        base_path: T,
+        ron_manager: Manager<MaterialRon, MemoryLoader>,
+        image_manager: ImageManager,
+    ) -> Self {
         Self {
             base_path: base_path.into(),
             ron_manager,
@@ -19,11 +23,11 @@ impl MaterialManager{
         }
     }
 
-    pub fn insert<T: Into<PathBuf>>(&mut self, base_rel_path: T){
+    pub fn insert<T: Into<PathBuf>>(&mut self, base_rel_path: T) {
         let path = self.base_path.join(base_rel_path.into());
         self.ron_manager.insert(path, ());
     }
-    pub fn insert_raw<T: Into<PathBuf>>(&mut self, base_rel_path: T, material: Arc<NewMaterial>){
+    pub fn insert_raw<T: Into<PathBuf>>(&mut self, base_rel_path: T, material: Arc<NewMaterial>) {
         let path = self.base_path.join(base_rel_path.into());
         self.material_cache.insert(path, material);
     }
@@ -39,12 +43,12 @@ impl MaterialManager{
         //if Ron loading return None
         //if Ron loaded dont construct here. Will be constructed on next call to maintain. return None
     }
-    pub fn maintain(&mut self, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>){
+    pub fn maintain(&mut self, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) {
         self.ron_manager.maintain();
         self.image_manager.maintain();
-        for mat_ron in self.ron_manager.get_loaded_once(){
-            match self.ron_manager.get(&mat_ron).unwrap().as_ref(){
-                MaterialRon::PBRMaterial{
+        for mat_ron in self.ron_manager.get_loaded_once() {
+            match self.ron_manager.get(&mat_ron).unwrap().as_ref() {
+                MaterialRon::PBRMaterial {
                     main_texture,
                     main_texture_info,
                     roughness_texture,
@@ -61,28 +65,55 @@ impl MaterialManager{
                     let roughness_texture = abs_path.join(roughness_texture);
                     let normal_texture = abs_path.join(normal_texture);
                     self.image_manager.insert(&main_texture, mat_ron.clone());
-                    self.image_manager.insert(&roughness_texture,mat_ron.clone()) ;
+                    self.image_manager
+                        .insert(&roughness_texture, mat_ron.clone());
                     self.image_manager.insert(&normal_texture, mat_ron);
-                    self.image_manager.load(&main_texture,(Arc::new(main_texture_info.to_owned()), device.clone(), queue.clone())).map_err(|e|{
-                        log::warn!("Image not loaded! {:?}", &e)
-                    }).ok();
-                    self.image_manager.load(&roughness_texture,(Arc::new(roughness_texture_info.to_owned()), device.clone(), queue.clone())).map_err(|e|{
-                        log::warn!("Image not loaded! {:?}", &e)
-                    }).ok();
-                    self.image_manager.load(&normal_texture,(Arc::new(normal_texture_info.to_owned()), device.clone(), queue.clone())).map_err(|e|{
-                        log::warn!("Image not loaded! {:?}", &e)
-                    }).ok();
-                },
+                    self.image_manager
+                        .load(
+                            &main_texture,
+                            (
+                                Arc::new(main_texture_info.to_owned()),
+                                device.clone(),
+                                queue.clone(),
+                            ),
+                        )
+                        .map_err(|e| log::warn!("Image not loaded! {:?}", &e))
+                        .ok();
+                    self.image_manager
+                        .load(
+                            &roughness_texture,
+                            (
+                                Arc::new(roughness_texture_info.to_owned()),
+                                device.clone(),
+                                queue.clone(),
+                            ),
+                        )
+                        .map_err(|e| log::warn!("Image not loaded! {:?}", &e))
+                        .ok();
+                    self.image_manager
+                        .load(
+                            &normal_texture,
+                            (
+                                Arc::new(normal_texture_info.to_owned()),
+                                device.clone(),
+                                queue.clone(),
+                            ),
+                        )
+                        .map_err(|e| log::warn!("Image not loaded! {:?}", &e))
+                        .ok();
+                }
             }
         }
-        
-        for img in self.image_manager.get_loaded_once(){
+
+        for img in self.image_manager.get_loaded_once() {
             let mat_path = self.image_manager.data_asset(img).unwrap();
-            if let Some(mat_ron) = self.ron_manager.get(mat_path){
+            if let Some(mat_ron) = self.ron_manager.get(mat_path) {
                 let mut base = mat_path.clone();
                 base.pop();
-                if let Some(mat) = mat_ron.try_construct(base, &self.image_manager){
-                    self.material_cache.entry(mat_path.into()).or_insert(Arc::new(mat));
+                if let Some(mat) = mat_ron.try_construct(base, &self.image_manager, &device) {
+                    self.material_cache
+                        .entry(mat_path.into())
+                        .or_insert(Arc::new(mat));
                 }
             }
         }
@@ -90,19 +121,25 @@ impl MaterialManager{
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
+    use super::MaterialManager;
+    use crate::graphics::{
+        material::{
+            image::{ImageData, ImageFormat},
+            MaterialRon,
+        },
+        resources::GPUImageHandle,
+    };
     use std::{path::PathBuf, sync::Arc, time::Duration};
-    use crate::graphics::{resources::GPUImageHandle, material::{MaterialRon, image::{ImageFormat, ImageData}}};
-    use super::MaterialManager; 
 
     #[test]
-    fn initial(){
+    fn initial() {
         env_logger::init_from_env(
             env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"),
         );
 
         let (device, queue) = async_std::task::block_on(async {
-            let instance = wgpu::Instance::new(); 
+            let instance = wgpu::Instance::new();
             let adapter = instance
                 .request_adapter(
                     &wgpu::RequestAdapterOptions {
@@ -115,12 +152,15 @@ mod tests{
                 .unwrap();
 
             let (device, queue) = adapter
-                .request_device(&wgpu::DeviceDescriptor {
-                    extensions: wgpu::Extensions {
-                        anisotropic_filtering: false,
+                .request_device(
+                    &wgpu::DeviceDescriptor {
+                        extensions: wgpu::Extensions {
+                            anisotropic_filtering: false,
+                        },
+                        limits: wgpu::Limits::default(),
                     },
-                    limits: wgpu::Limits::default(),
-                }, None)
+                    None,
+                )
                 .await
                 .unwrap();
             let arc_device = Arc::new(device);

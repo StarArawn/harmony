@@ -1,6 +1,6 @@
 use legion::prelude::*;
 use nalgebra_glm::Vec4;
-use std::{sync::Arc, convert::TryInto};
+use std::{convert::TryInto, sync::Arc};
 
 use crate::{
     graphics::{

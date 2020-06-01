@@ -8,7 +8,7 @@ use super::{
 use crate::AssetManager;
 use solvent::DepGraph;
 
-/// A description of a render pipeline. 
+/// A description of a render pipeline.
 /// Note: You can call `default()` to get a base implementation.
 /// You'll still need to specify the correct shader at the very least.
 #[derive(Debug, Hash, Clone)]
@@ -171,7 +171,7 @@ pub struct PipelineManager {
 }
 
 impl PipelineManager {
-    /// Creates a new pipeline manager. 
+    /// Creates a new pipeline manager.
     pub fn new() -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());

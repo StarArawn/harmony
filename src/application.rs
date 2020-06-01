@@ -23,7 +23,8 @@ use crate::{
 use graphics::{
     material::skybox::SkyboxType,
     pipelines::{LinePipelineDesc, UnlitPipelineDesc},
-    CommandBufferQueue, CommandQueueItem, renderer::{DEPTH_FORMAT, DepthTexture},
+    renderer::{DepthTexture, DEPTH_FORMAT},
+    CommandBufferQueue, CommandQueueItem,
 };
 use nalgebra_glm::Vec2;
 
@@ -97,26 +98,25 @@ impl Application {
 
         let asset_path = asset_path.into();
         let asset_manager = AssetManager::new(asset_path.clone());
-        
+
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
-        render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
-        
+            render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
+
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
             render_schedule_builder = render_schedule_builder.add_system(system);
         }
-        
+
         let render_schedule = render_schedule_builder
-        .flush()
-        .add_thread_local_fn(graphics::systems::render::create())
-        .build();
-        
-        
+            .flush()
+            .add_thread_local_fn(graphics::systems::render::create())
+            .build();
+
         resources.insert(asset_manager);
         resources.insert({
-            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-            let queue = resources.get::<Arc<wgpu::Queue>>().unwrap(); 
+            let _device = resources.get::<Arc<wgpu::Device>>().unwrap();
+            let _queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
             //crate::assets::ImageAssetManager::new(asset_path.clone(), device.clone(), queue.clone())
         });
         resources.insert(TransformCount(0));
@@ -165,8 +165,8 @@ impl Application {
 
         let imgui_renderer = {
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-            let queue = resources.get::<Arc<wgpu::Queue>>().unwrap(); 
-            
+            let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
+
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             imgui_wgpu::Renderer::new(&mut imgui, &device, &queue, sc_desc.format, None)
         };
@@ -279,7 +279,7 @@ impl Application {
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
         crate::graphics::pipelines::realtime_sky::create(&self.resources);
-        
+
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
 
@@ -459,8 +459,9 @@ impl Application {
                         label: None,
                     })
                 };
-                self.resources.insert(DepthTexture(depth_texture.create_default_view()));
-                
+                self.resources
+                    .insert(DepthTexture(depth_texture.create_default_view()));
+
                 app_state.resize(self);
             }
             _ => (),

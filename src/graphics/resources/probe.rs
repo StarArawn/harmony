@@ -5,9 +5,7 @@ use std::sync::Arc;
 
 use super::{BindGroup, GPUResourceManager, RenderTarget};
 use crate::{
-    graphics::{pipeline_manager::PipelineManager},
-    scene::components::CameraData,
-    AssetManager,
+    graphics::pipeline_manager::PipelineManager, scene::components::CameraData, AssetManager,
 };
 //use crate::graphics::systems::create_render_schedule_builder;
 
@@ -316,7 +314,7 @@ impl Probe {
                         Self::update_camera(self.position, &mut camera_data, i);
                     }
                 }
-                
+
                 // Submit our queue.
                 render_schedule.execute(&mut scene.world, resources);
             }
@@ -416,7 +414,7 @@ impl Probe {
 
         // create pipeline if we need to.
         let node_pipeline = pipeline_manager.get("irradiance", None).unwrap();
-        
+
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("irradiance"),
         });
@@ -515,11 +513,7 @@ impl Probe {
                 wgpu::TextureCopyView {
                     texture: &self.irradiance_target.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d {
-                        x: 0,
-                        y: 0,
-                        z: i,
-                    },
+                    origin: wgpu::Origin3d { x: 0, y: 0, z: i },
                 },
                 wgpu::Extent3d {
                     width: self.irradiance_resoultion as u32,
@@ -664,11 +658,7 @@ impl Probe {
                     wgpu::TextureCopyView {
                         texture: &self.specular_target.texture,
                         mip_level: mip_id,
-                        origin: wgpu::Origin3d {
-                            x: 0,
-                            y: 0,
-                            z: i,
-                        },
+                        origin: wgpu::Origin3d { x: 0, y: 0, z: i },
                     },
                     wgpu::Extent3d {
                         width: res as u32,

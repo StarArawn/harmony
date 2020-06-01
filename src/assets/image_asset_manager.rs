@@ -2,13 +2,15 @@ use crate::graphics::material::{
     image::{ImageData, ImageInfo},
     Image,
 };
-use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 // Types
-pub(crate) type ImageInfoAssetManager = assetmanage_rs::Manager<ImageInfo,assetmanage_rs::MemoryLoader>;
-pub(crate) type ImageBuilderManager = assetmanage_rs::Manager<ImageData,assetmanage_rs::MemoryLoader>;
+pub(crate) type ImageInfoAssetManager =
+    assetmanage_rs::Manager<ImageInfo, assetmanage_rs::MemoryLoader>;
+pub(crate) type ImageBuilderManager =
+    assetmanage_rs::Manager<ImageData, assetmanage_rs::MemoryLoader>;
 pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
-// TODO: If we were able to pass the device and queue into the ImageBuilderManager on creation, we could build the image while decoding. The ImageBuilderManager could then become a ImageManager. ImageStorage could be removed. 
+// TODO: If we were able to pass the device and queue into the ImageBuilderManager on creation, we could build the image while decoding. The ImageBuilderManager could then become a ImageManager. ImageStorage could be removed.
 //       Current Blocker: Imgui fetches the queue as mut in Application::new, so we cannot fetch it twice there.
 
 //pub struct ImageAssetManager {
@@ -104,7 +106,7 @@ pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
 //        );
 //
 //        async_std::task::block_on(async {
-//            let instance = wgpu::Instance::new(); 
+//            let instance = wgpu::Instance::new();
 //            let adapter = instance
 //                .request_adapter(
 //                    &wgpu::RequestAdapterOptions {
@@ -138,7 +140,7 @@ pub(crate) type ImageStorage = HashMap<PathBuf, Option<Arc<Image>>>;
 //            iam.update();
 //            async_std::task::sleep(std::time::Duration::from_millis(50)).await;
 //            iam.update();
-//            
+//
 //            println!("{:?}",iam.get(&image_path).is_some());
 //        });
 //    }

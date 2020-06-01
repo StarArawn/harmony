@@ -11,7 +11,7 @@ pub struct GPUResourceManager {
     single_bind_groups: HashMap<String, HashMap<u32, BindGroup>>,
     multi_bind_groups: HashMap<String, HashMap<u32, HashMap<u32, BindGroup>>>,
     multi_buffer: HashMap<String, HashMap<u32, wgpu::Buffer>>,
-    
+
     buffers: HashMap<String, wgpu::Buffer>,
 
     pub global_uniform_buffer: wgpu::Buffer,
@@ -97,11 +97,7 @@ impl GPUResourceManager {
     }
 
     /// Adds a single bind group with a given key.
-    pub fn add_single_bind_group<T: Into<String>>(
-        &mut self,
-        key: T,
-        bind_group: BindGroup,
-    ) {
+    pub fn add_single_bind_group<T: Into<String>>(&mut self, key: T, bind_group: BindGroup) {
         let key = key.into();
         let bind_group_index = bind_group.index;
         if self.single_bind_groups.contains_key(&key) {
@@ -110,8 +106,7 @@ impl GPUResourceManager {
         } else {
             let mut hash_map = HashMap::new();
             hash_map.insert(bind_group_index, bind_group);
-            self.single_bind_groups
-                .insert(key.clone(), hash_map);
+            self.single_bind_groups.insert(key.clone(), hash_map);
         }
     }
 
@@ -131,8 +126,7 @@ impl GPUResourceManager {
             let mut hashmap_bind_group = HashMap::new();
             hashmap_bind_group.insert(item_index, bind_group);
             bindings_hash_map.insert(bind_group_index, hashmap_bind_group);
-            self.multi_bind_groups
-                .insert(key, bindings_hash_map);
+            self.multi_bind_groups.insert(key, bindings_hash_map);
         } else {
             let bindings_hash_map = self.multi_bind_groups.get_mut(&key).unwrap();
             let mut hashmap_bind_group = bindings_hash_map.get_mut(&bind_group_index);
@@ -164,13 +158,9 @@ impl GPUResourceManager {
             self.multi_buffer.insert(key, hash_map);
         }
     }
-    
+
     /// Let's you retrieve a multi-buffer.
-    pub fn get_multi_buffer<T: Into<String>>(
-        &self,
-        key: T,
-        item_index: u32,
-    ) -> &wgpu::Buffer {
+    pub fn get_multi_buffer<T: Into<String>>(&self, key: T, item_index: u32) -> &wgpu::Buffer {
         self.multi_buffer
             .get(&key.into())
             .unwrap()

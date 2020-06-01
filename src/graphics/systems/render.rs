@@ -1,4 +1,4 @@
-use crate::{graphics::{pipeline_manager::PipelineManager, CommandBufferQueue}};
+use crate::graphics::{pipeline_manager::PipelineManager, CommandBufferQueue};
 use legion::prelude::*;
 use std::sync::Arc;
 

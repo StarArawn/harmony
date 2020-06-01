@@ -1,10 +1,13 @@
-use crate::{graphics::{
-    material::{skybox::SkyboxType, Skybox},
-    pipeline_manager::{Pipeline, PipelineManager},
-    renderer::DepthTexture,
-    resources::{CurrentRenderTarget, GPUResourceManager},
-    CommandBufferQueue, CommandQueueItem,
-}, AssetManager};
+use crate::{
+    graphics::{
+        material::{skybox::SkyboxType, Skybox},
+        pipeline_manager::{Pipeline, PipelineManager},
+        renderer::DepthTexture,
+        resources::{CurrentRenderTarget, GPUResourceManager},
+        CommandBufferQueue, CommandQueueItem,
+    },
+    AssetManager,
+};
 use legion::prelude::*;
 use std::sync::Arc;
 
@@ -23,8 +26,8 @@ pub fn create() -> Box<dyn Schedulable> {
         .with_query(<(Write<Skybox>,)>::query())
         .build(
             |_,
-            mut world,
-            (
+             mut world,
+             (
                 asset_manager,
                 //image_asset_manager,
                 command_buffer_queue,
@@ -36,26 +39,26 @@ pub fn create() -> Box<dyn Schedulable> {
                 output,
                 depth_texture,
             ),
-            skyboxes| {
+             skyboxes| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
-                
+
                 let view_attachment = if current_render_target.0.is_some() {
                     &current_render_target.0.as_ref().unwrap().1
                 } else {
                     &output.view
                 };
-                
+
                 let depth_attachment = if current_render_target.0.is_some() {
                     current_render_target
-                    .0
-                    .as_ref()
-                    .unwrap()
-                    .0
-                    .depth_texture_view
-                    .as_ref()
-                    .unwrap()
+                        .0
+                        .as_ref()
+                        .unwrap()
+                        .0
+                        .depth_texture_view
+                        .as_ref()
+                        .unwrap()
                 } else {
                     &depth_texture.0
                 };
@@ -72,7 +75,9 @@ pub fn create() -> Box<dyn Schedulable> {
                         );
                     }
 
-                    if !skybox.is_processed { continue; }
+                    if !skybox.is_processed {
+                        continue;
+                    }
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -101,9 +106,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     });
 
                     if skybox.skybox_type == SkyboxType::HdrCubemap {
-                        let pipeline: &Pipeline = { 
-                            pipeline_manager.get("skybox", None).unwrap()
-                        };
+                        let pipeline: &Pipeline = { pipeline_manager.get("skybox", None).unwrap() };
                         render_pass.set_pipeline(&pipeline.render_pipeline);
                         render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
 
@@ -114,9 +117,8 @@ pub fn create() -> Box<dyn Schedulable> {
                         );
                         render_pass.draw(0..3 as u32, 0..1);
                     } else if skybox.skybox_type == SkyboxType::RealTime {
-                        let pipeline_realtime: &Pipeline = {
-                            pipeline_manager.get("realtime_skybox", None).unwrap()
-                        };
+                        let pipeline_realtime: &Pipeline =
+                            { pipeline_manager.get("realtime_skybox", None).unwrap() };
                         render_pass.set_pipeline(&pipeline_realtime.render_pipeline);
                         render_pass.set_bind_group(0, &resource_manager.global_bind_group, &[]);
                         render_pass.set_bind_group(
