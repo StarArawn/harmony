@@ -24,39 +24,55 @@ impl MaterialManager{
         }
     }
 
-    pub fn insert<T: Into<PathBuf>>(&mut self, abs_path: T) -> Result<(), Box<dyn Error>> {
+    pub fn insert<T: Into<PathBuf>>(&mut self, abs_path: T){
         self.ron_manager.insert(abs_path.into(), ());
-        Ok(())
+    }
+    pub fn load<T: Into<PathBuf>>(&mut self, abs_path: T) -> Result<(), std::io::Error> {
+        self.ron_manager.load(abs_path.into(), ())
     }
     pub fn get<T: Into<PathBuf>>(&mut self, abs_path: T) -> Option<Arc<NewMaterial>> {
         let abs_path = abs_path.into();
-        match self.material_cache.get(&abs_path){
-            Some(m) => Some(m.clone()),
-            None => {
-                if let Some(mat_ron) = self.ron_manager.get(&abs_path){
-                    Some(self.try_construct_mat(mat_ron))
-                } else {
-                    match self.ron_manager.status(&abs_path){
+        self.material_cache.get(&abs_path).cloned()
+        .or(match self.ron_manager.status(&abs_path){
                         Some(s) => match s{
-                            LoadStatus::NotLoaded => {
+                            LoadStatus::NotLoaded => { //RON not loaded
                                 if self.ron_manager.load(&abs_path,()).is_err(){};
-                                None
+                                None//or return default?
                             }
-                            LoadStatus::Loading => {None}
-                            LoadStatus::Loaded => {None}
+                            LoadStatus::Loading => {None} // ron loading
+                            LoadStatus::Loaded => {
+                                // ron loaded
+                                let mat_ron = self.ron_manager.get(&abs_path).unwrap();
+                                self.try_construct(mat_ron)
+                            } 
                         }
-                        None => {None}
+                        None => {None} //ron not inserted.
                     }
-                    todo!()
-                }
+                )
             }
+        
+    
+    pub fn maintain(&mut self){
+
+        for mat_ron in self.ron_manager.get_loaded_once(){
+            let ron = self.ron_manager.get(mat_ron).unwrap();
+            //TODO: load images
         }
     }
-    pub fn status<T: Into<PathBuf>>(&self, abs_path: T) -> Option<assetmanage_rs::LoadStatus> {
-        self.image_manager.status(&abs_path.into())
-    }
-    fn try_construct_mat(&self, mat: Arc<MaterialRon>) -> Arc<NewMaterial>{
+    fn try_construct(&self, mat_ron: Arc<MaterialRon>) -> Option<Arc<NewMaterial>>{
         //construct mat and add to materialcache
-        todo!()
+            match mat_ron.as_ref(){
+                MaterialRon::PBRMaterial { 
+                    main_texture, 
+                    roughness_texture, 
+                    normal_texture, 
+                    roughness, 
+                    metallic, 
+                    color 
+                } => {}
+            }
+            todo!()
+            
+        
     }
 }

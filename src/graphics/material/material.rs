@@ -1,5 +1,5 @@
 use nalgebra_glm::Vec4;
-use std::{sync::Arc};
+use std::{sync::Arc, path::PathBuf};
 
 use super::Image;
 use assetmanage_rs::{Loader, MemoryLoader, Source};
@@ -16,7 +16,19 @@ pub(crate) struct PBRMaterial {
 }
 
 pub(crate) enum NewMaterial {
-    PBR(PBRMaterial),   
+    PBRMaterial {
+        index: u32,
+        main_texture: Arc<Image>,
+        roughness_texture: Arc<Image>,
+        normal_texture: Arc<Image>,
+        roughness: f32,
+        metallic: f32,
+        color: Vec4,
+        uniform_buf: Option<wgpu::Buffer>,
+    },
+    Test{
+        id: u32
+    },
 }
 
 //impl Material {
@@ -53,8 +65,15 @@ pub(crate) struct MaterialNode {
 //}
 
 #[derive(serde::Deserialize)]
-pub(crate) struct MaterialRon{
-    
+pub(crate) enum MaterialRon{
+    PBRMaterial{
+        main_texture: PathBuf,
+        roughness_texture: PathBuf,
+        normal_texture: PathBuf,
+        roughness: f32,
+        metallic: f32,
+        color: [f32;4],
+    },
 }
 
 impl assetmanage_rs::Asset<MemoryLoader> for MaterialRon{
