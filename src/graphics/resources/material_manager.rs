@@ -1,7 +1,7 @@
 use super::ImageManager;
 use crate::graphics::material::{MaterialRon, NewMaterial};
 use assetmanage_rs::*;
-use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 pub(crate) struct MaterialManager {
     base_path: PathBuf,
 
@@ -43,11 +43,12 @@ impl MaterialManager {
         //if Ron loading return None
         //if Ron loaded dont construct here. Will be constructed on next call to maintain. return None
     }
-    pub fn maintain(&mut self, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) {
+    pub fn maintain(&mut self, device: &Arc<wgpu::Device>, queue: &Arc<wgpu::Queue>) {
         self.ron_manager.maintain();
         self.image_manager.maintain();
         for mat_ron in self.ron_manager.get_loaded_once() {
             match self.ron_manager.get(&mat_ron).unwrap().as_ref() {
+                #[allow(unused)]
                 MaterialRon::PBRMaterial {
                     main_texture,
                     main_texture_info,
@@ -125,7 +126,7 @@ mod tests {
     use super::MaterialManager;
     use crate::graphics::{
         material::{
-            image::{ImageData, ImageFormat},
+            image::{ImageData},
             MaterialRon,
         },
         resources::GPUImageHandle,
@@ -192,9 +193,9 @@ mod tests {
         material_manager.load(&rel_image_path).unwrap();
 
         std::thread::sleep(Duration::from_millis(16));
-        material_manager.maintain(device.clone(), queue.clone());
+        material_manager.maintain(&device, &queue);
         std::thread::sleep(Duration::from_millis(16));
-        material_manager.maintain(device.clone(), queue.clone());
+        material_manager.maintain(&device, &queue);
 
         let t = material_manager.get(&rel_image_path);
         assert!(t.is_some());

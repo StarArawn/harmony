@@ -103,7 +103,6 @@ impl GPUImageLoader {
                 .filter_map(
                     |(id, p, t_device, t_queue)| match self.image_asset_manager.get(&p) {
                         Some(image) => {
-                            log::warn!("{:?}, went to GPULoader", &p);
                             gpu_loading.push(fut_generator(id, p, image, t_device, t_queue));
                             None
                         }
@@ -149,9 +148,9 @@ mod tests {
 
     #[test]
     fn initial() {
-        env_logger::init_from_env(
-            env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"),
-        );
+        //env_logger::init_from_env(
+        //    env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "warn"),
+        //);
 
         let (device, queue) = async_std::task::block_on(async {
             let instance = wgpu::Instance::new();

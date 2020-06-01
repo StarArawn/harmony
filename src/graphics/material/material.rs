@@ -28,6 +28,7 @@ impl NewMaterial {
         pipeline_layout: &wgpu::BindGroupLayout,
     ) -> BindGroup {
         match self {
+            #[allow(unused)]
             NewMaterial::PBRMaterial {
                 main_texture,
                 roughness_texture,
@@ -92,6 +93,7 @@ impl MaterialRon {
         device: &wgpu::Device,
     ) -> Option<NewMaterial> {
         match self {
+            #[allow(unused)]
             MaterialRon::PBRMaterial {
                 main_texture,
                 main_texture_info,
@@ -139,8 +141,8 @@ impl assetmanage_rs::Asset<MemoryLoader> for MaterialRon {
     type Structure = MaterialRon;
     fn construct(
         data_load: Vec<u8>,
-        data_ass: &Self::AssetSupplement,
-        data_mgr: &Self::ManagerSupplement,
+        _data_ass: &Self::AssetSupplement,
+        _data_mgr: &Self::ManagerSupplement,
     ) -> Result<Self::Structure, std::io::Error> {
         ron::de::from_bytes(&data_load)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))

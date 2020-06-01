@@ -59,7 +59,7 @@ impl PBRMaterial {
             info: Vec4::new(self.metallic, self.roughness, 0.0, 0.0),
         };
 
-        let material_uniform_size = mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
+        let _material_uniform_size = mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
         let uniform_buf = device.create_buffer_with_data(
             bytemuck::bytes_of(&uniform),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -68,19 +68,19 @@ impl PBRMaterial {
 
         // Asset manager will panic if image doesn't exist, but we don't want that.
         // So use get_image_option instead.
-        let main_image = images.get(&self.main_texture)
+        let _main_image = images.get(&self.main_texture)
             .unwrap_or(
                 images.get("white.png")
                     .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
             );
 
-        let normal_image = images.get(&self.normal_texture)
+        let _normal_image = images.get(&self.normal_texture)
             .unwrap_or(
                 images.get("white.png")
                     .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
             );
 
-        let roughness_image = images.get(&self.roughness_texture)
+        let _roughness_image = images.get(&self.roughness_texture)
             .unwrap_or(
                 images.get("white.png")
                     .unwrap_or_else(|| panic!("PBRMaterial Error: Couldn't find default white texture. Please make sure it exists in the asset folder or make sure your material's image can be found."))
