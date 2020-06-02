@@ -22,17 +22,13 @@ impl MaterialManager {
             material_cache: HashMap::new(),
         }
     }
-
-    pub fn insert<T: Into<PathBuf>>(&mut self, base_rel_path: T) {
-        let path = self.base_path.join(base_rel_path.into());
-        self.ron_manager.insert(path, ());
-    }
-    pub fn insert_raw<T: Into<PathBuf>>(&mut self, base_rel_path: T, material: Arc<NewMaterial>) {
+    pub fn insert<T: Into<PathBuf>>(&mut self, base_rel_path: T, material: Arc<NewMaterial>) {
         let path = self.base_path.join(base_rel_path.into());
         self.material_cache.insert(path, material);
     }
     pub fn load<T: Into<PathBuf>>(&mut self, base_rel_path: T) -> Result<(), std::io::Error> {
         let path = self.base_path.join(base_rel_path.into());
+        self.ron_manager.insert(&path, ());
         self.ron_manager.load(path, ())
     }
     pub fn get<T: Into<PathBuf>>(&mut self, base_rel_path: T) -> Option<Arc<NewMaterial>> {
@@ -47,33 +43,30 @@ impl MaterialManager {
         self.ron_manager.maintain();
         self.image_manager.maintain();
         for mat_ron in self.ron_manager.get_loaded_once() {
+            let mut abs_path = mat_ron.clone();
+            abs_path.pop();
             match self.ron_manager.get(&mat_ron).unwrap().as_ref() {
                 #[allow(unused)]
                 MaterialRon::PBRMaterial {
                     main_texture,
-                    main_texture_info,
                     roughness_texture,
-                    roughness_texture_info,
                     normal_texture,
-                    normal_texture_info,
                     roughness,
                     metallic,
                     color,
                 } => {
-                    let mut abs_path = mat_ron.clone();
-                    abs_path.pop();
-                    let main_texture = abs_path.join(main_texture);
-                    let roughness_texture = abs_path.join(roughness_texture);
-                    let normal_texture = abs_path.join(normal_texture);
-                    self.image_manager.insert(&main_texture, mat_ron.clone());
+                    let main_tex_path = abs_path.join(&main_texture.path);
+                    let roughness_tex_path = abs_path.join(&roughness_texture.path);
+                    let normal_tex_path = abs_path.join(&normal_texture.path);
+                    self.image_manager.insert(&main_tex_path, mat_ron.clone());
                     self.image_manager
-                        .insert(&roughness_texture, mat_ron.clone());
-                    self.image_manager.insert(&normal_texture, mat_ron);
+                        .insert(&roughness_tex_path, mat_ron.clone());
+                    self.image_manager.insert(&normal_tex_path, mat_ron);
                     self.image_manager
                         .load(
-                            &main_texture,
+                            &main_tex_path,
                             (
-                                Arc::new(main_texture_info.to_owned()),
+                                Arc::new(main_texture.to_owned()),
                                 device.clone(),
                                 queue.clone(),
                             ),
@@ -82,9 +75,9 @@ impl MaterialManager {
                         .ok();
                     self.image_manager
                         .load(
-                            &roughness_texture,
+                            &roughness_tex_path,
                             (
-                                Arc::new(roughness_texture_info.to_owned()),
+                                Arc::new(roughness_texture.to_owned()),
                                 device.clone(),
                                 queue.clone(),
                             ),
@@ -93,15 +86,34 @@ impl MaterialManager {
                         .ok();
                     self.image_manager
                         .load(
-                            &normal_texture,
+                            &normal_tex_path,
                             (
-                                Arc::new(normal_texture_info.to_owned()),
+                                Arc::new(normal_texture.to_owned()),
                                 device.clone(),
                                 queue.clone(),
                             ),
                         )
                         .map_err(|e| log::warn!("Image not loaded! {:?}", &e))
                         .ok();
+                }
+                #[allow(unused)]
+                MaterialRon::UnlitMaterial { 
+                    main_texture, 
+                    color 
+                } => {
+                    let main_tex_path = abs_path.join(&main_texture.path);
+                    self.image_manager.insert(&main_tex_path, mat_ron.clone());
+                    self.image_manager
+                    .load(
+                        &main_tex_path,
+                        (
+                            Arc::new(main_texture.to_owned()),
+                            device.clone(),
+                            queue.clone(),
+                        ),
+                    )
+                    .map_err(|e| log::warn!("Image not loaded! {:?}", &e))
+                    .ok();
                 }
             }
         }
@@ -126,7 +138,7 @@ mod tests {
     use super::MaterialManager;
     use crate::graphics::{
         material::{
-            image::{ImageData},
+            image::ImageData,
             MaterialRon,
         },
         resources::GPUImageHandle,
@@ -189,12 +201,12 @@ mod tests {
         let mut rel_image_path = PathBuf::new();
         rel_image_path.push("core");
         rel_image_path.push("material_test.ron");
-        material_manager.insert(&rel_image_path);
+
         material_manager.load(&rel_image_path).unwrap();
 
-        std::thread::sleep(Duration::from_millis(16));
+        std::thread::sleep(Duration::from_millis(50));
         material_manager.maintain(&device, &queue);
-        std::thread::sleep(Duration::from_millis(16));
+        std::thread::sleep(Duration::from_millis(1000));
         material_manager.maintain(&device, &queue);
 
         let t = material_manager.get(&rel_image_path);

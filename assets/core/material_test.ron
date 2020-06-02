@@ -1,10 +1,16 @@
 PBRMaterial(
-    main_texture:"white.png",
-    main_texture_info:(format:RGB,),
-    roughness_texture:"white.png",
-    roughness_texture_info:(format:RGB,),
-    normal_texture:"white.png",
-    normal_texture_info:(format:RGB,),
+    main_texture:(
+        path:"white.png",
+        format:RGB,
+        ),
+    roughness_texture:(
+        path:"white.png",
+        format:RGB,
+        ),
+    normal_texture:(
+        path:"white.png",
+        format:RGB,
+        ),
     roughness:1,
     metallic:1,
     color:(1,1,1,1,),

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{io, sync::Arc};
+use std::{io, sync::Arc, path::{Path, PathBuf}};
 
 #[derive(Eq, PartialEq, Hash, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageFormat {
@@ -22,13 +22,12 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Serialize, Deserialize)]
 pub struct ImageInfo {
+    pub path: PathBuf,
     pub format: ImageFormat,
 }
 
 impl ImageInfo {
-    pub fn new(format: ImageFormat) -> Self {
-        Self { format }
-    }
+    pub fn new<P: AsRef<Path>>(path: P, format: ImageFormat) -> Self { Self { path: path.as_ref().into(), format } }
 }
 
 pub(crate) struct ImageData {

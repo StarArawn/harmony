@@ -72,7 +72,6 @@ impl GPUImageLoader {
             )
         };
 
-        //let mut to_load = FuturesUnordered::new();
         loop {
             self.to_load
                 .try_iter()
@@ -205,7 +204,7 @@ mod tests {
         assert!(image_manager
             .load(
                 &abs_image_path,
-                (Arc::new(ImageInfo::new(ImageFormat::SRGB)), device, queue)
+                (Arc::new(ImageInfo::new(&abs_image_path,ImageFormat::SRGB)), device, queue)
             )
             .is_ok());
         println!("{:?}", image_manager.status(&abs_image_path));

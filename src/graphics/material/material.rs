@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use super::{
     image::ImageInfo,
-     PBRMaterialUniform,
+     PBRMaterialUniform, UnlitUniform,
 };
 use crate::graphics::resources::{BindGroup, GPUImageHandle, ImageManager};
 use assetmanage_rs::MemoryLoader;
@@ -16,6 +16,11 @@ pub(crate) enum NewMaterial {
         normal_texture: Arc<GPUImageHandle>,
         roughness: f32,
         metallic: f32,
+        color: Vec4,
+        uniform_buf: wgpu::Buffer,
+    },
+    UnlitMaterial{
+        main_texture: Arc<GPUImageHandle>,
         color: Vec4,
         uniform_buf: wgpu::Buffer,
     },
@@ -65,6 +70,32 @@ impl NewMaterial {
                     label: None,
                 });
                 BindGroup::new(2, bind_group)
+            },
+            #[allow(unused)]
+            NewMaterial::UnlitMaterial { 
+                main_texture, 
+                color ,
+                uniform_buf,
+            } => {
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &pipeline_layout,
+                    bindings: &[
+                        wgpu::Binding {
+                            binding: 0, // We'll use 1 for our local bindings.
+                            resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
+                        },
+                        // wgpu::Binding {
+                        //     binding: 1,
+                        //     resource: wgpu::BindingResource::TextureView(&image.view),
+                        // },
+                        // wgpu::Binding {
+                        //     binding: 2,
+                        //     resource: wgpu::BindingResource::Sampler(&image.sampler),
+                        // },
+                    ],
+                    label: None,
+                });
+                BindGroup::new(2, bind_group)
             }
         }
     }
@@ -74,17 +105,19 @@ impl NewMaterial {
 pub(crate) enum MaterialRon {
     PBRMaterial {
         //TODO: PathBuf into info
-        main_texture: PathBuf,
-        main_texture_info: ImageInfo,
-        roughness_texture: PathBuf,
-        roughness_texture_info: ImageInfo,
-        normal_texture: PathBuf,
-        normal_texture_info: ImageInfo,
+        main_texture: ImageInfo,
+        roughness_texture: ImageInfo,
+        normal_texture: ImageInfo,
         roughness: f32,
         metallic: f32,
         color: [f32; 4],
     },
+    UnlitMaterial{
+        main_texture: ImageInfo,
+        color: [f32; 4],
+    },
 }
+
 impl MaterialRon {
     pub(crate) fn try_construct(
         &self,
@@ -96,26 +129,23 @@ impl MaterialRon {
             #[allow(unused)]
             MaterialRon::PBRMaterial {
                 main_texture,
-                main_texture_info,
                 roughness_texture,
-                roughness_texture_info,
                 normal_texture,
-                normal_texture_info,
                 roughness,
                 metallic,
                 color,
             } => {
-                let main_texture = iam.get(base.join(main_texture))?;
-                let roughness_texture = iam.get(base.join(roughness_texture))?;
-                let normal_texture = iam.get(base.join(normal_texture))?;
+                let main_texture = iam.get(base.join(&main_texture.path))?;
+                let roughness_texture = iam.get(base.join(&roughness_texture.path))?;
+                let normal_texture = iam.get(base.join(&normal_texture.path))?;
 
                 let uniform = PBRMaterialUniform {
                     color: Vec4::from_column_slice(color),
                     info: Vec4::new(*metallic, *roughness, 0.0, 0.0),
                 };
 
-                let material_uniform_size =
-                    std::mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
+                //let material_uniform_size =
+                //    std::mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;
                 let uniform_buf = device.create_buffer_with_data(
                     bytemuck::bytes_of(&uniform),
                     wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
@@ -131,6 +161,26 @@ impl MaterialRon {
                     uniform_buf: uniform_buf,
                 })
             },
+            MaterialRon::UnlitMaterial { 
+                main_texture, 
+                color 
+            } => {
+                let main_texture = iam.get(base.join(&main_texture.path))?;
+
+                let color = Vec4::from_column_slice(color);
+
+                let material_uniform_size = std::mem::size_of::<UnlitUniform>() as wgpu::BufferAddress;
+                let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
+                    size: material_uniform_size,
+                    usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+                    label: None,
+                });
+                Some(NewMaterial::UnlitMaterial{
+                    main_texture,
+                    color,
+                    uniform_buf,
+                })
+            }
         }
     }
 }
