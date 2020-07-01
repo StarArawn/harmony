@@ -517,12 +517,16 @@ impl Probe {
                 wgpu::TextureCopyView {
                     texture: &self.irradiance_target.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i,
+                    },
                 },
                 wgpu::Extent3d {
                     width: self.irradiance_resoultion as u32,
                     height: self.irradiance_resoultion as u32,
-                    depth: i,
+                    depth: 1,
                 },
             );
         }

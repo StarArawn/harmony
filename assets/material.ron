@@ -1,0 +1,8 @@
+PBR(
+    main_texture: "./some_texture.jpg",
+    roughness_texture: "./some_texture.jpg",
+    normal_texture: "./some_texture.jpg",
+    roughness: 0.0,
+    metallic: 0.0,
+    color: [1.0, 1.0, 1.0, 1.0],
+)
