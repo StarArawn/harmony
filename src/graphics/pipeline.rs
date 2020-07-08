@@ -31,7 +31,7 @@ pub trait SimplePipeline: Send + Sync + 'static {
         _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _frame: Option<&wgpu::SwapChainOutput>,
+        _frame: Option<&wgpu::SwapChainTexture>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
         _pipeline: &wgpu::RenderPipeline,

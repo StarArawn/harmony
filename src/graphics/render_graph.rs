@@ -145,7 +145,7 @@ impl RenderGraph {
         asset_manager: &AssetManager,
         resource_manager: &mut GPUResourceManager,
         world: &mut legion::world::World,
-        frame: Option<&wgpu::SwapChainOutput>,
+        frame: Option<&wgpu::SwapChainTexture>,
         forward_depth: Option<&wgpu::TextureView>,
     ) -> wgpu::CommandBuffer {
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {

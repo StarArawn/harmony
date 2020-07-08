@@ -1,8 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Vec4};
 
-mod unlit;
-pub(crate) use unlit::UnlitPipelineDesc;
+// mod unlit;
+// pub(crate) use unlit::UnlitPipelineDesc;
 
 pub mod pbr;
 

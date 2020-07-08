@@ -1,5 +1,6 @@
 use super::resources::GPUResourceManager;
 use legion::systems::resource::Resources;
+use std::sync::Arc;
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 pub const FRAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb;
@@ -20,25 +21,29 @@ impl Renderer {
         size: winit::dpi::PhysicalSize<u32>,
         resources: &mut Resources,
     ) -> Self {
-        let instance = wgpu::Instance::new();
+        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
+
+        let (needed_features, unsafe_extensions) = (wgpu::Features::empty(), wgt::UnsafeFeatures::disallow());
+
         let adapter = instance
             .request_adapter(
-                &wgpu::RequestAdapterOptions {
-                    power_preference: wgpu::PowerPreference::Default,
+               &wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::HighPerformance,
                     compatible_surface: Some(&surface),
                 },
-                wgpu::BackendBit::PRIMARY,
+                unsafe_extensions
             )
             .await
             .unwrap();
 
+        let adapter_features = adapter.features();
+
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
-                extensions: wgpu::Extensions {
-                    anisotropic_filtering: false,
-                },
+                features: adapter_features & needed_features,
                 limits: wgpu::Limits::default(),
+                shader_validation: true,
             }, None)
             .await
             .unwrap();
@@ -68,8 +73,8 @@ impl Renderer {
 
         resources.insert(GPUResourceManager::new(&device));
         resources.insert(sc_desc);
-        resources.insert(queue);
-        resources.insert(device);
+        resources.insert(Arc::new(queue));
+        resources.insert(Arc::new(device));
         resources.insert(DepthTexture(depth_texture.create_default_view()));
 
         Self {
@@ -81,8 +86,8 @@ impl Renderer {
         }
     }
 
-    pub(crate) fn render(&mut self) -> wgpu::SwapChainOutput {
-        let output = self.swap_chain.get_next_texture().unwrap();
+    pub(crate) fn render(&mut self) -> wgpu::SwapChainFrame {
+        let output = self.swap_chain.get_next_frame().unwrap();
 
         output
     }

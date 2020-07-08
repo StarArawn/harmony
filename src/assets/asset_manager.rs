@@ -31,9 +31,7 @@ impl AssetManager {
     }
 
     pub fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
-        let mut init_encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
+        
         for entry in WalkDir::new(&self.path) {
             let entry = entry.expect("Error: Could not access file.");
             let file_name = entry.file_name().to_str().unwrap();
@@ -81,8 +79,8 @@ impl AssetManager {
                 || file_name.ends_with(".hdr")
             {
                 let image = Image::new(
-                    &device,
-                    &mut init_encoder,
+                    device,
+                    queue,
                     format!("{}{}", full_file_path, file_name),
                     file_name.to_string(),
                 );
@@ -90,7 +88,6 @@ impl AssetManager {
                 info!("Loaded image: {}", file_name);
             }
         }
-        queue.submit(Some(init_encoder.finish()));
     }
 
     pub fn get_shader<'a, T>(&'a self, key: T) -> &'a Shader

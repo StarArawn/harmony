@@ -110,7 +110,7 @@ impl Probe {
         crate::graphics::pipelines::irradiance::create(resources, wgpu_format);
 
         let brdf_texture = {
-            let device = resources.get::<wgpu::Device>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             RenderTarget::new(
                 &device,
                 512.0,
@@ -123,7 +123,7 @@ impl Probe {
         };
         crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu_format);
 
-        let device = resources.get::<wgpu::Device>().unwrap();
+        let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 
         let mut probe_cube = RenderTarget::new(
             &device,
@@ -239,7 +239,7 @@ impl Probe {
         {
             let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
             current_pipelines = pipeline_manager.current_pipelines.clone();
-            let device = resources.get::<wgpu::Device>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let asset_manager = resources.get::<AssetManager>().unwrap();
             let resource_manager = resources.get::<GPUResourceManager>().unwrap();
             let skybox_pipeline = pipeline_manager.get("skybox", None).unwrap();
@@ -350,7 +350,7 @@ impl Probe {
         // Generate mip maps for the resulting cube map
         let probe_resoultion = self.quality.get_probe_resoultion();
         let mut probe_cube = {
-            let device = resources.get::<wgpu::Device>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             RenderTarget::new(
                 &device,
                 probe_resoultion as f32,
@@ -410,7 +410,7 @@ impl Probe {
     }
 
     fn render_irradiance(&mut self, resources: &Resources) {
-        let device = resources.get::<wgpu::Device>().unwrap();
+        let device = resources.get::<Arc<wgpu::Device>>().unwrap();
         let asset_manager = resources.get::<AssetManager>().unwrap();
         let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
         let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
@@ -487,13 +487,14 @@ impl Probe {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.texture_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
                     },
                 }],
                 depth_stencil_attachment: None,
@@ -536,7 +537,7 @@ impl Probe {
     }
 
     fn render_specular(&mut self, resources: &Resources) {
-        let device = resources.get::<wgpu::Device>().unwrap();
+        let device = resources.get::<Arc<wgpu::Device>>().unwrap();
         let resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
         let pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
         let mip_levels: u32 = 9;
@@ -631,14 +632,15 @@ impl Probe {
                     color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                         attachment: &new_view,
                         resolve_target: None,
-                        load_op: wgpu::LoadOp::Clear,
-                        store_op: wgpu::StoreOp::Store,
-                        clear_color: wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        },
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 1.0,
+                            }),
+                            store: true,
+                        }
                     }],
                     depth_stencil_attachment: None,
                 });
@@ -666,12 +668,16 @@ impl Probe {
                     wgpu::TextureCopyView {
                         texture: &self.specular_target.texture,
                         mip_level: mip_id,
-                        origin: wgpu::Origin3d::ZERO,
+                        origin: wgpu::Origin3d {
+                            x: 0,
+                            y: 0,
+                            z: i,
+                        },
                     },
                     wgpu::Extent3d {
                         width: res as u32,
                         height: res as u32,
-                        depth: i,
+                        depth: 1,
                     },
                 );
             }

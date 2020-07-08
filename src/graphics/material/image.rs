@@ -12,7 +12,7 @@ pub struct Image {
 impl Image {
     pub fn new<T>(
         device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
         path: T,
         file_name: T,
     ) -> Self
@@ -43,27 +43,25 @@ impl Image {
 
         let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
 
-        encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &temp_buf,
-                layout: wgpu::TextureDataLayout {
-                    offset: 0,
-                    bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
-                        || format == wgpu::TextureFormat::Rgba8Unorm
-                    {
-                        4 * texture_extent.width
-                    } else {
-                        (4 * 4) * texture_extent.width
-                    },
-                    rows_per_image: 0,
-                },
-            },
+        queue.write_texture(
             wgpu::TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            texture_extent,
+            &image_bytes,
+            wgpu::TextureDataLayout {
+                offset: 0,
+                bytes_per_row: if format == wgpu::TextureFormat::Rgba8UnormSrgb
+                    || format == wgpu::TextureFormat::Rgba8Unorm
+                {
+                    4 * texture_extent.width
+                } else {
+                    (4 * 4) * texture_extent.width
+                },
+                rows_per_image: 0,
+            },
+            texture_extent
         );
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -76,7 +74,7 @@ impl Image {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
+            ..Default::default()
         });
 
         let view = texture.create_default_view();

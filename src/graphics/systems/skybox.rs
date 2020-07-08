@@ -14,8 +14,8 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<CurrentRenderTarget>()
         .read_resource::<GPUResourceManager>()
         .read_resource::<PipelineManager>()
-        .read_resource::<wgpu::Device>()
-        .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<Arc<wgpu::Device>>()
+        .read_resource::<Arc<wgpu::SwapChainTexture>>()
         .read_resource::<DepthTexture>()
         .with_query(<(Read<Skybox>,)>::query())
         .build(
@@ -62,24 +62,24 @@ pub fn create() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: view_attachment,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Clear,
-                            store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color {
-                                r: skybox.clear_color.x as f64,
-                                g: skybox.clear_color.y as f64,
-                                b: skybox.clear_color.z as f64,
-                                a: 1.0,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: skybox.clear_color.x as f64,
+                                    g: skybox.clear_color.y as f64,
+                                    b: skybox.clear_color.z as f64,
+                                    a: 1.0,
+                                }),
+                                store: true,
                             },
                         }],
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: depth_attachment,
-                                depth_load_op: wgpu::LoadOp::Clear,
-                                depth_store_op: wgpu::StoreOp::Store,
-                                stencil_load_op: wgpu::LoadOp::Clear,
-                                stencil_store_op: wgpu::StoreOp::Store,
-                                clear_depth: 1.0,
-                                clear_stencil: 0,
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(1.0),
+                                    store: true,
+                                }),
+                                stencil_ops: None,
                             },
                         ),
                     });

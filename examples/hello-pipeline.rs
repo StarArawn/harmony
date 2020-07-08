@@ -42,8 +42,8 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_triangle")
         .write_resource::<CommandBufferQueue>()
         .read_resource::<PipelineManager>()
-        .read_resource::<wgpu::Device>()
-        .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<Arc<wgpu::Device>>()
+        .read_resource::<Arc<wgpu::SwapChainTexture>>()
         .read_resource::<GPUResourceManager>()
         .build(
             |_,
@@ -62,9 +62,10 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Load, // Load because of our clear pass.
-                            store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color::BLACK,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: true,
+                            },
                         }],
                         depth_stencil_attachment: None,
                     });
@@ -87,7 +88,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
         // First we need to access some of the internal data.
-        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let device = app.resources.get::<Arc<wgpu::Device>>().unwrap();
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
         let mut gpu_resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
         let mut pipeline_manager = app.resources.get_mut::<PipelineManager>().unwrap();
@@ -119,7 +120,7 @@ impl harmony::AppState for AppState {
         pipeline_manager.add_pipeline(
             "triangle",            // Name of pipeline.
             &triangle_desc,        // Pipeline description
-            vec![],                // Dependencies list as names.
+            vec!["skybox"],        // Dependencies list as names. Uses skybox so that the triangle draws "after" the clear pass.
             &device,               // The wgpu device.
             &asset_manager,        // asset manager from where we can load shaders.
             &gpu_resource_manager, // The gpu resource manager.
@@ -132,7 +133,7 @@ impl harmony::AppState for AppState {
         pipeline_manager.add_pipeline(
             "triangle",            // Name of pipeline.
             &triangle_desc,        // Pipeline description
-            vec![],                // Dependencies list as names.
+            vec!["skybox"],        // Dependencies list as names.
             &device,               // The wgpu device.
             &asset_manager,        // asset manager from where we can load shaders.
             &gpu_resource_manager, // The gpu resource manager.

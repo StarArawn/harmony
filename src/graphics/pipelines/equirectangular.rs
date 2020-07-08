@@ -30,7 +30,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        _frame: Option<&wgpu::SwapChainOutput>,
+        _frame: Option<&wgpu::SwapChainTexture>,
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
         pipeline: &wgpu::RenderPipeline,
@@ -63,13 +63,14 @@ impl SimplePipeline for CubeProjectionPipeline {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.as_ref().unwrap().texture_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
                     },
                 }],
                 depth_stencil_attachment: None,
@@ -152,20 +153,20 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry::new(
+                        0,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
                             multisampled: false,
                             component_type: wgpu::TextureComponentType::Float,
                             dimension: wgpu::TextureViewDimension::D2,
                         },
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        1,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::Sampler { comparison: false },
+                    ),
                 ],
                 label: None,
             });

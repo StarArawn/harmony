@@ -15,8 +15,9 @@ pub fn create() -> Box<dyn Schedulable> {
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<RenderGraph>()
-        .read_resource::<wgpu::Device>()
-        .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<Arc<wgpu::Device>>()
+        .read_resource::<wgpu::Queue>()
+        .read_resource::<Arc<wgpu::SwapChainTexture>>()
         .read_resource::<GPUResourceManager>()
         .read_resource::<DepthTexture>()
         .read_resource::<PipelineManager>()
@@ -34,6 +35,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 command_buffer_queue,
                 render_graph,
                 device,
+                queue,
                 output,
                 resource_manager,
                 depth_texture,
@@ -51,37 +53,21 @@ pub fn create() -> Box<dyn Schedulable> {
                 if transform_query.iter_mut(&mut world).count() > 0 {
                     let size = std::mem::size_of::<LocalUniform>();
                     let mut_world = &mut world;
-                    let mut temp_buf_data = device.create_buffer_mapped(&wgpu::BufferDescriptor {
-                        size: (transform_query.iter_mut(mut_world).count() * size) as u64,
-                        usage: wgpu::BufferUsage::COPY_SRC,
-                        label: None,
-                    });
+                    // let mut temp_buf_data = device.create_buffer(&wgpu::BufferDescriptor {
+                    //     size: (transform_query.iter_mut(mut_world).count() * size) as u64,
+                    //     usage: wgpu::BufferUsage::COPY_SRC,
+                    //     label: None,
+                    //     mapped_at_creation: false,
+                    // });
 
                     // FIXME: Align and use `LayoutVerified`
-                    for ((mut transform,), slot) in transform_query
-                        .iter_mut(mut_world)
-                        .zip(temp_buf_data.data().chunks_exact_mut(size))
+                    for (mut transform,) in transform_query.iter_mut(mut_world)
                     {
                         transform.update();
-                        slot.copy_from_slice(bytemuck::bytes_of(&LocalUniform {
+                        let transform_buffer = resource_manager.get_multi_buffer("transform", transform.index);
+                        queue.write_buffer(&transform_buffer, 0, bytemuck::bytes_of(&LocalUniform {
                             world: transform.matrix,
                         }));
-                    }
-
-                    let temp_buf = temp_buf_data.finish();
-
-                    let mut i = 0;
-                    for (transform,) in transform_query.iter_mut(mut_world) {
-                        let transform_buffer =
-                            resource_manager.get_multi_buffer("transform", transform.index);
-                        encoder.copy_buffer_to_buffer(
-                            &temp_buf,
-                            (i * size) as wgpu::BufferAddress,
-                            &transform_buffer,
-                            0,
-                            size as wgpu::BufferAddress,
-                        );
-                        i += 1;
                     }
                 }
 
@@ -93,24 +79,22 @@ pub fn create() -> Box<dyn Schedulable> {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Load,
-                            store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color {
-                                r: 0.0,
-                                g: 0.0,
-                                b: 0.0,
-                                a: 1.0,
-                            },
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: true,
+                            }
                         }],
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: &depth_texture.0,
-                                depth_load_op: wgpu::LoadOp::Load,
-                                depth_store_op: wgpu::StoreOp::Store,
-                                stencil_load_op: wgpu::LoadOp::Load,
-                                stencil_store_op: wgpu::StoreOp::Store,
-                                clear_depth: 1.0,
-                                clear_stencil: 0,
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: true,
+                                }),
+                                stencil_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: true,
+                                }),
                             },
                         ),
                     });
@@ -134,48 +118,48 @@ pub fn create() -> Box<dyn Schedulable> {
                             .collect();
 
                         // Render unlit materials.
-                        let unlit_node = render_graph.get("unlit");
-                        render_pass.set_pipeline(&unlit_node.pipeline);
-                        render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
-                        for material in unlit_materials.iter() {
-                            match material {
-                                Material::Unlit(data) => {
-                                    render_pass.set_bind_group(
-                                        2,
-                                        &data.bind_group_data.as_ref().unwrap().bind_group,
-                                        &[],
-                                    );
-                                    for (mesh, _, transform) in mesh_query
-                                        .iter(&world)
-                                        .filter(|(_, material, _)| material.index == data.index)
-                                    {
-                                        resource_manager.set_multi_bind_group(
-                                            &mut render_pass,
-                                            "transform",
-                                            0,
-                                            transform.index,
-                                        );
-                                        let asset_mesh =
-                                            asset_manager.get_mesh(mesh.mesh_name.clone());
-                                        for sub_mesh in asset_mesh.sub_meshes.iter() {
-                                            render_pass.set_index_buffer(
-                                                sub_mesh.index_buffer.slice(..)
-                                            );
-                                            render_pass.set_vertex_buffer(
-                                                0,
-                                                sub_mesh.vertex_buffer.as_ref().unwrap().slice(..),
-                                            );
-                                            render_pass.draw_indexed(
-                                                0..sub_mesh.index_count as u32,
-                                                0,
-                                                0..1,
-                                            );
-                                        }
-                                    }
-                                }
-                                _ => (),
-                            }
-                        }
+                        // let unlit_node = render_graph.get("unlit");
+                        // render_pass.set_pipeline(&unlit_node.pipeline);
+                        // render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
+                        // for material in unlit_materials.iter() {
+                        //     match material {
+                        //         Material::Unlit(data) => {
+                        //             render_pass.set_bind_group(
+                        //                 2,
+                        //                 &data.bind_group_data.as_ref().unwrap().bind_group,
+                        //                 &[],
+                        //             );
+                        //             for (mesh, _, transform) in mesh_query
+                        //                 .iter(&world)
+                        //                 .filter(|(_, material, _)| material.index == data.index)
+                        //             {
+                        //                 resource_manager.set_multi_bind_group(
+                        //                     &mut render_pass,
+                        //                     "transform",
+                        //                     0,
+                        //                     transform.index,
+                        //                 );
+                        //                 let asset_mesh =
+                        //                     asset_manager.get_mesh(mesh.mesh_name.clone());
+                        //                 for sub_mesh in asset_mesh.sub_meshes.iter() {
+                        //                     render_pass.set_index_buffer(
+                        //                         sub_mesh.index_buffer.slice(..)
+                        //                     );
+                        //                     render_pass.set_vertex_buffer(
+                        //                         0,
+                        //                         sub_mesh.vertex_buffer.as_ref().unwrap().slice(..),
+                        //                     );
+                        //                     render_pass.draw_indexed(
+                        //                         0..sub_mesh.index_count as u32,
+                        //                         0,
+                        //                         0..1,
+                        //                     );
+                        //                 }
+                        //             }
+                        //         }
+                        //         _ => (),
+                        //     }
+                        // }
 
                         // Render pbr materials.
                         let pbr_node = pipeline_manager.get("pbr", None).unwrap();

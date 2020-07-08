@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use super::BindGroup;
-use crate::graphics::pipelines::{GlobalUniform, LightingUniform};
+use crate::{scene::components::transform::LocalUniform, graphics::pipelines::{GlobalUniform, LightingUniform}};
 
 /// Stores bind groups for consumption by pipelines.
 /// Also can store buffers, but it's not required.
@@ -39,18 +39,28 @@ impl GPUResourceManager {
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
-                    wgpu::BindGroupLayoutEntry {
+                    wgpu::BindGroupLayoutEntry::new(
                         // CAMERA INFO
-                        binding: 0,
-                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                    },
-                    wgpu::BindGroupLayoutEntry {
+                        0,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: wgpu::BufferSize::new(
+                                std::mem::size_of::<GlobalUniform>() as _
+                            ),
+                        },
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
                         // LIGHTING DATA
-                        binding: 1,
-                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                    },
+                        1,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: wgpu::BufferSize::new(
+                                std::mem::size_of::<LightingUniform>() as _
+                            ),
+                        },
+                    ),
                 ],
                 label: Some("Globals"),
             });
@@ -75,11 +85,16 @@ impl GPUResourceManager {
         // Local bind group layout
         let local_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-                }],
+                bindings: &[wgpu::BindGroupLayoutEntry::new(
+                    0,
+                    wgpu::ShaderStage::VERTEX,
+                    wgpu::BindingType::UniformBuffer {
+                        dynamic: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<LocalUniform>() as _
+                        ),
+                    },
+                )],
                 label: Some("Locals"),
             });
         bind_group_layouts.insert("locals".to_string(), local_bind_group_layout);

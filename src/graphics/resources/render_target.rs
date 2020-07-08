@@ -64,7 +64,7 @@ impl RenderTarget {
                 mipmap_filter: wgpu::FilterMode::Linear,
                 lod_min_clamp: -100.0,
                 lod_max_clamp: 100.0,
-                compare: wgpu::CompareFunction::Undefined,
+                ..Default::default()
             }),
             depth_texture: None,
             depth_texture_view: None,

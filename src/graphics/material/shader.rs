@@ -81,7 +81,7 @@ impl Shader {
                     Some(&options),
                 )
                 .unwrap();
-            device.create_shader_module(&spirv.as_binary())
+            device.create_shader_module(wgpu::ShaderModuleSource::SpirV(&spirv.as_binary()))
         };
 
         let fragment = {
@@ -94,7 +94,7 @@ impl Shader {
                     Some(&options),
                 )
                 .unwrap();
-            device.create_shader_module(spirv.as_binary())
+            device.create_shader_module(wgpu::ShaderModuleSource::SpirV(spirv.as_binary()))
         };
 
         Shader { fragment, vertex }

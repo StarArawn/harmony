@@ -1,6 +1,6 @@
 use std::{sync::Arc, path::PathBuf, convert::TryFrom};
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub enum ImageFormat {
     RGB,
     SRGB,
@@ -18,7 +18,8 @@ impl Into<wgpu::TextureFormat> for ImageFormat {
     }
 }
 
-#[derive(Debug, Clone)]
+// Image represents data on the CPU.
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Image {
     // Byte data representing the pixels of the image.
     pub data: Vec<u8>,
@@ -41,7 +42,7 @@ impl TryFrom<(PathBuf, Vec<u8>)> for Image {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub(crate) struct ImageRon {
     pub format: ImageFormat,
 }
@@ -60,23 +61,19 @@ mod tests {
     use super::{Image, ImageRon};
 
     #[test]
-    fn should_load() {
+    fn should_from_bytes_to_type() {
         let ron_path = PathBuf::new().join("./assets/").join("image.ron");
         let image_path = PathBuf::new().join("./assets/").join("core/white.png");
         
-        let pool = Arc::new(threadpool::Builder::new().build());
+        let pool = Arc::new(futures::executor::ThreadPoolBuilder::new().create().unwrap());
         let mut manager = AsyncFileManager::<ImageRon>::new(pool.clone());
         futures::executor::block_on(manager.load(&ron_path));
         std::thread::sleep(std::time::Duration::from_millis(500));
         let ron_asset = futures::executor::block_on(manager.get(&ron_path));
 
-        dbg!(ron_asset);
-
         let mut manager = AsyncFileManager::<Image>::new(pool.clone());
         futures::executor::block_on(manager.load(&image_path));
         std::thread::sleep(std::time::Duration::from_millis(500));
         let image_asset = futures::executor::block_on(manager.get(&image_path));
-
-        dbg!(image_asset);
     }
 }

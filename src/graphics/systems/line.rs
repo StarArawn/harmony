@@ -15,7 +15,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<RenderGraph>()
-        .read_resource::<wgpu::Device>()
+        .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
         .read_resource::<GPUResourceManager>()
         .read_resource::<DepthTexture>()

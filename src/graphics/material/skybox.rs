@@ -7,6 +7,7 @@ use crate::{
     },
     Application, AssetManager,
 };
+use std::sync::Arc;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -37,7 +38,7 @@ impl Skybox {
         let mut graph = { RenderGraph::new(&mut app.resources, false) };
 
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
-        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let device = app.resources.get::<Arc<wgpu::Device>>().unwrap();
         let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
         let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
 
@@ -115,7 +116,7 @@ impl Skybox {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
+            ..Default::default()
         });
 
         Self {
@@ -175,7 +176,7 @@ impl Skybox {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
+            ..Default::default()
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
