@@ -8,3 +8,4 @@ mod new_asset_manager;
 // mod material;
 
 mod texture;
+mod texture_manager;

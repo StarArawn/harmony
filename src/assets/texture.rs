@@ -10,7 +10,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Image, image_ron: Option<ImageRon>) -> Self {
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<Arc<ImageRon>>) -> Self {
 
         let extent = wgpu::Extent3d {
             width: image.width,
@@ -49,9 +49,11 @@ impl Texture {
             extent,
         );
 
+        let view = texture.create_default_view();
+
         Texture {
             inner: texture,
-            view: texture.create_default_view(),
+            view,
             extent,
         }
     }

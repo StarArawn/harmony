@@ -43,7 +43,7 @@ impl TryFrom<(PathBuf, Vec<u8>)> for Image {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
-pub(crate) struct ImageRon {
+pub struct ImageRon {
     pub format: ImageFormat,
 }
 

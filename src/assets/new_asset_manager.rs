@@ -2,10 +2,13 @@ use async_filemanager::AsyncFileManager;
 use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
 use legion::{systems::resource::Resource, prelude::Resources};
 use super::{image::ImageRon, Image};
+use futures::stream::FuturesUnordered;
+use futures::FutureExt;
 
 pub struct AssetManager {
     pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
+    // texture_futures: FuturesUnordered<>,
 }
 
 impl AssetManager {
@@ -14,6 +17,7 @@ impl AssetManager {
         Self{ 
             pool,
             loaders: Resources::default(),
+            // texture_futures: FuturesUnordered::new(),
         }
     }
 
@@ -58,7 +62,18 @@ impl AssetManager {
         }
 
         let mut loader = loader.unwrap();
-        futures::executor::block_on(loader.get(path))
+        let result = futures::executor::block_on(loader.get(path));
+
+        match &result {
+            async_filemanager::LoadStatus::Loading(img_future) => {
+                // self.texture_futures.push(img_future.then(|img| async {
+                //     self.gpu_manager.load(path, img.unwrap()).await;
+                // }));
+            },
+            _ => {}
+        }
+
+        result
     }
 }
 
