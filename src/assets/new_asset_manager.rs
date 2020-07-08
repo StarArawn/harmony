@@ -42,7 +42,7 @@ impl AssetManager {
         // If the loaded asset is detected as an image based off of extension attempt to load a descriptor ron file.
         // The ron file may fail, but we don't really care as we can use default values.
         let ext = path.extension().unwrap().to_str().unwrap().to_string();
-        if (ext.contains("jpg") || ext.contains("png") || ext.contains("hdr")) && !ext.contains("ron") {
+        if TypeId::of::<Image>() == TypeId::of::<T>() {
             let mut path = path.clone();
             path.set_extension(format!("{}{}", ext,".ron"));
             self.load::<ImageRon, _>(path);
