@@ -23,6 +23,7 @@ impl TextureManager {
         }
     }
 
+    #[allow(unused)]
     pub async fn load(&mut self, id: &PathBuf, img: Arc<Image>, imgron: Option<Arc<ImageRon>>) {
         if !self.cache.contains_key(id) && !self.loading.contains_key(id) {
             let mut f = TextureFuture::new(
@@ -30,7 +31,7 @@ impl TextureManager {
                 imgron,
                 self.device.clone(),
                 self.queue.clone(),
-                self.pool.clone(),
+                self.pool.clone(),  
             )
             .shared();
             futures::poll!(&mut f);

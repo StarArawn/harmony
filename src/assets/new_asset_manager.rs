@@ -1,23 +1,25 @@
-use async_filemanager::AsyncFileManager;
+use async_filemanager::{FileLoadFuture, AsyncFileManager};
 use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
 use legion::{systems::resource::Resource, prelude::Resources};
-use super::{image::ImageRon, Image};
-use futures::stream::FuturesUnordered;
-use futures::FutureExt;
+use super::{image::ImageRon, Image, texture_manager::TextureManager};
+use futures::{stream::FuturesUnordered, future::Shared, Stream, StreamExt};
 
 pub struct AssetManager {
     pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
-    // texture_futures: FuturesUnordered<>,
+    image_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<Image>>>,
+    texture_manager: TextureManager,
 }
 
 impl AssetManager {
-    pub fn new() -> Self {
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
         let pool = Arc::new(futures::executor::ThreadPoolBuilder::new().create().unwrap());
+        let texture_manager = TextureManager::new(pool.clone(), device, queue);
         Self{ 
             pool,
             loaders: Resources::default(),
-            // texture_futures: FuturesUnordered::new(),
+            image_futures: FuturesUnordered::new(),
+            texture_manager,
         }
     }
 
@@ -47,10 +49,53 @@ impl AssetManager {
         // The ron file may fail, but we don't really care as we can use default values.
         let ext = path.extension().unwrap().to_str().unwrap().to_string();
         if TypeId::of::<Image>() == TypeId::of::<T>() {
-            let mut path = path.clone();
-            path.set_extension(format!("{}{}", ext,".ron"));
-            self.load::<ImageRon, _>(path);
+            // Load ron file.
+            let mut ron_path = path.clone();
+            ron_path.set_extension(format!("{}{}", ext,".ron"));
+            self.load::<ImageRon, _>(ron_path);
+
+            // Grab image.
+            let mut loader = self.loaders.get_mut::<AsyncFileManager<Image>>().unwrap();
+            let image_result = futures::executor::block_on(loader.get(&path));
+
+            match image_result {
+                async_filemanager::LoadStatus::Loading(img_future) => {
+                    self.image_futures.push(img_future);
+                },
+                _ => {}
+            };
         }
+    }
+
+    pub fn maintain(&mut self) {
+        let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
+        let image_futures = self.image_futures.by_ref();
+        let texture_manager = &mut self.texture_manager;
+        
+        // Instead of block should this be a thread pool?
+        futures::executor::block_on(async {
+            while let Some(result) = image_futures.next().await {
+                if result.is_ok() {
+                    let image = result.unwrap();
+
+                    // We need to grab the image ron file if its A loaded and B exists.
+                    // If it doesn't exist Texture will use defaults.
+                    let mut ron_path = image.path.clone();
+                    let ext = ron_path.extension().unwrap().to_str().unwrap().to_string();
+                    ron_path.set_extension(format!("{}{}", ext,".ron"));
+                    let img_ron = match ron_image_loader.get(ron_path).await {
+                        async_filemanager::LoadStatus::Loaded(img_ron) => {
+                            Some(img_ron)
+                        },
+                        _ => None,
+                    };
+
+                    dbg!("Loaded texture!");
+                    dbg!(&image.path);
+                    texture_manager.load(&image.path.clone(), image, img_ron).await;
+                }
+            }
+        });
     }
 
     pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)> + Unpin, K: Into<PathBuf>>(&mut self, path: K) -> async_filemanager::LoadStatus<T, async_filemanager::FileLoadFuture<T>>{
@@ -62,18 +107,7 @@ impl AssetManager {
         }
 
         let mut loader = loader.unwrap();
-        let result = futures::executor::block_on(loader.get(path));
-
-        match &result {
-            async_filemanager::LoadStatus::Loading(img_future) => {
-                // self.texture_futures.push(img_future.then(|img| async {
-                //     self.gpu_manager.load(path, img.unwrap()).await;
-                // }));
-            },
-            _ => {}
-        }
-
-        result
+        return futures::executor::block_on(loader.get(path));
     }
 }
 
@@ -89,34 +123,34 @@ mod tests {
             .filter_module("harmony", log::LevelFilter::Info)
             .init();
 
-        let mut asset_manager = AssetManager::new();
-        asset_manager.register::<Image>();
-        asset_manager.register::<ImageRon>();
-        asset_manager.load::<Image, _>("./assets/core/white.png");
+        // let mut asset_manager = AssetManager::new();
+        // asset_manager.register::<Image>();
+        // asset_manager.register::<ImageRon>();
+        // asset_manager.load::<Image, _>("./assets/core/white.png");
 
-        let image = asset_manager.get::<Image, _>("./assets/core/white.png");
-        match image {
-            async_filemanager::LoadStatus::NotLoading => {
+        // let image = asset_manager.get::<Image, _>("./assets/core/white.png");
+        // match image {
+        //     async_filemanager::LoadStatus::NotLoading => {
 
-            },
-            async_filemanager::LoadStatus::Loading(_) => {
-            },
-            _ => panic!("Failed to load image correctly!"),
-        }
+        //     },
+        //     async_filemanager::LoadStatus::Loading(_) => {
+        //     },
+        //     _ => panic!("Failed to load image correctly!"),
+        // }
 
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        // std::thread::sleep(std::time::Duration::from_millis(1000));
 
-        let image = asset_manager.get::<Image, _>("./assets/core/white.png");
-        match image {
-            async_filemanager::LoadStatus::Loaded(data) => {
-                assert!(data.width == 1);
-                assert!(data.height == 1);
-                assert!(data.data == [255, 255, 255, 255]);
-            },
-            async_filemanager::LoadStatus::Error(error) => {
-                dbg!(error);
-            },
-            _ => panic!("Failed to load image correctly!"),
-        }
+        // let image = asset_manager.get::<Image, _>("./assets/core/white.png");
+        // match image {
+        //     async_filemanager::LoadStatus::Loaded(data) => {
+        //         assert!(data.width == 1);
+        //         assert!(data.height == 1);
+        //         assert!(data.data == [255, 255, 255, 255]);
+        //     },
+        //     async_filemanager::LoadStatus::Error(error) => {
+        //         dbg!(error);
+        //     },
+        //     _ => panic!("Failed to load image correctly!"),
+        // }
     }
 }

@@ -64,18 +64,54 @@ mod tests {
 
     use crate::{assets::{image::ImageRon, Image}};
     use super::super::new_asset_manager::AssetManager;
+    use std::sync::Arc;
 
     #[test]
     fn should_create_texture() {
-        env_logger::Builder::from_default_env()
-            .filter_level(log::LevelFilter::Warn)
-            .filter_module("harmony", log::LevelFilter::Info)
-            .init();
+        // env_logger::Builder::from_default_env()
+        //     .filter_level(log::LevelFilter::Warn)
+        //     .filter_module("harmony", log::LevelFilter::Info)
+        //     .init();
 
-        let mut asset_manager = AssetManager::new();
+        let (_, arc_device, arc_queue) = futures::executor::block_on(async {
+            let (needed_features, unsafe_features) =
+                (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
+
+            let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+            let adapter = instance
+                .request_adapter(
+                    &wgpu::RequestAdapterOptions {
+                        power_preference: wgpu::PowerPreference::Default,
+                        compatible_surface: None,
+                    },
+                    unsafe_features,
+                )
+                .await
+                .unwrap();
+
+            let adapter_features = adapter.features();
+            let (device, queue) = adapter
+                .request_device(
+                    &wgpu::DeviceDescriptor {
+                        features: adapter_features & needed_features,
+                        limits: wgpu::Limits::default(),
+                        shader_validation: true,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            let arc_device = Arc::new(device);
+            let arc_queue = Arc::new(queue);
+            
+            (adapter, arc_device, arc_queue)
+        });        
+
+        let mut asset_manager = AssetManager::new(arc_device, arc_queue);
         asset_manager.register::<Image>();
         asset_manager.register::<ImageRon>();
         asset_manager.load::<Image, _>("./assets/core/white.png");
+
 
         
     }
