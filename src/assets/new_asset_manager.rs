@@ -1,7 +1,7 @@
 use async_filemanager::{FileLoadFuture, AsyncFileManager};
 use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
 use legion::{systems::resource::Resource, prelude::Resources};
-use super::{image::ImageRon, Image, texture_manager::TextureManager};
+use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture};
 use futures::{stream::FuturesUnordered, future::Shared, Stream, StreamExt};
 
 pub struct AssetManager {
@@ -53,24 +53,37 @@ impl AssetManager {
             let mut ron_path = path.clone();
             ron_path.set_extension(format!("{}{}", ext,".ron"));
             self.load::<ImageRon, _>(ron_path);
+            
+            let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
 
             // Grab image.
+            dbg!("Getting image future!");
             let mut loader = self.loaders.get_mut::<AsyncFileManager<Image>>().unwrap();
             let image_result = futures::executor::block_on(loader.get(&path));
 
             match image_result {
                 async_filemanager::LoadStatus::Loading(img_future) => {
+                    dbg!("Storing image future!");
                     self.image_futures.push(img_future);
+                },
+                async_filemanager::LoadStatus::Error(error) => {
+                    dbg!(error);
+                    panic!("Some sort of error");
                 },
                 _ => {}
             };
         }
     }
 
+    pub fn get_texture<T: Into<PathBuf>>(&mut self, path: T) -> async_filemanager::LoadStatus<Texture, TextureFuture> {
+        futures::executor::block_on(self.texture_manager.get(&path.into()))
+    }
+
     pub fn maintain(&mut self) {
         let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
         let image_futures = self.image_futures.by_ref();
         let texture_manager = &mut self.texture_manager;
+        dbg!(image_futures.len());
         
         // Instead of block should this be a thread pool?
         futures::executor::block_on(async {
@@ -113,15 +126,15 @@ impl AssetManager {
 
 #[cfg(test)]
 mod tests {
-    use super::AssetManager;
-    use crate::assets::{image::ImageRon, Image};
+    // use super::AssetManager;
+    // use crate::assets::{image::ImageRon, Image};
 
     #[test]
     fn should_register() {
-        env_logger::Builder::from_default_env()
-            .filter_level(log::LevelFilter::Warn)
-            .filter_module("harmony", log::LevelFilter::Info)
-            .init();
+        // env_logger::Builder::from_default_env()
+        //     .filter_level(log::LevelFilter::Warn)
+        //     .filter_module("harmony", log::LevelFilter::Info)
+        //     .init();
 
         // let mut asset_manager = AssetManager::new();
         // asset_manager.register::<Image>();

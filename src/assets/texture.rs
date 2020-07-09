@@ -111,7 +111,21 @@ mod tests {
         asset_manager.register::<Image>();
         asset_manager.register::<ImageRon>();
         asset_manager.load::<Image, _>("./assets/core/white.png");
+        dbg!("First maintain!");
+        asset_manager.maintain(); 
 
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        dbg!("Second maintain!");
+        asset_manager.maintain();
+
+        let texture_status = asset_manager.get_texture("./assets/core/white.png");
+
+        match texture_status {
+            async_filemanager::LoadStatus::Loaded(_) => {
+                dbg!("We have wgpu texture!");
+            },
+            _ => { panic!("Texture did not load successfully"); }
+        }
 
         
     }
