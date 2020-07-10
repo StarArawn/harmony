@@ -21,12 +21,12 @@ impl TryFrom<(PathBuf, Vec<u8>)> for PBRMaterial {
     }
 }
 
-trait IntoBindGroup {
-    fn create_bindgroup(&mut self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: Arc<AssetManager>) -> BindGroup;
+pub trait IntoBindGroup {
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: &mut AssetManager) -> Option<BindGroup>;
 }
 
 impl IntoBindGroup for PBRMaterial {
-    fn create_bindgroup(&mut self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: Arc<AssetManager>) -> BindGroup {
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: &mut AssetManager) -> Option<BindGroup> {
         let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap();
 
         let uniform = PBRMaterialUniform {
@@ -42,11 +42,38 @@ impl IntoBindGroup for PBRMaterial {
 
         // Asset manager will panic if image doesn't exist, but we don't want that.
         // So use get_image_option instead.
-        let main_image = texture_manager.get(&self.main_texture);
 
-        let normal_image = texture_manager.get(&self.normal_texture);
+        let main_image = match asset_manager.get_texture(&self.main_texture) {
+            async_filemanager::LoadStatus::Loaded(texture) => Some(texture),
+            _ => None,
+        };
+        let normal_image = match asset_manager.get_texture(&self.normal_texture) {
+            async_filemanager::LoadStatus::Loaded(texture) => Some(texture),
+            _ => None,
+        };
+        let roughness_image = match asset_manager.get_texture(&self.roughness_texture) {
+            async_filemanager::LoadStatus::Loaded(texture) => Some(texture),
+            _ => None,
+        };
 
-        let roughness_image = texture_manager.get(&self.roughness_texture);
+        if main_image.is_none() || normal_image.is_none() || roughness_image.is_none() {
+            return None;
+        }
+
+        let main_image = main_image.unwrap();
+        let normal_image = normal_image.unwrap();
+        let roughness_image = roughness_image.unwrap();
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("PBRMaterialSampler"),
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v:  wgpu::AddressMode::Repeat,
+            address_mode_w:  wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layout,
@@ -57,7 +84,7 @@ impl IntoBindGroup for PBRMaterial {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&main_image.sampler),
+                    resource: wgpu::BindingResource::Sampler(&sampler),
                 },
                 wgpu::Binding {
                     binding: 2,
@@ -75,7 +102,7 @@ impl IntoBindGroup for PBRMaterial {
             label: None,
         });
 
-        BindGroup::new(2, bind_group)
+        Some(BindGroup::new(2, bind_group))
     }
 }
 
@@ -88,6 +115,13 @@ impl MaterialManager {
         asset_manager.register::<PBRMaterial>();
 
         Self {
+
         }
+    }
+
+    pub fn upload<T: Into<String>, T2: IntoBindGroup + 'static>(device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: &mut AssetManager, name: T, material: T2) {
+        let bind_group = material.create_bindgroup(device, gpu_resource_manager, asset_manager);
+
+        
     }
 }
