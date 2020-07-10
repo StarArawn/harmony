@@ -1,5 +1,5 @@
 use log::*;
-use std::collections::HashMap;
+use std::{sync::Arc, collections::HashMap};
 use walkdir::WalkDir;
 
 use crate::core::Font;
@@ -30,7 +30,7 @@ impl AssetManager {
         }
     }
 
-    pub fn load(&mut self, device: &wgpu::Device, queue: &mut wgpu::Queue) {
+    pub fn load(&mut self, device: &wgpu::Device, queue: Arc<wgpu::Queue>) {
         
         for entry in WalkDir::new(&self.path) {
             let entry = entry.expect("Error: Could not access file.");
@@ -80,7 +80,7 @@ impl AssetManager {
             {
                 let image = Image::new(
                     device,
-                    queue,
+                    queue.clone(),
                     format!("{}{}", full_file_path, file_name),
                     file_name.to_string(),
                 );

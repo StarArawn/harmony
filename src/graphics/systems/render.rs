@@ -1,5 +1,6 @@
 use crate::graphics::{pipeline_manager::PipelineManager, CommandBufferQueue};
 use legion::prelude::*;
+use std::sync::Arc;
 
 pub fn create() -> Box<dyn Fn(&mut World, &mut Resources) -> ()> {
     let thread = Box::new(|_world: &mut World, resources: &mut Resources| {

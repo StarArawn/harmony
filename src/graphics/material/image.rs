@@ -1,4 +1,4 @@
-use std::{fs, io};
+use std::{fs, io, sync::Arc};
 
 pub struct Image {
     pub name: String,
@@ -12,7 +12,7 @@ pub struct Image {
 impl Image {
     pub fn new<T>(
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        queue: Arc<wgpu::Queue>,
         path: T,
         file_name: T,
     ) -> Self

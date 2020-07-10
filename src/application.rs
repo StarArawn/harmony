@@ -215,8 +215,8 @@ impl Application {
         {
             let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
             let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
-            let mut queue = self.resources.get_mut::<Arc<wgpu::Queue>>().unwrap();
-            asset_manager.load(&device, &mut queue);
+            let queue = self.resources.get::<Arc<wgpu::Queue>>().unwrap();
+            asset_manager.load(&device, queue.clone());
         }
 
         {
