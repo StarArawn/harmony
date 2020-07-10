@@ -59,7 +59,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
         render_pass.draw(0..3, 0..1);
     }
 
-    let queue = resources.get::<wgpu::Queue>().unwrap();
+    let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
     queue.submit(Some(encoder.finish()));
 
     device.poll(wgpu::Maintain::Wait);

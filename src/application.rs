@@ -158,7 +158,7 @@ impl Application {
 
         let imgui_renderer = {
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap();
+            let mut queue = resources.get_mut::<Arc<wgpu::Queue>>().unwrap();
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             imgui_wgpu::Renderer::new(&mut imgui, &device, &mut queue, sc_desc.format, None)
         };
@@ -215,7 +215,7 @@ impl Application {
         {
             let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
             let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
-            let mut queue = self.resources.get_mut::<wgpu::Queue>().unwrap();
+            let mut queue = self.resources.get_mut::<Arc<wgpu::Queue>>().unwrap();
             asset_manager.load(&device, &mut queue);
         }
 

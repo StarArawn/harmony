@@ -532,7 +532,7 @@ impl Probe {
             );
         }
 
-        let queue = resources.get::<wgpu::Queue>().unwrap();
+        let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
         queue.submit(Some(encoder.finish()));
     }
 
@@ -683,7 +683,7 @@ impl Probe {
             }
         }
 
-        let queue = resources.get::<wgpu::Queue>().unwrap();
+        let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
         queue.submit(Some(encoder.finish()));
     }
 

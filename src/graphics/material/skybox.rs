@@ -83,7 +83,7 @@ impl Skybox {
             None,
         );
         // Push to all command buffers to the queue
-        let queue = app.resources.get::<wgpu::Queue>().unwrap();
+        let queue = app.resources.get::<Arc<wgpu::Queue>>().unwrap();
         queue.submit(vec![command_buffer]);
 
         // Note that we're not calling `.await` here.
