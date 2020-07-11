@@ -165,7 +165,7 @@ where T: Material + Send + Sync {
             TODO: This doesn't make sense if the texture is already loaded.. 
             TODO: I'm not 100% sure why the asset manager `get` requires `&mut` if we could solve that we could share a
             TODO: Arc<AssetManager> with this instead and I think some things will be much easier..
-            TODO: maybe Arc<Mutex<AssetManager>> ? :(
+            TODO: maybe Arc<Mutex<AssetManager>> though because we still need to mutate with load? :(
         */
         texture_futures: FuturesUnordered<Shared<TextureFuture>>,
     ) -> Self {
