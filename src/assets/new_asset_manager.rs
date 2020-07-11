@@ -1,14 +1,15 @@
-use async_filemanager::{FileLoadFuture, AsyncFileManager};
+use async_filemanager::{AsyncFileManager};
 use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
 use legion::{systems::resource::Resource, prelude::Resources};
 use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture};
-use futures::{stream::FuturesUnordered, future::Shared, Stream, StreamExt};
+use futures::{stream::FuturesUnordered, future::Shared, StreamExt};
 
 pub struct AssetManager {
     pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
     image_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<Image>>>,
     texture_manager: TextureManager,
+    
 }
 
 impl AssetManager {

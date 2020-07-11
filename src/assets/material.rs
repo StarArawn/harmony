@@ -4,11 +4,11 @@ use std::{path::PathBuf, convert::TryFrom, sync::Arc, collections::HashMap, task
 use super::{texture::Texture, new_asset_manager::AssetManager, texture_manager::TextureFuture};
 use crate::graphics::{material::PBRMaterialUniform, resources::{BindGroup, GPUResourceManager}};
 use futures::{future::Shared, executor::ThreadPool, task::AtomicWaker, Future};
-use futures::FutureExt;
+use futures::{stream::FuturesUnordered, StreamExt};
 use crossbeam::channel::{bounded, Receiver, TryRecvError};
 
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct PBRMaterialRon {
     pub main_texture: String,
     pub roughness_texture: String,
@@ -25,8 +25,9 @@ impl TryFrom<(PathBuf, Vec<u8>)> for PBRMaterialRon {
     }
 }
 
-pub trait Material {
+pub trait Material: Clone + Sync + Send {
     fn load_textures(&self) -> Vec<PathBuf>;
+    fn create_material(&self, textures: Vec<Arc<Texture>>) -> Arc<dyn BindMaterial>;
 }
 
 impl Material for PBRMaterialRon {
@@ -36,6 +37,17 @@ impl Material for PBRMaterialRon {
             self.roughness_texture.clone().into(),
             self.normal_texture.clone().into(),
         ]
+    }
+
+    fn create_material(&self, mut textures: Vec<Arc<Texture>>) -> Arc<dyn BindMaterial> {
+       Arc::new(PBRMaterial {
+            main_texture: Some(textures.remove(0)),
+            roughness_texture: Some(textures.remove(0)),
+            normal_texture: Some(textures.remove(0)),
+            roughness: self.roughness,
+            metallic: self.metallic,
+            color: self.color,
+        })
     }
 }
 
@@ -56,6 +68,7 @@ impl MaterialManager {
 
 }
 
+#[derive(Clone)]
 pub struct PBRMaterial {
     pub main_texture: Option<Arc<Texture>>,
     pub roughness_texture: Option<Arc<Texture>>,
@@ -65,32 +78,12 @@ pub struct PBRMaterial {
     pub color: Vec4,
 }
 
-impl From<PBRMaterialRon> for PBRMaterial {
-    fn from(ron_material: PBRMaterialRon) -> Self {
-        Self {
-            main_texture: None,
-            roughness_texture: None,
-            normal_texture: None,
-            roughness: ron_material.roughness,
-            metallic: ron_material.metallic,
-            color: ron_material.color,
-        }
-    }
+pub trait BindMaterial {
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager) -> BindGroup;
 }
 
-pub trait BindTexture {
-    fn bind_textures(&mut self, textures: Vec<Arc<Texture>>) { }
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: &mut AssetManager) -> BindGroup;
-}
-
-impl BindTexture for PBRMaterial {
-    fn bind_textures(&mut self, mut textures: Vec<Arc<Texture>>) {
-        self.main_texture = Some(textures.remove(0));
-        self.roughness_texture = Some(textures.remove(0));
-        self.normal_texture = Some(textures.remove(0));
-    }
-
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager, asset_manager: &mut AssetManager) -> BindGroup {
+impl BindMaterial for PBRMaterial {
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager) -> BindGroup {
         let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap();
 
         let uniform = PBRMaterialUniform {
@@ -150,9 +143,9 @@ impl BindTexture for PBRMaterial {
 }
 
 /// The future that resolves to a Texture
-pub struct MaterialFuture {
-    material_ron: Arc<dyn Material>,
-    texture_futures: Vec<Shared<TextureFuture>>,
+pub struct MaterialFuture<T: Material + Send + Sync> {
+    ron_material: Arc<T>,
+    texture_futures: Option<FuturesUnordered<Shared<TextureFuture>>>,
     loaded_textures: Vec<Arc<Texture>>,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
@@ -161,16 +154,18 @@ pub struct MaterialFuture {
     status: LoadStatus,
 }
 #[allow(unused)]
-impl MaterialFuture {
+impl<T> MaterialFuture<T>
+where T: Material + Send + Sync {
     pub fn new(
-        material_ron: Arc<dyn Material>,
+        ron_material: Arc<T>,
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
         pool: Arc<ThreadPool>,
+        texture_futures: FuturesUnordered<Shared<TextureFuture>>,
     ) -> Self {
         Self {
-            material_ron,
-            texture_futures: Vec::new(),
+            ron_material,
+            texture_futures: Some(texture_futures),
             loaded_textures: Vec::new(),
             device,
             queue,
@@ -183,14 +178,14 @@ impl MaterialFuture {
 
 enum LoadStatus {
     Start,
-    LoadingTextures(Receiver<Vec<Arc<Texture>>>),
-    Uploading(Receiver<Arc<dyn Material>>),
+    Uploading(Receiver<Arc<dyn BindMaterial>>),
 }
 
-impl Future for MaterialFuture {
-    type Output = Result<Arc<dyn Material>, Arc<std::io::Error>>;
+impl<T> Future for MaterialFuture<T>
+where T: Material + Send + Sync + 'static {
+    type Output = Result<Arc<dyn BindMaterial>, Arc<std::io::Error>>;
     fn poll(
-        self: std::pin::Pin<&mut Self>,
+        mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         match &self.status {
@@ -198,31 +193,33 @@ impl Future for MaterialFuture {
                 let (tx, rx) = bounded(1);
                 self.waker.register(cx.waker());
                 let waker = self.waker.clone();
-                // let imgdata = self.imgdata.clone();
-                // let imgron = self.imgron.clone();
                 let device = self.device.clone();
                 let queue = self.queue.clone();
+                let mut texture_futures = self.texture_futures.take().unwrap();
+                let ron_material = self.ron_material.clone();
                 self.pool.spawn_ok(async move {
-                    // tx.send(Arc::new(Texture::new(device, queue, imgdata, imgron)))
-                        // .expect("Error forwarding loaded data!");
+                    // First load textures
+                    let mut loaded_textures = Vec::new();
+                    while let Some(result) = texture_futures.next().await {
+                        if result.is_ok() {
+                            let texture = result.unwrap();
+                            loaded_textures.push(texture);
+                        } else {
+                            panic!("Texture failed to load!");
+                        }
+                    }
+
+                    let bind_material = ron_material.create_material(loaded_textures);
+
+                    // TODO: How to get `&mut gpu_resource_manager` here?
+                    // Maybe a Arc<Mutex<GPUResourceManager>>?
+                    //let bind_group = bind_material.create_bindgroup(device, gpu_resource_manager);
+
                     waker.wake();
                 });
                 self.get_mut().status = LoadStatus::Uploading(rx);
                 std::task::Poll::Pending
             }
-            LoadStatus::LoadingTextures(rx) => match rx.try_recv() {
-                Ok(textures) => {
-                    Poll::Pending
-                },
-                Err(TryRecvError::Empty) => {
-                    self.waker.register(cx.waker());
-                    Poll::Pending
-                }
-                Err(e) => Poll::Ready(Err(Arc::new(std::io::Error::new(
-                    std::io::ErrorKind::BrokenPipe,
-                    e,
-                )))),
-            },
             LoadStatus::Uploading(rx) => match rx.try_recv() {
                 Ok(material) => Poll::Ready(Ok(material)),
                 Err(TryRecvError::Empty) => {
