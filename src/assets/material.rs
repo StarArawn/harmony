@@ -161,6 +161,12 @@ where T: Material + Send + Sync {
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
         pool: Arc<ThreadPool>,
+        /*
+            TODO: This doesn't make sense if the texture is already loaded.. 
+            TODO: I'm not 100% sure why the asset manager `get` requires `&mut` if we could solve that we could share a
+            TODO: Arc<AssetManager> with this instead and I think some things will be much easier..
+            TODO: maybe Arc<Mutex<AssetManager>> ? :(
+        */
         texture_futures: FuturesUnordered<Shared<TextureFuture>>,
     ) -> Self {
         Self {
@@ -199,6 +205,8 @@ where T: Material + Send + Sync + 'static {
                 let ron_material = self.ron_material.clone();
                 self.pool.spawn_ok(async move {
                     // First load textures
+                    // TODO: Again texture futures don't make sense it seems like it would be better to just have..
+                    // TODO: loaded_textures.push(asset_manager.get_async::<Texture>(path).await); ??
                     let mut loaded_textures = Vec::new();
                     while let Some(result) = texture_futures.next().await {
                         if result.is_ok() {
@@ -212,8 +220,8 @@ where T: Material + Send + Sync + 'static {
                     let bind_material = ron_material.create_material(loaded_textures);
 
                     // TODO: How to get `&mut gpu_resource_manager` here?
-                    // Maybe a Arc<Mutex<GPUResourceManager>>?
-                    //let bind_group = bind_material.create_bindgroup(device, gpu_resource_manager);
+                    // TODO: Maybe a Arc<Mutex<GPUResourceManager>>? Again not great to have mutexs everywhere, but perhaps its okay?
+                    // let bind_group = bind_material.create_bindgroup(device, gpu_resource_manager);
 
                     waker.wake();
                 });
