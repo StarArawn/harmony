@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{sync::Arc, collections::HashMap};
 
 use super::BindGroup;
 use crate::{scene::components::transform::LocalUniform, graphics::pipelines::{GlobalUniform, LightingUniform}};
@@ -7,7 +7,7 @@ use crate::{scene::components::transform::LocalUniform, graphics::pipelines::{Gl
 /// Also can store buffers, but it's not required.
 pub struct GPUResourceManager {
     // HashMap<Pipeline Name, Bind Group>
-    bind_group_layouts: HashMap<String, wgpu::BindGroupLayout>,
+    bind_group_layouts: HashMap<String, Arc<wgpu::BindGroupLayout>>,
     single_bind_groups: HashMap<String, HashMap<u32, BindGroup>>,
     multi_bind_groups: HashMap<String, HashMap<u32, HashMap<u32, BindGroup>>>,
     multi_buffer: HashMap<String, HashMap<u32, wgpu::Buffer>>,
@@ -80,7 +80,7 @@ impl GPUResourceManager {
             label: Some("Globals"),
         });
 
-        bind_group_layouts.insert("globals".to_string(), global_bind_group_layout);
+        bind_group_layouts.insert("globals".to_string(), Arc::new(global_bind_group_layout));
 
         // Local bind group layout
         let local_bind_group_layout =
@@ -97,7 +97,7 @@ impl GPUResourceManager {
                 )],
                 label: Some("Locals"),
             });
-        bind_group_layouts.insert("locals".to_string(), local_bind_group_layout);
+        bind_group_layouts.insert("locals".to_string(), Arc::new(local_bind_group_layout));
 
         Self {
             bind_group_layouts,
@@ -273,14 +273,14 @@ impl GPUResourceManager {
                 "Bind group layout already exists use `get_bind_group_layout` or a different key."
             );
         }
-        self.bind_group_layouts.insert(name, bind_group_layout);
+        self.bind_group_layouts.insert(name, Arc::new(bind_group_layout));
     }
 
     /// Gets a bind group layout based on name.
     pub fn get_bind_group_layout<T: Into<String>>(
         &self,
         name: T,
-    ) -> Option<&wgpu::BindGroupLayout> {
+    ) -> Option<&Arc<wgpu::BindGroupLayout>> {
         self.bind_group_layouts.get(&name.into())
     }
 

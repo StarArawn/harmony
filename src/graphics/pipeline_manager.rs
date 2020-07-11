@@ -1,6 +1,6 @@
 use ordered_float::OrderedFloat;
 use std::collections::{hash_map::DefaultHasher, HashMap};
-use std::hash::{Hash, Hasher};
+use std::{sync::Arc, hash::{Hash, Hasher}};
 
 use super::{
     renderer::FRAME_FORMAT, resources::GPUResourceManager, CommandBufferQueue, VertexStateBuilder,
@@ -80,13 +80,13 @@ impl PipelineDesc {
             entry_point: "main",
         });
 
-        let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self
+        let bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>> = self
             .layouts
             .iter()
             .map(|group_name| {
                 gpu_resource_manager
                     .get_bind_group_layout(group_name)
-                    .unwrap()
+                    .unwrap().clone()
             })
             .collect();
         let rasterization_state = wgpu::RasterizationStateDescriptor {
@@ -106,7 +106,8 @@ impl PipelineDesc {
 
         // Once we create the layout we don't need the bind group layouts.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts,
+            bind_group_layouts: 
+                &bind_group_layouts.iter().map(|x| x.as_ref()).collect::<Vec<&wgpu::BindGroupLayout>>(),
         });
 
         // Creates our vertex descriptor.

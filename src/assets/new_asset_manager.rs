@@ -30,7 +30,7 @@ impl AssetManager {
             log::warn!("Duplicate registration of key: {:?}", TypeId::of::<T>());
             return;
         }
-        
+
         let loader = AsyncFileManager::<T>::new(self.pool.clone());
         self.loaders.insert(loader);
     }

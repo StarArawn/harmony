@@ -28,6 +28,7 @@ impl TryFrom<(PathBuf, Vec<u8>)> for PBRMaterialRon {
 pub trait Material: Clone + Sync + Send {
     fn load_textures(&self) -> Vec<PathBuf>;
     fn create_material(&self, textures: Vec<Arc<Texture>>) -> Arc<dyn BindMaterial>;
+    fn get_layout(&self, gpu_resource_manager: &mut GPUResourceManager) -> Arc<wgpu::BindGroupLayout>;
 }
 
 impl Material for PBRMaterialRon {
@@ -48,6 +49,10 @@ impl Material for PBRMaterialRon {
             metallic: self.metallic,
             color: self.color,
         })
+    }
+
+    fn get_layout(&self, gpu_resource_manager: &mut GPUResourceManager) -> Arc<wgpu::BindGroupLayout> {
+        gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone()
     }
 }
 
@@ -79,13 +84,11 @@ pub struct PBRMaterial {
 }
 
 pub trait BindMaterial {
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager) -> BindGroup;
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) -> BindGroup;
 }
 
 impl BindMaterial for PBRMaterial {
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, gpu_resource_manager: &mut GPUResourceManager) -> BindGroup {
-        let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap();
-
+    fn create_bindgroup(&self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) -> BindGroup {
         let uniform = PBRMaterialUniform {
             color: self.color,
             info: Vec4::new(self.metallic, self.roughness, 0.0, 0.0),
@@ -144,6 +147,7 @@ impl BindMaterial for PBRMaterial {
 
 /// The future that resolves to a Texture
 pub struct MaterialFuture<T: Material + Send + Sync> {
+    bind_group_layout: Arc<wgpu::BindGroupLayout>,
     ron_material: Arc<T>,
     texture_futures: Option<FuturesUnordered<Shared<TextureFuture>>>,
     loaded_textures: Vec<Arc<Texture>>,
@@ -157,6 +161,7 @@ pub struct MaterialFuture<T: Material + Send + Sync> {
 impl<T> MaterialFuture<T>
 where T: Material + Send + Sync {
     pub fn new(
+        bind_group_layout: Arc<wgpu::BindGroupLayout>,
         ron_material: Arc<T>,
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
@@ -170,6 +175,7 @@ where T: Material + Send + Sync {
         texture_futures: FuturesUnordered<Shared<TextureFuture>>,
     ) -> Self {
         Self {
+            bind_group_layout,
             ron_material,
             texture_futures: Some(texture_futures),
             loaded_textures: Vec::new(),
@@ -203,6 +209,7 @@ where T: Material + Send + Sync + 'static {
                 let queue = self.queue.clone();
                 let mut texture_futures = self.texture_futures.take().unwrap();
                 let ron_material = self.ron_material.clone();
+                let bind_group_layout = self.bind_group_layout.clone();
                 self.pool.spawn_ok(async move {
                     // First load textures
                     // TODO: Again texture futures don't make sense it seems like it would be better to just have..
@@ -221,7 +228,7 @@ where T: Material + Send + Sync + 'static {
 
                     // TODO: How to get `&mut gpu_resource_manager` here?
                     // TODO: Maybe a Arc<Mutex<GPUResourceManager>>? Again not great to have mutexs everywhere, but perhaps its okay?
-                    // let bind_group = bind_material.create_bindgroup(device, gpu_resource_manager);
+                    let bind_group = bind_material.create_bindgroup(device, bind_group_layout);
 
                     waker.wake();
                 });
