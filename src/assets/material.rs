@@ -206,7 +206,7 @@ where T: Material + Send + Sync + 'static {
                 self.pool.spawn_ok(async move {
                     // First load textures
                     // TODO: Again texture futures don't make sense it seems like it would be better to just have..
-                    // TODO: loaded_textures.push(asset_manager.get_async::<Texture>(path).await); ??
+                    // TODO: loaded_textures.push(asset_manager.get_async::<Texture>(path).await); which would always resolve to a Arc<Texture> ??
                     let mut loaded_textures = Vec::new();
                     while let Some(result) = texture_futures.next().await {
                         if result.is_ok() {
