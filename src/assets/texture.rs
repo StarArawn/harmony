@@ -1,16 +1,17 @@
 
 use super::{image::ImageRon, Image};
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 // Texture represents data on the GPU.
 pub struct Texture {
+    pub(crate) path: PathBuf,
     pub inner: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub extent: wgpu::Extent3d,
 }
 
 impl Texture {
-    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<Arc<ImageRon>>) -> Self {
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<Arc<ImageRon>>, path: PathBuf) -> Self {
 
         let extent = wgpu::Extent3d {
             width: image.width,
@@ -52,6 +53,7 @@ impl Texture {
         let view = texture.create_default_view();
 
         Texture {
+            path,
             inner: texture,
             view,
             extent,

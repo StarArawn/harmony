@@ -1,26 +1,30 @@
 use async_filemanager::{AsyncFileManager};
-use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
+use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc, collections::HashMap};
 use legion::{systems::resource::Resource, prelude::Resources};
-use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture};
+use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture, material::Material};
 use futures::{stream::FuturesUnordered, future::Shared, StreamExt};
+use crate::graphics::resources::GPUResourceManager;
 
 pub struct AssetManager {
     pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
     image_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<Image>>>,
     texture_manager: TextureManager,
-    
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
 }
 
 impl AssetManager {
     pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
         let pool = Arc::new(futures::executor::ThreadPoolBuilder::new().create().unwrap());
-        let texture_manager = TextureManager::new(pool.clone(), device, queue);
+        let texture_manager = TextureManager::new(pool.clone(), device.clone(), queue.clone());
         Self{ 
             pool,
             loaders: Resources::default(),
             image_futures: FuturesUnordered::new(),
             texture_manager,
+            device,
+            queue,
         }
     }
 
@@ -74,6 +78,49 @@ impl AssetManager {
                 _ => {}
             };
         }
+    }
+
+    async fn load_material<T: Material, T2: Into<PathBuf>>(&mut self, material_ron: Arc<T>, gpu_resource_manager: &GPUResourceManager) {
+        let mut texture_futures = FuturesUnordered::new();
+        let mut loaded_textures = HashMap::new();
+        let textures = material_ron.load_textures();
+        for texture in textures.iter() {
+            self.load::<Image, _>(texture.clone());
+            let texture_status = self.get_texture(texture.clone());
+            match texture_status {
+                async_filemanager::LoadStatus::Loading(future) => {
+                    texture_futures.push(future);
+                },
+                async_filemanager::LoadStatus::Loaded(asset) => { loaded_textures.insert(texture.clone(), asset.clone()); },
+                _ => {},
+            }
+        }
+
+        // Wait for textures to load..
+        self.maintain();
+
+        // Await texture futures.
+        while let Some(result) = texture_futures.next().await {
+            if result.is_ok() {
+                let texture = result.unwrap();
+                loaded_textures.insert(texture.path.clone(), texture.clone());
+            }
+        }
+
+        // Reorder loaded textures.
+        let mut final_textures = Vec::new();
+        for texture_path in textures.iter() {
+            let texture = loaded_textures.get(texture_path);
+            if texture.is_some() {
+                final_textures.push(texture.unwrap().clone());
+            } else {
+                // Perhaps use default texture here?
+            }
+        }
+
+        let layout = material_ron.get_layout(gpu_resource_manager);
+        let material = material_ron.create_material(final_textures);
+        material.create_bindgroup(self.device.clone(), layout);
     }
 
     pub fn get_texture<T: Into<PathBuf>>(&mut self, path: T) -> async_filemanager::LoadStatus<Texture, TextureFuture> {

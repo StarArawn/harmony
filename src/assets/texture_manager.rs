@@ -31,7 +31,8 @@ impl TextureManager {
                 imgron,
                 self.device.clone(),
                 self.queue.clone(),
-                self.pool.clone(),  
+                self.pool.clone(),
+                id.clone(),
             )
             .shared();
             futures::poll!(&mut f);
@@ -70,6 +71,7 @@ pub struct TextureFuture {
     pool: Arc<ThreadPool>,
     waker: Arc<AtomicWaker>,
     status: LoadStatus,
+    path: PathBuf
 }
 #[allow(unused)]
 impl TextureFuture {
@@ -79,6 +81,7 @@ impl TextureFuture {
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
         pool: Arc<ThreadPool>,
+        id: PathBuf,
     ) -> Self {
         Self {
             imgdata,
@@ -88,6 +91,7 @@ impl TextureFuture {
             pool,
             waker: Arc::new(AtomicWaker::new()),
             status: LoadStatus::Image,
+            path: id,
         }
     }
 }
@@ -112,8 +116,9 @@ impl Future for TextureFuture {
                 let imgron = self.imgron.clone();
                 let device = self.device.clone();
                 let queue = self.queue.clone();
+                let path = self.path.clone();
                 self.pool.spawn_ok(async move {
-                    tx.send(Arc::new(Texture::new(device, queue, imgdata, imgron)))
+                    tx.send(Arc::new(Texture::new(device, queue, imgdata, imgron, path)))
                         .expect("Error forwarding loaded data!");
                     waker.wake();
                 });
