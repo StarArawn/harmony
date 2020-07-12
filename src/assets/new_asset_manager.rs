@@ -1,14 +1,16 @@
 use async_filemanager::{AsyncFileManager};
 use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc, collections::HashMap};
 use legion::{systems::resource::Resource, prelude::Resources};
-use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture, material::Material};
+use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture, material::{PBRMaterialRon, Material, BindMaterial}};
 use futures::{stream::FuturesUnordered, future::Shared, StreamExt};
-use crate::graphics::resources::GPUResourceManager;
+use crate::graphics::resources::{BindGroup, GPUResourceManager};
 
 pub struct AssetManager {
     pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
     image_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<Image>>>,
+    // Maybe Any here? not sure if that'll work though.. Probably should use the RonManager from the async library I think..
+    material_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<PBRMaterialRon>>>,
     texture_manager: TextureManager,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
@@ -23,6 +25,7 @@ impl AssetManager {
             loaders: Resources::default(),
             image_futures: FuturesUnordered::new(),
             texture_manager,
+            material_futures: FuturesUnordered::new(),
             device,
             queue,
         }
@@ -77,10 +80,26 @@ impl AssetManager {
                 },
                 _ => {}
             };
+        } else if TypeId::of::<PBRMaterialRon>() == TypeId::of::<T>() {
+            // Again not sure how to make this more generic..
+            let mut loader = self.loaders.get_mut::<AsyncFileManager<PBRMaterialRon>>().unwrap();
+            let material_result = futures::executor::block_on(loader.get(&path));
+
+            match material_result {
+                async_filemanager::LoadStatus::Loading(mat_future) => {
+                    dbg!("Storing material future!");
+                    self.material_futures.push(mat_future);
+                },
+                async_filemanager::LoadStatus::Error(error) => {
+                    dbg!(error);
+                    panic!("Some sort of error");
+                },
+                _ => {}
+            };
         }
     }
 
-    async fn load_material<T: Material, T2: Into<PathBuf>>(&mut self, material_ron: Arc<T>, gpu_resource_manager: &GPUResourceManager) {
+    async fn load_material<T: Material>(&mut self, material_ron: Arc<T>, gpu_resource_manager: &GPUResourceManager) -> (Arc<dyn BindMaterial>, BindGroup) {
         let mut texture_futures = FuturesUnordered::new();
         let mut loaded_textures = HashMap::new();
         let textures = material_ron.load_textures();
@@ -97,7 +116,7 @@ impl AssetManager {
         }
 
         // Wait for textures to load..
-        self.maintain();
+        self.maintain(gpu_resource_manager);
 
         // Await texture futures.
         while let Some(result) = texture_futures.next().await {
@@ -120,25 +139,26 @@ impl AssetManager {
 
         let layout = material_ron.get_layout(gpu_resource_manager);
         let material = material_ron.create_material(final_textures);
-        material.create_bindgroup(self.device.clone(), layout);
+        let bind_group = material.create_bindgroup(self.device.clone(), layout);
+
+        (material, bind_group)
     }
 
     pub fn get_texture<T: Into<PathBuf>>(&mut self, path: T) -> async_filemanager::LoadStatus<Texture, TextureFuture> {
         futures::executor::block_on(self.texture_manager.get(&path.into()))
     }
 
-    pub fn maintain(&mut self) {
+    pub fn maintain(&mut self, gpu_resource_manager: &GPUResourceManager) {
         let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
         let image_futures = self.image_futures.by_ref();
         let texture_manager = &mut self.texture_manager;
-        dbg!(image_futures.len());
         
         // Instead of block should this be a thread pool?
         futures::executor::block_on(async {
             while let Some(result) = image_futures.next().await {
                 if result.is_ok() {
                     let image = result.unwrap();
-
+                    
                     // We need to grab the image ron file if its A loaded and B exists.
                     // If it doesn't exist Texture will use defaults.
                     let mut ron_path = image.path.clone();
@@ -150,10 +170,25 @@ impl AssetManager {
                         },
                         _ => None,
                     };
-
+                    
                     dbg!("Loaded texture!");
                     dbg!(&image.path);
                     texture_manager.load(&image.path.clone(), image, img_ron).await;
+                }
+            }
+        });
+        
+        // Don't create the pool here..
+        let pool = futures::executor::ThreadPoolBuilder::new().pool_size(4).create().unwrap();
+        let mat_futures = self.material_futures.by_ref();
+
+        // pool.spawn_ok(async {
+        futures::executor::block_on(async {
+            while let Some(result) = mat_futures.next().await {
+                if result.is_ok() {
+                    let material = result.unwrap();
+                    // TODO: How to call load_material???!?!? this might be an ideal place for a future, but I'm not sure how to load/get the textures from within the future.
+                    // self.load_material::<PBRMaterialRon>(material, gpu_resource_manager);
                 }
             }
         });

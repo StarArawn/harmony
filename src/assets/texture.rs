@@ -64,7 +64,7 @@ impl Texture {
 #[cfg(test)]
 mod tests {
 
-    use crate::{assets::{image::ImageRon, Image}};
+    use crate::{assets::{image::ImageRon, Image}, graphics::resources::GPUResourceManager};
     use super::super::new_asset_manager::AssetManager;
     use std::sync::Arc;
 
@@ -109,16 +109,18 @@ mod tests {
             (adapter, arc_device, arc_queue)
         });        
 
+        let gpu_resource_manager = GPUResourceManager::new(&arc_device);
+
         let mut asset_manager = AssetManager::new(arc_device, arc_queue);
         asset_manager.register::<Image>();
         asset_manager.register::<ImageRon>();
         asset_manager.load::<Image, _>("./assets/core/white.png");
         dbg!("First maintain!");
-        asset_manager.maintain(); 
+        asset_manager.maintain(&gpu_resource_manager); 
 
         std::thread::sleep(std::time::Duration::from_secs(1));
         dbg!("Second maintain!");
-        asset_manager.maintain();
+        asset_manager.maintain(&gpu_resource_manager);
 
         let texture_status = asset_manager.get_texture("./assets/core/white.png");
 
