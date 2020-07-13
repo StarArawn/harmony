@@ -29,7 +29,6 @@ impl MaterialManager {
             let mut f = MaterialFuture::<PBRMaterialRon, PBRMaterial>::new(
                 textures,
                 material,
-                self.device.clone(),
                 self.pool.clone(),
                 id.clone(),
             )
@@ -65,7 +64,6 @@ impl MaterialManager {
 pub struct MaterialFuture<T, T2> {
     textures: Vec<Arc<Texture>>,
     material: Arc<T>,
-    device: Arc<wgpu::Device>,
     pool: Arc<ThreadPool>,
     waker: Arc<AtomicWaker>,
     status: LoadStatus<T2>,
@@ -77,14 +75,12 @@ where T: Material<T2>, T2: BindMaterial {
     pub fn new(
         textures: Vec<Arc<Texture>>,
         material: Arc<T>,
-        device: Arc<wgpu::Device>,
         pool: Arc<ThreadPool>,
         id: PathBuf,
     ) -> Self {
         Self {
             textures,
             material,
-            device,
             pool,
             waker: Arc::new(AtomicWaker::new()),
             status: LoadStatus::Image,
@@ -110,8 +106,6 @@ where T: Material<T2> + Send + Sync + 'static, T2: BindMaterial + Send + Sync + 
                 let (tx, rx) = bounded(1);
                 self.waker.register(cx.waker());
                 let waker = self.waker.clone();
-                let device = self.device.clone();
-                let path = self.path.clone();
                 let material = self.material.clone();
                 let textures = self.textures.clone();
                 self.pool.spawn_ok(async move {
