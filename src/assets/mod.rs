@@ -12,3 +12,6 @@ mod texture;
 mod texture_manager;
 
 mod file_manager;
+
+mod shader;
+pub use shader::Shader;
