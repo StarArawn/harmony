@@ -5,12 +5,13 @@ use super::{
     texture::Texture,
     material::{Material},
     file_manager::{FileManager, AssetHandle},
-    material_manager::MaterialManager,
+    material_manager::MaterialManager, shader_manager::ShaderManager, Shader,
 };
 
 pub struct AssetManager {
     loaders: Resources,
     texture_manager: Arc<TextureManager>,
+    shader_manager: Arc<ShaderManager>,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
 }
@@ -18,9 +19,11 @@ pub struct AssetManager {
 impl AssetManager {
     pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
         let texture_manager = Arc::new(TextureManager::new(device.clone(), queue.clone()));
-        Self{ 
+        let shader_manager = Arc::new(ShaderManager::new(device.clone()));
+        Self { 
             loaders: Resources::default(),
             texture_manager,
+            shader_manager,
             device,
             queue,
         }
@@ -66,6 +69,11 @@ impl AssetManager {
     // Instantly returns Arc<AssetHandle<Texture>> from a path.
     pub fn get_texture<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Texture>> {
         self.texture_manager.get(path)
+    }
+
+    // Instantly returns Arc<AssetHandle<Shader>> from a path.
+    pub fn get_shader<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Shader>> {
+        self.shader_manager.get(path)
     }
 
     // Instantly returns a Arc<AssetHandle<T::BindMaterialType>> from a path.

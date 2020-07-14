@@ -48,7 +48,7 @@ impl ShaderManager {
 
 #[cfg(test)]
 mod tests {
-    use super::{ShaderManager, Shader};
+    use super::{ShaderManager};
     use std::sync::Arc;
 
     #[test]
@@ -70,7 +70,7 @@ mod tests {
                 .unwrap();
 
             let adapter_features = adapter.features();
-            let (device, queue) = adapter
+            let (device, _) = adapter
                 .request_device(
                     &wgpu::DeviceDescriptor {
                         features: adapter_features & needed_features,
