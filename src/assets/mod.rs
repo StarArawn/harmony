@@ -15,5 +15,6 @@ mod file_manager;
 
 mod shader;
 pub use shader::Shader;
-
 mod shader_manager;
+
+mod mesh;

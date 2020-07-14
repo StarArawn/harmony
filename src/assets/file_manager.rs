@@ -1,5 +1,5 @@
 
-use std::{sync::Arc, path::PathBuf, convert::{TryFrom}};
+use std::{sync::Arc, path::PathBuf, convert::{TryFrom}, hash::Hash};
 use futures::{executor::{ThreadPool, ThreadPoolBuilder}};
 
 pub type AssetCache<T> = Arc<dashmap::DashMap<PathBuf, Result<Arc<T>, Arc<AssetError>>>>;
@@ -11,10 +11,20 @@ pub struct AssetHandle<T> {
     cache: AssetCache<T>,
 }
 
+impl<T> Hash for AssetHandle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.handle_id.hash(state);
+    }   
+}
+
 impl<T> PartialEq for AssetHandle<T> {
     fn eq(&self, other: &Self) -> bool {
         self.handle_id == other.handle_id
     }
+}
+
+impl<T> Eq for AssetHandle<T> {
+    
 }
 
 impl<T> AssetHandle<T>

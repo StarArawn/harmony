@@ -31,6 +31,40 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
         }
     }
 
+    pub fn insert(&self, material: T) -> Arc<AssetHandle<T::BindMaterialType>> {
+        let path = PathBuf::new();
+        let path = path.join(uuid::Builder::nil().set_version(uuid::Version::Random).build().to_string());
+
+        let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));
+
+        let material_cache = self.material_cache.clone();
+        let ron_cache = self.ron_cache.clone();
+        let texture_manager = self.texture_manager.clone();
+        let material_thread_handle = material_handle.clone();
+
+        self.pool.spawn_ok(async move {
+            let material_arc = Arc::new(material);
+            // Store ron material in cache.
+            ron_cache.insert(material_thread_handle.handle_id.clone(), Ok(material_arc.clone()));
+
+            // TODO: Separate out loading into CPU from loading into the GPU?
+
+            let texture_paths = material_arc.load_textures();
+            let mut textures = Vec::new();
+            for texture_path in texture_paths {
+                let texture_handle = texture_manager.get_async(&texture_path).await;
+                textures.push(texture_handle);
+            }
+
+            // TODO: Create bind_group possible here?
+            let material = material_arc.create_material(textures);
+
+            material_cache.insert(material_thread_handle.handle_id.clone(), Ok(Arc::new(material)));
+        });
+
+        material_handle
+    }
+
     pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = path.into();
         let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));

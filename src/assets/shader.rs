@@ -57,13 +57,11 @@ impl Shader {
 
         // Pixel
         let shader_path = path.join(frag_file_name.clone());
-        dbg!(&shader_path);
         let frag_contents = std::fs::read_to_string(&shader_path)
             .unwrap_or_else(|_| panic!("Unable to read the file: {}", frag_file_name));
 
         // Vertex
         let shader_path = path.join(vert_file_name.clone());
-        dbg!(&shader_path);
         let vert_contents = std::fs::read_to_string(&shader_path)
             .unwrap_or_else(|_| panic!("Unable to read the file: {}", vert_file_name));
         
@@ -123,7 +121,7 @@ mod tests {
                 .unwrap();
 
             let adapter_features = adapter.features();
-            let (device, queue) = adapter
+            let (device, _) = adapter
                 .request_device(
                     &wgpu::DeviceDescriptor {
                         features: adapter_features & needed_features,
@@ -137,7 +135,7 @@ mod tests {
             
             let device = Arc::new(device);
 
-            let shader = Shader::new(device, "./assets/core/shaders/pbr.shader");
+            Shader::new(device, "./assets/core/shaders/pbr.shader");
             
         });
 
