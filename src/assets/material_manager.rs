@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc, convert::TryFrom, fmt::Debug};
 use futures::executor::{ThreadPoolBuilder, ThreadPool};
-use super::{Image, file_manager::{AssetHandle, AssetCache, AssetError}, image::ImageRon, texture::Texture, material::{Material}, texture_manager::TextureManager};
+use super::{file_manager::{AssetHandle, AssetCache, AssetError}, material::{Material}, texture_manager::TextureManager};
 
 pub struct MaterialManager<T: Material> {
     device: Arc<wgpu::Device>,
@@ -41,9 +41,9 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
             let ron_cache = self.ron_cache.clone();
             let texture_manager = self.texture_manager.clone();
             let material_thread_handle = material_handle.clone();
-            let device = self.device.clone();
-            let queue = self.queue.clone();
-
+            // let device = self.device.clone();
+            // let queue = self.queue.clone();
+            
             self.pool.spawn_ok(async move {
                 let ron_file = async_std::fs::read(path.clone()).await;
 
@@ -63,7 +63,7 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
                                 // Store ron material in cache.
                                 ron_cache.insert(material_thread_handle.handle_id.clone(), Ok(material));
 
-                                // TODO: Separate out loading into CPU from loading into the GPU.
+                                // TODO: Separate out loading into CPU from loading into the GPU?
                                 
                                 let texture_paths = material_arc.load_textures();
                                 let mut textures = Vec::new();
@@ -72,6 +72,7 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
                                     textures.push(texture_handle);
                                 }
                                 
+                                // TODO: Create bind_group possible here?
                                 let material = material_arc.create_material(textures);
 
                                 Ok(Arc::new(material))
@@ -153,7 +154,6 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         let material = material_handle.get();
-        dbg!(&material);
         assert!(material.is_ok());
     }
 }
