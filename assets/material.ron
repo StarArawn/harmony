@@ -1,7 +1,7 @@
-PBR(
-    main_texture: "./some_texture.jpg",
-    roughness_texture: "./some_texture.jpg",
-    normal_texture: "./some_texture.jpg",
+PBRMaterialRon(
+    main_texture: "./assets/core/white.png",
+    roughness_texture: "./assets/core/white.png",
+    normal_texture: "./assets/core/white.png",
     roughness: 0.0,
     metallic: 0.0,
     color: [1.0, 1.0, 1.0, 1.0],

@@ -10,8 +10,17 @@ pub struct Texture {
     pub extent: wgpu::Extent3d,
 }
 
+impl std::fmt::Debug for Texture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Texture")
+         .field("path", &self.path)
+         .field("extent", &self.extent)
+         .finish()
+    }
+}
+
 impl Texture {
-    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<Arc<ImageRon>>, path: PathBuf) -> Self {
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<ImageRon>, path: PathBuf) -> Self {
 
         let extent = wgpu::Extent3d {
             width: image.width,
@@ -58,79 +67,5 @@ impl Texture {
             view,
             extent,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::{assets::{image::ImageRon, Image}, graphics::resources::GPUResourceManager};
-    use super::super::new_asset_manager::AssetManager;
-    use std::sync::Arc;
-
-    #[test]
-    fn should_create_texture() {
-        // env_logger::Builder::from_default_env()
-        //     .filter_level(log::LevelFilter::Warn)
-        //     .filter_module("harmony", log::LevelFilter::Info)
-        //     .init();
-
-        let (_, arc_device, arc_queue) = futures::executor::block_on(async {
-            let (needed_features, unsafe_features) =
-                (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
-
-            let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
-            let adapter = instance
-                .request_adapter(
-                    &wgpu::RequestAdapterOptions {
-                        power_preference: wgpu::PowerPreference::Default,
-                        compatible_surface: None,
-                    },
-                    unsafe_features,
-                )
-                .await
-                .unwrap();
-
-            let adapter_features = adapter.features();
-            let (device, queue) = adapter
-                .request_device(
-                    &wgpu::DeviceDescriptor {
-                        features: adapter_features & needed_features,
-                        limits: wgpu::Limits::default(),
-                        shader_validation: true,
-                    },
-                    None,
-                )
-                .await
-                .unwrap();
-            let arc_device = Arc::new(device);
-            let arc_queue = Arc::new(queue);
-            
-            (adapter, arc_device, arc_queue)
-        });        
-
-        let gpu_resource_manager = GPUResourceManager::new(&arc_device);
-
-        let mut asset_manager = AssetManager::new(arc_device, arc_queue);
-        asset_manager.register::<Image>();
-        asset_manager.register::<ImageRon>();
-        asset_manager.load::<Image, _>("./assets/core/white.png");
-        dbg!("First maintain!");
-        asset_manager.maintain(&gpu_resource_manager); 
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        dbg!("Second maintain!");
-        asset_manager.maintain(&gpu_resource_manager);
-
-        let texture_status = asset_manager.get_texture("./assets/core/white.png");
-
-        match texture_status {
-            async_filemanager::LoadStatus::Loaded(_) => {
-                dbg!("We have wgpu texture!");
-            },
-            _ => { panic!("Texture did not load successfully"); }
-        }
-
-        
     }
 }

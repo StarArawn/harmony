@@ -1,141 +1,226 @@
-use std::{collections::HashMap, sync::Arc, path::PathBuf, task::Poll};
-use futures::{future::Shared, executor::ThreadPool, task::AtomicWaker, Future};
-use futures::FutureExt;
-use crossbeam::channel::{bounded, Receiver, TryRecvError};
-use super::{Image, texture::Texture, image::ImageRon};
+use std::{path::PathBuf, sync::Arc, convert::TryFrom};
+use futures::executor::{ThreadPoolBuilder, ThreadPool};
+use super::{Image, file_manager::{AssetHandle, AssetCache, AssetError}, image::ImageRon, texture::Texture};
 
 pub struct TextureManager {
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
     pool: Arc<ThreadPool>,
-    loading: HashMap<PathBuf, Shared<TextureFuture>>,
-    cache: HashMap<PathBuf, Arc<Texture>>,
+    image_cache: AssetCache<Image>,
+    ron_cache: AssetCache<ImageRon>,
+    texture_cache: AssetCache<Texture>,
 }
 
 impl TextureManager {
-    pub fn new(pool: Arc<ThreadPool>, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
-        Self {
-            device,
-            queue,
-            pool,
-            loading: HashMap::new(),
-            cache: HashMap::new(),
-        }
-    }
-
-    #[allow(unused)]
-    pub async fn load(&mut self, id: &PathBuf, img: Arc<Image>, imgron: Option<Arc<ImageRon>>) {
-        if !self.cache.contains_key(id) && !self.loading.contains_key(id) {
-            let mut f = TextureFuture::new(
-                img,
-                imgron,
-                self.device.clone(),
-                self.queue.clone(),
-                self.pool.clone(),
-                id.clone(),
-            )
-            .shared();
-            futures::poll!(&mut f);
-            self.loading.insert(id.clone(), f);
-        }
-    }
-
-    pub async fn get(&mut self, id: &PathBuf) -> async_filemanager::LoadStatus<Texture, TextureFuture> {
-        if let Some(f) = self.loading.get_mut(id) {
-            if let Poll::Ready(result) = futures::poll!(f) {
-                self.loading.remove(id);
-                match result {
-                    Ok(t) => {
-                        self.cache.entry(id.clone()).or_insert(t.clone());
-                        async_filemanager::LoadStatus::Loaded(t)
-                    }
-                    Err(e) => async_filemanager::LoadStatus::Error(e),
-                }
-            } else {
-                async_filemanager::LoadStatus::Loading(self.loading.get(id).unwrap().clone())
-            }
-        } else if let Some(f) = self.cache.get(id) {
-            async_filemanager::LoadStatus::Loaded(f.clone())
-        } else {
-            async_filemanager::LoadStatus::NotLoading
-        }
-    }
-}
-
-/// The future that resolves to a Texture
-pub struct TextureFuture {
-    imgdata: Arc<Image>,
-    imgron: Option<Arc<ImageRon>>,
-    device: Arc<wgpu::Device>,
-    queue: Arc<wgpu::Queue>,
-    pool: Arc<ThreadPool>,
-    waker: Arc<AtomicWaker>,
-    status: LoadStatus,
-    path: PathBuf
-}
-#[allow(unused)]
-impl TextureFuture {
     pub fn new(
-        imgdata: Arc<Image>,
-        imgron: Option<Arc<ImageRon>>,
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
-        pool: Arc<ThreadPool>,
-        id: PathBuf,
     ) -> Self {
+        let pool = Arc::new(ThreadPoolBuilder::new().pool_size(4).create().unwrap());
+        let image_cache = Arc::new(dashmap::DashMap::new());
+        let ron_cache = Arc::new(dashmap::DashMap::new());
+        let texture_cache = Arc::new(dashmap::DashMap::new());
         Self {
-            imgdata,
-            imgron,
             device,
             queue,
             pool,
-            waker: Arc::new(AtomicWaker::new()),
-            status: LoadStatus::Image,
-            path: id,
+            image_cache,
+            ron_cache,
+            texture_cache,
         }
+    }
+
+    pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<Texture>> {
+        let path = path.into();
+        let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
+        
+        if !self.texture_cache.contains_key(&path) {
+            let ext = path.extension().unwrap().to_str().unwrap().to_string();
+
+            // Cross thread arcs passed to new thread.
+            let image_cache = self.image_cache.clone();
+            let ron_cache = self.ron_cache.clone();
+            let texture_cache = self.texture_cache.clone();
+            let texture_thread_handle = texture_handle.clone();
+            let device = self.device.clone();
+            let queue = self.queue.clone();
+
+            self.pool.spawn_ok(async move {
+                let mut ron_path = path.clone();
+                ron_path.set_extension(format!("{}{}", ext,".ron"));
+                let image_file = async_std::fs::read(path.clone()).await;
+                let ron_file = async_std::fs::read(ron_path).await;
+
+                let result = match image_file {
+                    Ok(image_data) => {
+                        let image = Arc::new(Image::try_from((path.clone(), image_data)).unwrap());
+                        // Store image in cache.
+                        image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
+
+                        // Attempt to load ron file..
+                        let image_ron = if ron_file.is_ok() {
+                            Some(ImageRon::try_from((path.clone(), ron_file.unwrap())).unwrap())
+                        } else {
+                            None
+                        };
+
+                        // TODO: Separate out loading into CPU from loading into the GPU.
+                        let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));
+
+                        let image_ron = match image_ron {
+                            Some(ron) => {
+                                Ok(Arc::new(ron))
+                            },
+                            None => {
+                                Err(Arc::new(AssetError::FileNotFound))
+                            }
+                        };
+
+                        ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
+
+                        result
+                    },
+                    Err(error) => {
+                        match error.kind() {
+                            std::io::ErrorKind::NotFound => {
+                                Err(Arc::new(AssetError::FileNotFound))
+                            },
+                            _ => { Err(Arc::new(AssetError::OtherError(error))) }
+                        }
+                    }
+                };
+
+                texture_cache.insert(texture_thread_handle.handle_id.clone(), result);
+            });
+        }
+
+        texture_handle
+    }
+
+    // Assures the asset is loaded before returning the asset handle.
+    pub async fn get_async<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<Texture>> {
+        let path = path.into();
+        let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
+        
+        if !self.texture_cache.contains_key(&path) {
+            let ext = path.extension().unwrap().to_str().unwrap().to_string();
+
+            // Cross thread arcs passed to new thread.
+            let image_cache = self.image_cache.clone();
+            let ron_cache = self.ron_cache.clone();
+            let texture_cache = self.texture_cache.clone();
+            let texture_thread_handle = texture_handle.clone();
+            let device = self.device.clone();
+            let queue = self.queue.clone();
+
+            let mut ron_path = path.clone();
+            ron_path.set_extension(format!("{}{}", ext,".ron"));
+            let image_file = async_std::fs::read(path.clone()).await;
+            let ron_file = async_std::fs::read(ron_path).await;
+
+            let result = match image_file {
+                Ok(image_data) => {
+                    let image = Arc::new(Image::try_from((path.clone(), image_data)).unwrap());
+                    // Store image in cache.
+                    image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
+
+                    // Attempt to load ron file..
+                    let image_ron = if ron_file.is_ok() {
+                        Some(ImageRon::try_from((path.clone(), ron_file.unwrap())).unwrap())
+                    } else {
+                        None
+                    };
+
+                    // TODO: Separate out loading into CPU from loading into the GPU.
+                    let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));
+
+                    let image_ron = match image_ron {
+                        Some(ron) => {
+                            Ok(Arc::new(ron))
+                        },
+                        None => {
+                            Err(Arc::new(AssetError::FileNotFound))
+                        }
+                    };
+
+                    ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
+
+                    result
+                },
+                Err(error) => {
+                    match error.kind() {
+                        std::io::ErrorKind::NotFound => {
+                            Err(Arc::new(AssetError::FileNotFound))
+                        },
+                        _ => { Err(Arc::new(AssetError::OtherError(error))) }
+                    }
+                }
+            };
+
+            texture_cache.insert(texture_thread_handle.handle_id.clone(), result);
+        } else {
+            loop {
+                let result = texture_handle.get();
+                if result.is_ok() {
+                    break;
+                }
+            }
+        }
+
+        texture_handle
     }
 }
 
-enum LoadStatus {
-    Image,
-    Uploading(Receiver<Arc<Texture>>),
-}
+#[cfg(test)]
+mod tests {
+    use super::TextureManager;
+    use super::{AssetError};
+    use std::sync::Arc;
 
-impl Future for TextureFuture {
-    type Output = Result<Arc<Texture>, Arc<std::io::Error>>;
-    fn poll(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
-        match &self.status {
-            LoadStatus::Image => {
-                let (tx, rx) = bounded(1);
-                self.waker.register(cx.waker());
-                let waker = self.waker.clone();
-                let imgdata = self.imgdata.clone();
-                let imgron = self.imgron.clone();
-                let device = self.device.clone();
-                let queue = self.queue.clone();
-                let path = self.path.clone();
-                self.pool.spawn_ok(async move {
-                    tx.send(Arc::new(Texture::new(device, queue, imgdata, imgron, path)))
-                        .expect("Error forwarding loaded data!");
-                    waker.wake();
-                });
-                self.get_mut().status = LoadStatus::Uploading(rx);
-                std::task::Poll::Pending
-            }
-            LoadStatus::Uploading(rx) => match rx.try_recv() {
-                Ok(texture) => Poll::Ready(Ok(texture)),
-                Err(TryRecvError::Empty) => {
-                    self.waker.register(cx.waker());
-                    Poll::Pending
-                }
-                Err(e) => Poll::Ready(Err(Arc::new(std::io::Error::new(
-                    std::io::ErrorKind::BrokenPipe,
-                    e,
-                )))),
-            },
-        }
+    #[test]
+    fn should_load_texture() {
+        let (_, device, queue) = async_std::task::block_on(async {
+            let (needed_features, unsafe_features) =
+                (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
+
+            let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+            let adapter = instance
+                .request_adapter(
+                    &wgpu::RequestAdapterOptions {
+                        power_preference: wgpu::PowerPreference::Default,
+                        compatible_surface: None,
+                    },
+                    unsafe_features,
+                )
+                .await
+                .unwrap();
+
+            let adapter_features = adapter.features();
+            let (device, queue) = adapter
+                .request_device(
+                    &wgpu::DeviceDescriptor {
+                        features: adapter_features & needed_features,
+                        limits: wgpu::Limits::default(),
+                        shader_validation: true,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            let arc_device = Arc::new(device);
+            let arc_queue = Arc::new(queue);
+            (adapter, arc_device, arc_queue)
+        });
+
+        let texture_manager = TextureManager::new(device, queue);
+
+        let handle = texture_manager.get("./assets/core/white.png");
+        let asset = handle.get();
+        assert!(match *asset.err().unwrap() { AssetError::Loading => true, _ => false });
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let asset = handle.get();
+        assert!(asset.is_ok());
     }
 }

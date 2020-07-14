@@ -1,17 +1,9 @@
-use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc, collections::HashMap};
-use async_filemanager::{AsyncFileManager};
+use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc};
 use legion::{systems::resource::Resource, prelude::Resources};
-use futures::{stream::FuturesUnordered, future::Shared, StreamExt};
-use crossbeam::channel::{bounded, Receiver, TryRecvError};
-use super::{image::ImageRon, Image, texture_manager::{TextureFuture, TextureManager}, texture::Texture, material::{PBRMaterialRon, Material, BindMaterial}};
-use crate::graphics::resources::{BindGroup, GPUResourceManager};
+use super::{texture_manager::{TextureManager}, texture::Texture, material::{PBRMaterialRon, Material, BindMaterial}, file_manager::{AssetError, FileManager, AssetHandle}};
 
 pub struct AssetManager {
-    pool: Arc<futures::executor::ThreadPool>,
     loaders: Resources,
-    image_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<Image>>>,
-    // Maybe Any here? not sure if that'll work though.. Probably should use the RonManager from the async library I think..
-    material_futures: FuturesUnordered<Shared<async_filemanager::FileLoadFuture<PBRMaterialRon>>>,
     texture_manager: TextureManager,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
@@ -19,14 +11,10 @@ pub struct AssetManager {
 
 impl AssetManager {
     pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
-        let pool = Arc::new(futures::executor::ThreadPoolBuilder::new().create().unwrap());
-        let texture_manager = TextureManager::new(pool.clone(), device.clone(), queue.clone());
+        let texture_manager = TextureManager::new(device.clone(), queue.clone());
         Self{ 
-            pool,
             loaders: Resources::default(),
-            image_futures: FuturesUnordered::new(),
             texture_manager,
-            material_futures: FuturesUnordered::new(),
             device,
             queue,
         }
@@ -34,237 +22,33 @@ impl AssetManager {
 
     pub fn register<T: Resource + TryFrom<(PathBuf, Vec<u8>)> + Unpin>(&mut self) {
         
-        if self.loaders.contains::<AsyncFileManager<T>>() {
+        if self.loaders.contains::<FileManager<T>>() {
             log::warn!("Duplicate registration of key: {:?}", TypeId::of::<T>());
             return;
         }
 
-        let loader = AsyncFileManager::<T>::new(self.pool.clone());
+        let loader = FileManager::<T>::new();
         self.loaders.insert(loader);
     }
 
-    pub fn load<T: Resource + TryFrom<(PathBuf, Vec<u8>)> + Unpin, K: Into<PathBuf>>(&mut self, path: K) {
-        let path: PathBuf = path.into();
-        {
-            let loader = self.loaders.get_mut::<AsyncFileManager<T>>();
-
-            if loader.is_none() {
-                panic!("Couldn't find asset loader for the requested file.");
-            }
-            let mut loader = loader.unwrap();
-            futures::executor::block_on(loader.load(path.clone()));
-        }
-        // If the loaded asset is detected as an image based off of extension attempt to load a descriptor ron file.
-        // The ron file may fail, but we don't really care as we can use default values.
-        let ext = path.extension().unwrap().to_str().unwrap().to_string();
-        if TypeId::of::<Image>() == TypeId::of::<T>() {
-            // Load ron file.
-            let mut ron_path = path.clone();
-            ron_path.set_extension(format!("{}{}", ext,".ron"));
-            self.load::<ImageRon, _>(ron_path);
-            
-            let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
-
-            // Grab image.
-            dbg!("Getting image future!");
-            let mut loader = self.loaders.get_mut::<AsyncFileManager<Image>>().unwrap();
-            let image_result = futures::executor::block_on(loader.get(&path));
-
-            match image_result {
-                async_filemanager::LoadStatus::Loading(img_future) => {
-                    dbg!("Storing image future!");
-                    self.image_futures.push(img_future);
-                },
-                async_filemanager::LoadStatus::Error(error) => {
-                    dbg!(error);
-                    panic!("Some sort of error");
-                },
-                _ => {}
-            };
-        } else if TypeId::of::<PBRMaterialRon>() == TypeId::of::<T>() {
-            // Again not sure how to make this more generic..
-            let mut loader = self.loaders.get_mut::<AsyncFileManager<PBRMaterialRon>>().unwrap();
-            let material_result = futures::executor::block_on(loader.get(&path));
-
-            match material_result {
-                async_filemanager::LoadStatus::Loading(mat_future) => {
-                    dbg!("Storing material future!");
-                    self.material_futures.push(mat_future);
-                },
-                async_filemanager::LoadStatus::Error(error) => {
-                    dbg!(error);
-                    panic!("Some sort of error");
-                },
-                _ => {}
-            };
-        }
-    }
-
-    // async fn load_material<T: Material>(&mut self, material_ron: Arc<T>, gpu_resource_manager: &GPUResourceManager) -> (Arc<dyn BindMaterial>, BindGroup) {
-    //     let mut texture_futures = FuturesUnordered::new();
-    //     let mut loaded_textures = HashMap::new();
-    //     let textures = material_ron.load_textures();
-    //     for texture in textures.iter() {
-    //         self.load::<Image, _>(texture.clone());
-    //         let texture_status = self.get_texture(texture.clone());
-    //         match texture_status {
-    //             async_filemanager::LoadStatus::Loading(future) => {
-    //                 texture_futures.push(future);
-    //             },
-    //             async_filemanager::LoadStatus::Loaded(asset) => { loaded_textures.insert(texture.clone(), asset.clone()); },
-    //             _ => {},
-    //         }
-    //     }
-
-    //     // Wait for textures to load..
-    //     self.maintain(gpu_resource_manager);
-
-    //     // Await texture futures.
-    //     while let Some(result) = texture_futures.next().await {
-    //         if result.is_ok() {
-    //             let texture = result.unwrap();
-    //             loaded_textures.insert(texture.path.clone(), texture.clone());
-    //         }
-    //     }
-
-    //     // Reorder loaded textures.
-    //     let mut final_textures = Vec::new();
-    //     for texture_path in textures.iter() {
-    //         let texture = loaded_textures.get(texture_path);
-    //         if texture.is_some() {
-    //             final_textures.push(texture.unwrap().clone());
-    //         } else {
-    //             // Perhaps use default texture here?
-    //         }
-    //     }
-
-    //     let layout = material_ron.get_layout(gpu_resource_manager);
-    //     let material = material_ron.create_material(final_textures);
-    //     let bind_group = material.create_bindgroup(self.device.clone(), layout);
-
-    //     (material, bind_group)
-    // }
-
-    pub fn get_texture<T: Into<PathBuf>>(&mut self, path: T) -> async_filemanager::LoadStatus<Texture, TextureFuture> {
-        futures::executor::block_on(self.texture_manager.get(&path.into()))
-    }
-
-    pub fn maintain(&mut self, gpu_resource_manager: &GPUResourceManager) {
-        {
-            let mut ron_image_loader = self.loaders.get_mut::<AsyncFileManager<ImageRon>>().unwrap();
-            let image_futures = self.image_futures.by_ref();
-            let texture_manager = &mut self.texture_manager;
-            
-            // Instead of block should this be a thread pool?
-            futures::executor::block_on(async {
-                while let Some(result) = image_futures.next().await {
-                    if result.is_ok() {
-                        let image = result.unwrap();
-                        
-                        // We need to grab the image ron file if its A loaded and B exists.
-                        // If it doesn't exist Texture will use defaults.
-                        let mut ron_path = image.path.clone();
-                        let ext = ron_path.extension().unwrap().to_str().unwrap().to_string();
-                        ron_path.set_extension(format!("{}{}", ext,".ron"));
-                        let img_ron = match ron_image_loader.get(ron_path).await {
-                            async_filemanager::LoadStatus::Loaded(img_ron) => {
-                                Some(img_ron)
-                            },
-                            _ => None,
-                        };
-                        
-                        dbg!("Loaded texture!");
-                        dbg!(&image.path);
-                        texture_manager.load(&image.path.clone(), image, img_ron).await;
-                    }
-                }
-            });
-        }
-        
-        // Don't create the pool here..
-        // let pool = futures::executor::ThreadPoolBuilder::new().pool_size(4).create().unwrap();
-        let mat_futures = self.material_futures.by_ref();
-        let (tx, rx) = bounded(1);
-
-        //pool.spawn_ok(async {
-        futures::executor::block_on(async {
-            while let Some(result) = mat_futures.next().await {
-                if result.is_ok() {
-                    let material = result.unwrap();
-
-                    // TODO: How to call load_material???!?!? this might be an ideal place for a future, but I'm not sure how to load/get the textures from within the future.
-                    // self.load_material::<PBRMaterialRon>(material, gpu_resource_manager);
-                    tx.send(material).unwrap();
-                }
-            }
-        });
-
-        match rx.try_recv() {
-            Ok(material) =>  {
-                let texture_paths = material.load_textures();
-                let mut image_futures = Vec::new();
-                for path in texture_paths {
-                    self.load::<Image, _>(path.clone());
-                    image_futures.push(self.get_texture(path.clone()))
-                }
-            }
-            _ => {}
-        }
-    }
-
-    pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)> + Unpin, K: Into<PathBuf>>(&mut self, path: K) -> async_filemanager::LoadStatus<T, async_filemanager::FileLoadFuture<T>>{
+    // Instantly returns Arc<AssetHandle<T>> from a path.
+    // Note: You should only call `get` once per path.
+    // TODO: Add better checking to make sure we don't load an asset more than once.
+    pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)>, K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<T>> {
         let path = path.into();
-        let loader = self.loaders.get_mut::<AsyncFileManager<T>>();
+        let loader = self.loaders.get_mut::<FileManager<T>>();
 
         if loader.is_none() {
-            panic!("Couldn't find asset loader for the requested file.");
+            log::error!("Couldn't find asset loader for the requested file.");
         }
 
-        let mut loader = loader.unwrap();
-        return futures::executor::block_on(loader.get(path));
+        let loader = loader.unwrap();
+
+        loader.get(path)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    // use super::AssetManager;
-    // use crate::assets::{image::ImageRon, Image};
-
-    #[test]
-    fn should_register() {
-        // env_logger::Builder::from_default_env()
-        //     .filter_level(log::LevelFilter::Warn)
-        //     .filter_module("harmony", log::LevelFilter::Info)
-        //     .init();
-
-        // let mut asset_manager = AssetManager::new();
-        // asset_manager.register::<Image>();
-        // asset_manager.register::<ImageRon>();
-        // asset_manager.load::<Image, _>("./assets/core/white.png");
-
-        // let image = asset_manager.get::<Image, _>("./assets/core/white.png");
-        // match image {
-        //     async_filemanager::LoadStatus::NotLoading => {
-
-        //     },
-        //     async_filemanager::LoadStatus::Loading(_) => {
-        //     },
-        //     _ => panic!("Failed to load image correctly!"),
-        // }
-
-        // std::thread::sleep(std::time::Duration::from_millis(1000));
-
-        // let image = asset_manager.get::<Image, _>("./assets/core/white.png");
-        // match image {
-        //     async_filemanager::LoadStatus::Loaded(data) => {
-        //         assert!(data.width == 1);
-        //         assert!(data.height == 1);
-        //         assert!(data.data == [255, 255, 255, 255]);
-        //     },
-        //     async_filemanager::LoadStatus::Error(error) => {
-        //         dbg!(error);
-        //     },
-        //     _ => panic!("Failed to load image correctly!"),
-        // }
+    // Instantly returns Arc<AssetHandle<Texture>> from a path.
+    pub fn get_texture<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Texture>> {
+        self.texture_manager.get(path)
     }
 }

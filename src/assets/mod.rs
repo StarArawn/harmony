@@ -10,3 +10,5 @@ mod material_manager;
 
 mod texture;
 mod texture_manager;
+
+mod file_manager;

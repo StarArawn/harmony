@@ -10,10 +10,10 @@ edition = "2018"
 default = []
 
 [dependencies]
-arc-swap = "0.4.7"
-async_filemanager = { git = "https://github.com/floatingmountain/async_filemanager", rev = "4d28be0f832ba1f1f368f5a4e9c8bb4a8af84837" }
+async-std = "1.6.2"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
 crossbeam = "0.7.3"
+dashmap = "3.11.7"
 env_logger = "0.7.1"
 futures = { version = "0.3.5", features = ["default", "thread-pool"] }
 gltf="0.15.2"

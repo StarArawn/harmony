@@ -1,4 +1,4 @@
-use std::{sync::Arc, path::PathBuf, convert::TryFrom};
+use std::{path::PathBuf, convert::TryFrom};
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub enum ImageFormat {
@@ -42,7 +42,7 @@ impl TryFrom<(PathBuf, Vec<u8>)> for Image {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct ImageRon {
     pub format: ImageFormat,
 }
@@ -51,29 +51,5 @@ impl TryFrom<(PathBuf, Vec<u8>)> for ImageRon {
     type Error = ron::de::Error;
     fn try_from((_p, v): (PathBuf, Vec<u8>)) -> Result<Self, Self::Error> {
         ron::de::from_bytes(&v)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use async_filemanager::AsyncFileManager;
-    use std::{path::PathBuf, sync::Arc};
-    use super::{Image, ImageRon};
-
-    #[test]
-    fn should_from_bytes_to_type() {
-        let ron_path = PathBuf::new().join("./assets/").join("image.ron");
-        let image_path = PathBuf::new().join("./assets/").join("core/white.png");
-        
-        let pool = Arc::new(futures::executor::ThreadPoolBuilder::new().create().unwrap());
-        let mut manager = AsyncFileManager::<ImageRon>::new(pool.clone());
-        futures::executor::block_on(manager.load(&ron_path));
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        let ron_asset = futures::executor::block_on(manager.get(&ron_path));
-
-        let mut manager = AsyncFileManager::<Image>::new(pool.clone());
-        futures::executor::block_on(manager.load(&image_path));
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        let image_asset = futures::executor::block_on(manager.get(&image_path));
     }
 }
