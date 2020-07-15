@@ -7,6 +7,7 @@ use super::{
     file_manager::{FileManager, AssetHandle},
     material_manager::MaterialManager, shader_manager::ShaderManager, Shader,
 };
+use walkdir::WalkDir;
 
 pub struct AssetManager {
     loaders: Resources,
@@ -28,6 +29,22 @@ impl AssetManager {
             device,
             queue,
             path,
+        }
+    }
+
+    pub fn load(&mut self) {
+        for entry in WalkDir::new(&self.path) {
+            let entry = entry.expect("Error: Could not access asset directory.");
+            let file_name = entry.file_name().to_str().unwrap().to_string();
+            let path = entry.into_path();
+            if file_name.ends_with(".png") || file_name.ends_with(".jpg") || file_name.ends_with(".hdr") {
+                self.get_texture(path);
+            } else if file_name.ends_with(".shader") {
+                self.get_shader(path);
+            } else if file_name.ends_with(".gltf"){
+                // self.get_mesh(path);
+            }
+
         }
     }
 
@@ -99,7 +116,7 @@ impl AssetManager {
 mod tests {
     use super::AssetManager;
     use super::super::file_manager::AssetError;
-    use std::sync::Arc;
+    use std::{path::PathBuf, sync::Arc};
     use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{material::PBRMaterialRon}};
 
     #[test]
@@ -137,7 +154,7 @@ mod tests {
             (adapter, arc_device, arc_queue)
         });
 
-        let mut asset_manager = AssetManager::new(device.clone(), queue.clone());
+        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone());
 
         let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
         

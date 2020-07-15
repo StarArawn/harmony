@@ -108,7 +108,7 @@ impl harmony::AppState for AppState {
 
         // Setup our custom pipeline
         let mut triangle_desc = PipelineDesc::default();
-        triangle_desc.shader = "triangle.shader".to_string(); // Make sure we reference the right shader!
+        triangle_desc.shader = "example/shader/triangle.shader".to_string(); // Make sure we reference the right shader!
         triangle_desc.layouts = vec!["triangle_layout".to_string()];
         triangle_desc
             .vertex_state

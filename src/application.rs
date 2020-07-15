@@ -272,6 +272,11 @@ impl Application {
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
 
+        {
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            asset_manager.load();
+        }
+
         // Run user code.
         app_state.load(self);
 
