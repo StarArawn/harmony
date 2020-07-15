@@ -4,7 +4,8 @@ A modern 3D/2D game engine that uses wgpu and is designed to work out of the box
 Note: Currently this library is very early in development. Things are very likely going to change. 
 
 ## Features
-- [x] A custom asset manager that handles loading data for you.
+- [x] A custom async based asset manager that handles loading data for you.
+- [x] Ability to load custom assets via the asset manager.
 - [x] Loads GLTF meshes
 - [x] (png, jpg, hdr) image support.
 - [x] Per-material type forward rendering.
@@ -15,18 +16,18 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Render Graph
 - [x] Skybox rendering from an .hdr texture.
 - [x] Multi-threaded rendering
-- [ ] Multiple Enviroment probes(almost done).
 - [x] Custom render pipelines
 - [x] Lighting (Directional, Point)
 - [x] PBR shading model
 - [x] IMGui integration
+- [ ] Multiple Enviroment probes(almost done).
 
 ## Future Features (Prioritized)
 4. [ ] HDR/Tonemap rendering
 5. [ ] Temporal SMAA
 6. [ ] SSAO
 7. [ ] Shadow Mapping
-8. [ ] Asset Bundling and custom assets types.
+8. [ ] Asset Bundling
 9. [ ] More useful scene features
 10. [ ] WASM Support
 
