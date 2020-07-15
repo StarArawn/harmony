@@ -56,7 +56,8 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 
                 // Name of our node we created in app state "load".
                 let node = pipeline_manager.get("triangle", None).unwrap();
-
+                
+                let triangle_bind_group = resource_manager.get_bind_group("triangle", 0).unwrap();
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -70,7 +71,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&node.render_pipeline);
-                    resource_manager.set_bind_group(&mut rpass, "triangle", 0);
+                    rpass.set_bind_group(0, &triangle_bind_group.group, &[]);
                     rpass.draw(0..3, 0..1);
                 }
 
@@ -123,7 +124,7 @@ impl harmony::AppState for AppState {
             vec!["skybox"],        // Dependencies list as names. Uses skybox so that the triangle draws "after" the clear pass.
             &device,               // The wgpu device.
             &asset_manager,        // asset manager from where we can load shaders.
-            &gpu_resource_manager, // The gpu resource manager.
+            gpu_resource_manager.clone(), // The gpu resource manager.
         );
 
         // Pipeline manager is smart enough to not add a new pipeline even if we call pipeline_manager.add again!
@@ -136,7 +137,7 @@ impl harmony::AppState for AppState {
             vec!["skybox"],        // Dependencies list as names.
             &device,               // The wgpu device.
             &asset_manager,        // asset manager from where we can load shaders.
-            &gpu_resource_manager, // The gpu resource manager.
+            gpu_resource_manager.clone(), // The gpu resource manager.
         );
 
         // Create a clear color

@@ -354,12 +354,12 @@ mod tests {
     
             let texture_manager = TextureManager::new(device.clone(), queue.clone());
 
-            let gpu_resource_manager = GPUResourceManager::new(device.clone());
+            let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
 
             let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
             gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
     
-            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), gpu_resource_Manager));
+            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), gpu_resource_manager));
 
             let _mesh = Gltf::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
         });

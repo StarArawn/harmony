@@ -185,14 +185,12 @@ mod tests {
 
         let texture_manager = TextureManager::new(device.clone(), queue.clone());
 
-        let gpu_resource_manager = GPUResourceManager::new(device.clone());
+        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
 
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
 
-        let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
-
-        let material_manager = MaterialManager::<PBRMaterialRon>::new(device, queue, Arc::new(texture_manager), layout);
+        let material_manager = MaterialManager::<PBRMaterialRon>::new(device, queue, Arc::new(texture_manager), gpu_resource_manager);
         let material_handle = material_manager.get("./assets/material.ron");
         let material = material_handle.get();
         assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });

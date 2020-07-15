@@ -69,7 +69,7 @@ impl AssetManager {
         self.loaders.insert(loader);
     }
 
-    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self, layout: Arc<wgpu::BindGroupLayout>) {
+    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self) {
         
         if self.loaders.contains::<Arc<MaterialManager<T>>>() {
             log::warn!("Duplicate registration of material key: {:?}", TypeId::of::<T>());
@@ -164,16 +164,14 @@ mod tests {
             let arc_queue = Arc::new(queue);
             (adapter, arc_device, arc_queue)
         });
-        let gpu_resource_manager = GPUResourceManager::new(device.clone());
+        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
         
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
 
-        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone(), &gpu_resource_manager);
+        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone(), gpu_resource_manager);
 
-        let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
-        
-        asset_manager.register_material::<PBRMaterialRon>(layout);
+        asset_manager.register_material::<PBRMaterialRon>();
         let material_handle = asset_manager.get_material::<PBRMaterialRon, _>("./assets/material.ron");
         let material = material_handle.get();
         assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });
