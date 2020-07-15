@@ -1,226 +1,159 @@
-use log::*;
-use std::{sync::Arc, collections::HashMap};
-use walkdir::WalkDir;
-
-use crate::core::Font;
-use crate::graphics::{
-    material::{Image, Material, Shader},
-    mesh::Mesh,
-    resources::GPUResourceManager,
+use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc, fmt::Debug};
+use legion::{systems::resource::Resource, prelude::Resources};
+use super::{
+    texture_manager::{TextureManager},
+    texture::Texture,
+    material::{Material},
+    file_manager::{FileManager, AssetHandle},
+    material_manager::MaterialManager, shader_manager::ShaderManager, Shader,
 };
 
 pub struct AssetManager {
-    path: String,
-    shaders: HashMap<String, Shader>,
-    fonts: HashMap<String, Font>,
-    meshes: HashMap<String, Mesh>,
-    pub(crate) images: HashMap<String, Image>,
-    pub(crate) materials: HashMap<u32, Material>,
+    loaders: Resources,
+    texture_manager: Arc<TextureManager>,
+    shader_manager: Arc<ShaderManager>,
+    device: Arc<wgpu::Device>,
+    queue: Arc<wgpu::Queue>,
+    path: PathBuf,
 }
 
 impl AssetManager {
-    pub fn new(path: String) -> Self {
-        AssetManager {
+    pub fn new(path: PathBuf, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
+        let texture_manager = Arc::new(TextureManager::new(device.clone(), queue.clone()));
+        let shader_manager = Arc::new(ShaderManager::new(device.clone()));
+        Self { 
+            loaders: Resources::default(),
+            texture_manager,
+            shader_manager,
+            device,
+            queue,
             path,
-            shaders: HashMap::new(),
-            fonts: HashMap::new(),
-            meshes: HashMap::new(),
-            images: HashMap::new(),
-            materials: HashMap::new(),
         }
     }
 
-    pub fn load(&mut self, device: &wgpu::Device, queue: Arc<wgpu::Queue>) {
+    pub fn register<T: Resource + TryFrom<(PathBuf, Vec<u8>)>>(&mut self) {        
+        if self.loaders.contains::<FileManager<T>>() {
+            log::warn!("Duplicate registration of key: {:?}", TypeId::of::<T>());
+            return;
+        }
+
+        let loader = FileManager::<T>::new();
+        self.loaders.insert(loader);
+    }
+
+    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self, layout: Arc<wgpu::BindGroupLayout>) {
         
-        for entry in WalkDir::new(&self.path) {
-            let entry = entry.expect("Error: Could not access file.");
-            let file_name = entry.file_name().to_str().unwrap();
-            let full_file_path = str::replace(
-                entry.path().to_str().unwrap_or_else(|| {
-                    panic!(format!(
-                        "Error: could not get full file path: {}",
-                        file_name
-                    ))
-                }),
-                file_name,
-                "",
-            );
-            if file_name.ends_with(".shader") {
-                let shader =
-                    Shader::new(&device, full_file_path.to_string(), file_name.to_string());
-                self.shaders.insert(file_name.to_string(), shader);
-                info!("Compiled shader: {}", file_name);
-            }
-            if file_name.ends_with(".ttf") || file_name.ends_with(".otf") {
-                let font = Font::new(
-                    &device,
-                    format!("{}{}", full_file_path, file_name).to_string(),
-                );
-                self.fonts.insert(file_name.to_string(), font);
-                info!("Loaded font: {}", file_name);
-            }
-            if file_name.ends_with(".gltf") {
-                let current_index = self.materials.len() as u32;
-                let (mesh, materials) = Mesh::new(
-                    &device,
-                    format!("{}{}", full_file_path, file_name),
-                    current_index,
-                );
-                let mut index = current_index;
-                for material in materials {
-                    self.materials.insert(index, material);
-                    index += 1;
-                }
-                self.meshes.insert(file_name.to_string(), mesh);
-                info!("Loaded mesh: {}", file_name);
-            }
-            if file_name.ends_with(".png")
-                || file_name.ends_with(".jpg")
-                || file_name.ends_with(".hdr")
-            {
-                let image = Image::new(
-                    device,
-                    queue.clone(),
-                    format!("{}{}", full_file_path, file_name),
-                    file_name.to_string(),
-                );
-                self.images.insert(file_name.to_string(), image);
-                info!("Loaded image: {}", file_name);
-            }
+        if self.loaders.contains::<Arc<MaterialManager<T>>>() {
+            log::warn!("Duplicate registration of material key: {:?}", TypeId::of::<T>());
+            return;
         }
+
+        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone(), layout);
+        self.loaders.insert(Arc::new(loader));
     }
 
-    pub fn get_shader<'a, T>(&'a self, key: T) -> &'a Shader
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.shaders.get(&key).expect(&format!(
-            "Asset Error: Could not find {} shader asset!",
-            &key
-        ))
-    }
+    // Instantly returns Arc<AssetHandle<T>> from a path.
+    // Note: You should only call `get` once per path.
+    // TODO: Add better checking to make sure we don't load an asset more than once.
+    pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)>, K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<T>> {
+        let path = self.path.join(path.into());
+        let loader = self.loaders.get::<FileManager<T>>();
 
-    pub fn get_mesh<T>(&self, key: T) -> &Mesh
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.meshes
-            .get(&key)
-            .expect(&format!("Asset Error: Could not find {} mesh asset!", &key))
-    }
-
-    pub fn get_meshes(&self) -> Vec<&Mesh> {
-        self.meshes.values().collect()
-    }
-
-    pub fn get_meshes_mut(&mut self) -> Vec<&mut Mesh> {
-        self.meshes.values_mut().collect()
-    }
-
-    pub fn get_material(&self, index: u32) -> &Material {
-        self.materials.get(&index).expect(&format!(
-            "Asset Error: Could not find material @index {} asset!",
-            index
-        ))
-    }
-
-    pub fn get_materials_mut(&mut self) -> Vec<&mut Material> {
-        self.materials.values_mut().collect()
-    }
-
-    pub fn get_materials(&self) -> Vec<&Material> {
-        self.materials.values().collect()
-    }
-
-    pub fn get_image<T>(&self, key: T) -> &Image
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.images.get(&key).expect(&format!(
-            "Asset Error: Could not find {} image asset!",
-            &key
-        ))
-    }
-
-    pub fn get_image_option<T>(&self, key: T) -> Option<&Image>
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.images.get(&key)
-    }
-
-    pub fn get_images(&self) -> Vec<&Image> {
-        self.images.values().collect()
-    }
-
-    pub fn get_font<T>(&self, key: T) -> &Font
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.fonts
-            .get(&key)
-            .expect(&format!("Asset Error: Could not find {} font asset!", &key))
-    }
-
-    pub fn get_font_mut<T>(&mut self, key: T) -> &mut Font
-    where
-        T: Into<String>,
-    {
-        let key = key.into();
-        self.fonts
-            .get_mut(&key)
-            .expect(&format!("Asset Error: Could not find {} font asset!", &key))
-    }
-
-    pub fn get_fonts(&self) -> Vec<&Font> {
-        self.fonts.values().collect()
-    }
-
-    pub(crate) fn load_materials(
-        &mut self,
-        device: &wgpu::Device,
-        resource_manager: &mut GPUResourceManager,
-    ) {
-        let mut current_bind_group = None;
-        let mut current_index = 0;
-        for material in self.materials.values_mut() {
-            match material {
-                crate::graphics::material::Material::Unlit(unlit_material) => {
-                    let unlit_bind_group_layout = resource_manager
-                        .get_bind_group_layout("unlit_material")
-                        .unwrap();
-                    unlit_material.create_bind_group(
-                        &self.images,
-                        &device,
-                        unlit_bind_group_layout,
-                    );
-                }
-                crate::graphics::material::Material::PBR(pbr_material) => {
-                    let pbr_bind_group_layout = resource_manager
-                        .get_bind_group_layout("pbr_material_layout")
-                        .unwrap();
-                    current_bind_group = Some(pbr_material.create_bind_group(
-                        &self.images,
-                        device,
-                        pbr_bind_group_layout,
-                    ));
-                    current_index = pbr_material.index;
-                }
-            }
-            if current_bind_group.is_some() {
-                resource_manager.add_multi_bind_group(
-                    "pbr",
-                    current_bind_group.take().unwrap(),
-                    current_index,
-                );
-            }
-
-            current_bind_group = None;
+        if loader.is_none() {
+            panic!("Couldn't find asset loader for the requested file.");
         }
+
+        let loader = loader.unwrap();
+
+        loader.get(path)
+    }
+
+    // Instantly returns Arc<AssetHandle<Texture>> from a path.
+    pub fn get_texture<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Texture>> {
+        let path = self.path.join(path.into());
+        self.texture_manager.get(path)
+    }
+
+    // Instantly returns Arc<AssetHandle<Shader>> from a path.
+    pub fn get_shader<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Shader>> {
+        let path = self.path.join(path.into());
+        self.shader_manager.get(path)
+    }
+
+    // Instantly returns a Arc<AssetHandle<T::BindMaterialType>> from a path.
+    // Note: If materials have textures they take longer to load as it'll await the loading of the textures.
+    pub fn get_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static, K: Into<PathBuf>>(&self, path: K)-> Arc<AssetHandle<T::BindMaterialType>> {
+        let path = self.path.join(path.into());
+        let loader = self.loaders.get::<Arc<MaterialManager<T>>>();
+        if loader.is_none() {
+            panic!("Couldn't find material asset loader for the requested file.");
+        }
+
+        let loader = loader.unwrap();
+
+        loader.get(path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AssetManager;
+    use super::super::file_manager::AssetError;
+    use std::sync::Arc;
+    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{material::PBRMaterialRon}};
+
+    #[test]
+    fn should_load_material() {
+        let (_, device, queue) = async_std::task::block_on(async {
+            let (needed_features, unsafe_features) =
+                (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
+
+            let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+            let adapter = instance
+                .request_adapter(
+                    &wgpu::RequestAdapterOptions {
+                        power_preference: wgpu::PowerPreference::Default,
+                        compatible_surface: None,
+                    },
+                    unsafe_features,
+                )
+                .await
+                .unwrap();
+
+            let adapter_features = adapter.features();
+            let (device, queue) = adapter
+                .request_device(
+                    &wgpu::DeviceDescriptor {
+                        features: adapter_features & needed_features,
+                        limits: wgpu::Limits::default(),
+                        shader_validation: true,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            let arc_device = Arc::new(device);
+            let arc_queue = Arc::new(queue);
+            (adapter, arc_device, arc_queue)
+        });
+
+        let mut asset_manager = AssetManager::new(device.clone(), queue.clone());
+
+        let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
+        
+        let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
+        gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
+
+        let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
+        
+        asset_manager.register_material::<PBRMaterialRon>(layout);
+        let material_handle = asset_manager.get_material::<PBRMaterialRon, _>("./assets/material.ron");
+        let material = material_handle.get();
+        assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        let material = material_handle.get();
+        assert!(material.is_ok());
     }
 }

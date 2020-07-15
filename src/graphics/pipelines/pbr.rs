@@ -1,11 +1,12 @@
 use legion::prelude::Resources;
 
+use crate::assets::{mesh::MeshVertexData, material::PBRMaterialUniform};
+
 use crate::{
     graphics::{
-        mesh::MeshVertexData,
         pipeline_manager::{PipelineDesc, PipelineManager},
         renderer::DEPTH_FORMAT,
-        resources::GPUResourceManager, material::PBRMaterialUniform,
+        resources::GPUResourceManager,
     },
     AssetManager,
 };
@@ -69,7 +70,7 @@ pub fn create(resources: &Resources) {
     let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
     let mut pbr_desc = PipelineDesc::default();
-    pbr_desc.shader = "pbr.shader".to_string();
+    pbr_desc.shader = "core/shaders/pbr.shader".to_string();
     pbr_desc.color_state.format = sc_desc.format;
     pbr_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,

@@ -41,8 +41,6 @@ impl Image {
             label: None,
         });
 
-        let temp_buf = device.create_buffer_with_data(&image_bytes, wgpu::BufferUsage::COPY_SRC);
-
         queue.write_texture(
             wgpu::TextureCopyView {
                 texture: &texture,

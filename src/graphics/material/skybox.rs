@@ -163,8 +163,11 @@ impl Skybox {
         asset_manager: &AssetManager,
         material_layout: &wgpu::BindGroupLayout,
     ) {
-        let rayleigh_texture = asset_manager.get_image("rayleigh.hdr");
-        let mie_texture = asset_manager.get_image("mie.hdr");
+        let rayleigh_texture = asset_manager.get_texture("rayleigh.hdr");
+        let mie_texture = asset_manager.get_texture("mie.hdr");
+
+        let rayleigh_texture = futures::executor::block_on(rayleigh_texture.get_async()).unwrap();
+        let mie_texture = futures::executor::block_on(mie_texture.get_async()).unwrap();
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,

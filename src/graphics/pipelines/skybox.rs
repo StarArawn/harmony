@@ -18,7 +18,7 @@ pub fn create(resources: &Resources) {
     let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
     let mut skybox_desc = PipelineDesc::default();
-    skybox_desc.shader = "skybox.shader".to_string();
+    skybox_desc.shader = "core/shaders/skybox.shader".to_string();
     skybox_desc.color_state.format = sc_desc.format;
     skybox_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,

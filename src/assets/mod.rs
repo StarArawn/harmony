@@ -4,8 +4,7 @@ pub use asset_manager::AssetManager;
 mod image;
 pub use self::image::Image;
 
-mod new_asset_manager;
-mod material;
+pub mod material;
 mod material_manager;
 
 mod texture;
@@ -17,4 +16,4 @@ mod shader;
 pub use shader::Shader;
 mod shader_manager;
 
-mod mesh;
+pub mod mesh;

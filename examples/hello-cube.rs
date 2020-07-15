@@ -85,16 +85,6 @@ impl harmony::AppState for AppState {
             .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
-        // We need to find the material index for the material that automatically gets created when loading in the GLTF.
-        // It's easy enough:
-        let cube_material_index = app
-            .resources
-            .get::<harmony::AssetManager>()
-            .unwrap()
-            .get_mesh("cube.gltf")
-            .sub_meshes[0]
-            .material_index;
-
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
@@ -107,7 +97,6 @@ impl harmony::AppState for AppState {
             (),
             vec![(
                 Mesh::new("cube.gltf"),
-                Material::new(cube_material_index),
                 transform,
             )],
         );

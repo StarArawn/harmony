@@ -1,9 +1,18 @@
-/// WIP
 use nalgebra_glm::Vec4;
 use std::{path::PathBuf, convert::TryFrom, sync::Arc, fmt::Debug};
 use super::{texture::Texture, file_manager::{AssetError, AssetHandle}};
-use crate::graphics::{material::PBRMaterialUniform, resources::{BindGroup, GPUResourceManager}};
+use crate::graphics::{resources::{BindGroup, GPUResourceManager}};
+use bytemuck::{Pod, Zeroable};
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct PBRMaterialUniform {
+    pub color: Vec4,
+    pub info: Vec4,
+}
+
+unsafe impl Zeroable for PBRMaterialUniform {}
+unsafe impl Pod for PBRMaterialUniform {}
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PBRMaterialRon {

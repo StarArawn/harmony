@@ -1,8 +1,8 @@
 use super::{
-    material::Shader,
     resources::{GPUResourceManager, RenderTarget},
 };
 use crate::AssetManager;
+use std::sync::Arc;
 
 pub struct BindGroupWithData {
     pub(crate) uniform_buf: wgpu::Buffer,
@@ -117,7 +117,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
     // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
-    fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
+    fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> Arc<crate::assets::Shader>;
     fn create_layout<'a>(
         &self,
         _device: &wgpu::Device,

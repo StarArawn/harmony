@@ -1,4 +1,3 @@
-use super::Image;
 use crate::graphics::resources::BindGroup;
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Vec4;

@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant, path::PathBuf};
 use winit::{
     event::Event,
     event_loop::{ControlFlow, EventLoop},
@@ -82,7 +82,7 @@ impl Application {
         mut render_systems: Vec<Box<dyn Schedulable>>,
     ) -> Self
     where
-        T: Into<String>,
+        T: Into<PathBuf>,
     {
         let scene = Scene::new(None, None);
         let window = window_builder.build(event_loop).unwrap();
@@ -95,7 +95,11 @@ impl Application {
 
         let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
-        let asset_manager = AssetManager::new(asset_path.into());
+        let asset_manager = {
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
+            let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
+            AssetManager::new(asset_path.into(), device.clone(), queue.clone())
+        };
 
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
@@ -213,13 +217,6 @@ impl Application {
         T: AppState,
     {
         {
-            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
-            let queue = self.resources.get::<Arc<wgpu::Queue>>().unwrap();
-            asset_manager.load(&device, queue.clone());
-        }
-
-        {
             let render_graph = RenderGraph::new(&mut self.resources, true);
             self.resources.insert(render_graph);
         }
@@ -277,14 +274,6 @@ impl Application {
 
         // Run user code.
         app_state.load(self);
-
-        // Once materials have been created we need to create more info for them.
-        {
-            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
-            asset_manager.load_materials(&device, &mut resource_manager);
-        }
 
         {
             let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();

@@ -3,7 +3,7 @@ pub use renderer::Renderer;
 
 pub mod material;
 
-pub mod mesh;
+// pub mod mesh;
 
 mod render_graph;
 pub use render_graph::{CommandBufferQueue, CommandQueueItem, RenderGraph};

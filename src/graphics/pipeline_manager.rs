@@ -71,6 +71,7 @@ impl PipelineDesc {
         gpu_resource_manager: &GPUResourceManager,
     ) -> Pipeline {
         let shader = asset_manager.get_shader(self.shader.clone());
+        let shader = futures::executor::block_on(shader.get_async()).unwrap();
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
             entry_point: "main",

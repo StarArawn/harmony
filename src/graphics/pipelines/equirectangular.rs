@@ -6,6 +6,7 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 pub struct CubeProjectionPipeline {
     texture: String,
@@ -38,22 +39,40 @@ impl SimplePipeline for CubeProjectionPipeline {
         resource_manager: &mut GPUResourceManager,
     ) -> Option<RenderTarget> {
         {
-            let image = asset_manager.get_image(self.texture.clone());
+            let texture_handle = asset_manager.get_texture(self.texture.clone());
+            let texture = texture_handle.get();
+
+            if texture.is_err() {
+                return None;
+            }
+
+            let texture = texture.unwrap();
 
             let global_bind_group = resource_manager
                 .get_bind_group_layout("equirectangular_globals")
                 .unwrap();
+
+            let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                label: None,
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Linear,
+                ..Default::default()
+            });
 
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: global_bind_group,
                 bindings: &[
                     wgpu::Binding {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&image.view),
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
                     },
                     wgpu::Binding {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&image.sampler),
+                        resource: wgpu::BindingResource::Sampler(&sampler),
                     },
                 ],
                 label: None,
@@ -140,8 +159,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
-    ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("hdr_to_cubemap.shader")
+    ) -> Arc<crate::assets::Shader> {
+        futures::executor::block_on(asset_manager.get_shader("core/shaders/calculations/hdr_to_cubemap.shader").get_async()).unwrap()
     }
 
     fn create_layout<'a>(

@@ -1,6 +1,6 @@
 use crate::{
     graphics::{
-        material::Material, pipeline_manager::PipelineManager, renderer::DepthTexture,
+        pipeline_manager::PipelineManager, renderer::DepthTexture,
         resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph,
     },
     scene::components,
@@ -101,21 +101,21 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     if mesh_query.iter(&world).count() > 0 {
                         // Collect materials in to their groups.
-                        let asset_materials = asset_manager.get_materials();
-                        let pbr_materials: Vec<_> = asset_materials
-                            .iter()
-                            .filter(|material| match material {
-                                Material::PBR(_) => true,
-                                _ => false,
-                            })
-                            .collect();
-                        let unlit_materials: Vec<_> = asset_materials
-                            .iter()
-                            .filter(|material| match material {
-                                Material::Unlit(_) => true,
-                                _ => false,
-                            })
-                            .collect();
+                        // let asset_materials = asset_manager.get_materials();
+                        // let pbr_materials: Vec<_> = asset_materials
+                        //     .iter()
+                        //     .filter(|material| match material {
+                        //         Material::PBR(_) => true,
+                        //         _ => false,
+                        //     })
+                        //     .collect();
+                        // let unlit_materials: Vec<_> = asset_materials
+                        //     .iter()
+                        //     .filter(|material| match material {
+                        //         Material::Unlit(_) => true,
+                        //         _ => false,
+                        //     })
+                        //     .collect();
 
                         // Render unlit materials.
                         // let unlit_node = render_graph.get("unlit");
@@ -162,50 +162,49 @@ pub fn create() -> Box<dyn Schedulable> {
                         // }
 
                         // Render pbr materials.
-                        let pbr_node = pipeline_manager.get("pbr", None).unwrap();
-                        render_pass.set_pipeline(&pbr_node.render_pipeline);
-                        render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
-                        resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
-                        for material in pbr_materials.iter() {
-                            match material {
-                                Material::PBR(data) => {
-                                    resource_manager.set_multi_bind_group(
-                                        &mut render_pass,
-                                        "pbr",
-                                        2,
-                                        data.index as u32,
-                                    );
-                                    for (mesh, _, transform) in mesh_query
-                                        .iter(&world)
-                                        .filter(|(_, material, _)| material.index == data.index)
-                                    {
-                                        resource_manager.set_multi_bind_group(
-                                            &mut render_pass,
-                                            "transform",
-                                            0,
-                                            transform.index,
-                                        );
-                                        let asset_mesh =
-                                            asset_manager.get_mesh(mesh.mesh_name.clone());
-                                        for sub_mesh in asset_mesh.sub_meshes.iter() {
-                                            render_pass.set_index_buffer(
-                                                sub_mesh.index_buffer.slice(..)
-                                            );
-                                            render_pass.set_vertex_buffer(
-                                                0,
-                                                sub_mesh.vertex_buffer.as_ref().unwrap().slice(..),
-                                            );
-                                            render_pass.draw_indexed(
-                                                0..sub_mesh.index_count as u32,
-                                                0,
-                                                0..1,
-                                            );
-                                        }
-                                    }
-                                }
-                                _ => (),
-                            }
-                        }
+                        // let pbr_node = pipeline_manager.get("pbr", None).unwrap();
+                        // render_pass.set_pipeline(&pbr_node.render_pipeline);
+                        // render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
+                        // resource_manager.set_bind_group(&mut render_pass, "probe_material", 3);
+                        // for material in pbr_materials.iter() {
+                        //     match material {
+                        //         Material::PBR(data) => {
+                        //             resource_manager.set_multi_bind_group(
+                        //                 &mut render_pass,
+                        //                 "pbr",
+                        //                 2,
+                        //                 data.index as u32,
+                        //             );
+                        //             for (mesh, _, transform) in mesh_query
+                        //                 .iter(&world)
+                        //                 .filter(|(_, material, _)| material.index == data.index)
+                        //             {
+                        //                 resource_manager.set_multi_bind_group(
+                        //                     &mut render_pass,
+                        //                     "transform",
+                        //                     0,
+                        //                     transform.index,
+                        //                 );
+                        //                 let asset_mesh = asset_manager.get_mesh(mesh.mesh_name.clone());
+                        //                 for sub_mesh in asset_mesh.sub_meshes.iter() {
+                        //                     render_pass.set_index_buffer(
+                        //                         sub_mesh.index_buffer.slice(..)
+                        //                     );
+                        //                     render_pass.set_vertex_buffer(
+                        //                         0,
+                        //                         sub_mesh.vertex_buffer.as_ref().unwrap().slice(..),
+                        //                     );
+                        //                     render_pass.draw_indexed(
+                        //                         0..sub_mesh.index_count as u32,
+                        //                         0,
+                        //                         0..1,
+                        //                     );
+                        //                 }
+                        //             }
+                        //         }
+                        //         _ => (),
+                        //     }
+                        // }
                     }
                 }
 

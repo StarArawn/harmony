@@ -6,8 +6,8 @@ use nalgebra_glm::{Mat4, Vec4};
 
 pub mod pbr;
 
-mod line;
-pub(crate) use line::LinePipelineDesc;
+// mod line;
+// pub(crate) use line::LinePipelineDesc;
 
 pub mod mipmap;
 

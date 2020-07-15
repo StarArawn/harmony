@@ -55,6 +55,24 @@ where T: Send + Sync + 'static {
             },
         }
     }
+
+    pub async fn get_async(&self) -> Result<Arc<T>, Arc<AssetError>> {
+        let mut asset_result = self.cache.get(&self.handle_id);
+        while asset_result.is_none() {
+            asset_result = self.cache.get(&self.handle_id);
+        }
+
+        let asset_result = asset_result.unwrap(); 
+        let asset = asset_result.as_ref();
+        match asset {
+            Ok(asset) => {
+                return Ok(asset.clone());
+            },
+            Err(error) => {
+                return Err(error.clone());
+            },
+        }
+    }
 }
 
 #[derive(Debug)]
