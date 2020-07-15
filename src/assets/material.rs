@@ -1,6 +1,6 @@
 use nalgebra_glm::Vec4;
 use std::{path::PathBuf, convert::TryFrom, sync::Arc, fmt::Debug};
-use super::{texture::Texture, file_manager::{AssetError, AssetHandle}};
+use super::{texture::Texture, file_manager::{AssetHandle}};
 use crate::graphics::{resources::{BindGroup, GPUResourceManager}};
 use bytemuck::{Pod, Zeroable};
 

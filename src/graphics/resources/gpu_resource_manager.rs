@@ -21,7 +21,7 @@ pub struct GPUResourceManager {
 
 impl GPUResourceManager {
     pub fn new(device: Arc<wgpu::Device>) -> Self {
-        let mut bind_group_layouts = DashMap::new();
+        let bind_group_layouts = DashMap::new();
 
         // Create our global uniforms buffers, layouts, and bindgroups here.
         // These *can* be shared across all pipelines.
@@ -123,7 +123,7 @@ impl GPUResourceManager {
             let bind_groups = self.single_bind_groups.get_mut(&key).unwrap();
             bind_groups.insert(bind_group_index, Arc::new(bind_group));
         } else {
-            let mut hash_map = DashMap::new();
+            let hash_map = DashMap::new();
             hash_map.insert(bind_group_index, Arc::new(bind_group));
             self.single_bind_groups
                 .insert(key.clone(), hash_map);
@@ -142,8 +142,8 @@ impl GPUResourceManager {
         let key = key.into();
         let bind_group_index = bind_group.index;
         if !self.multi_bind_groups.contains_key(&key) {
-            let mut bindings_hash_map = DashMap::new();
-            let mut hashmap_bind_group = DashMap::new();
+            let bindings_hash_map = DashMap::new();
+            let hashmap_bind_group = DashMap::new();
             hashmap_bind_group.insert(item_index, Arc::new(bind_group));
             bindings_hash_map.insert(bind_group_index, hashmap_bind_group);
             self.multi_bind_groups
@@ -155,7 +155,7 @@ impl GPUResourceManager {
                 let hashmap_bind_group = hashmap_bind_group.as_mut().unwrap();
                 hashmap_bind_group.insert(item_index, Arc::new(bind_group));
             } else {
-                let mut hashmap_bind_group = DashMap::new();
+                let hashmap_bind_group = DashMap::new();
                 hashmap_bind_group.insert(item_index, Arc::new(bind_group));
                 bindings_hash_map.insert(bind_group_index, hashmap_bind_group);
             }
@@ -171,10 +171,10 @@ impl GPUResourceManager {
     ) {
         let key = key.into();
         if self.multi_buffer.contains_key(&key) {
-            let mut item_hash_map = self.multi_buffer.get_mut(&key).unwrap();
+            let item_hash_map = self.multi_buffer.get_mut(&key).unwrap();
             item_hash_map.insert(item_index, Arc::new(buffer));
         } else {
-            let mut hash_map = DashMap::new();
+            let hash_map = DashMap::new();
             hash_map.insert(item_index, Arc::new(buffer));
             self.multi_buffer.insert(key, hash_map);
         }

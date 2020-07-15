@@ -411,10 +411,8 @@ impl Probe {
 
     fn render_irradiance(&mut self, resources: &Resources) {
         let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-        let asset_manager = resources.get::<AssetManager>().unwrap();
-        let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
         let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
-        let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
+        let pipeline_manager = resources.get::<PipelineManager>().unwrap();
 
         // create pipeline if we need to.
         let node_pipeline = pipeline_manager.get("irradiance", None).unwrap();
@@ -451,7 +449,6 @@ impl Probe {
                 0.0,
             ),
         };
-        let uniform_size = std::mem::size_of::<ProbeUniform>() as wgpu::BufferAddress;
         let uniform_buf = device.create_buffer_with_data(
             bytemuck::bytes_of(&uniform),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,

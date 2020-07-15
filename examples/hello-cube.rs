@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::{
-    components::{CameraData, DirectionalLightData, LightType, Material, Mesh, Transform},
+    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform},
     resources::DeltaTime,
     Scene,
 };
@@ -43,8 +43,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         .with_query(<Write<Transform>>::query())
         .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
-                // transform.rotate_on_y(-0.5 * delta_time.0);
-                // transform.rotate_on_x(-0.5 * delta_time.0);
+                transform.rotate_on_y(-0.5 * delta_time.0);
+                transform.rotate_on_x(-0.5 * delta_time.0);
             }
         })
 }

@@ -1,7 +1,7 @@
 
 use std::{sync::Arc, path::PathBuf};
 use futures::{executor::{ThreadPool, ThreadPoolBuilder}};
-use super::{mesh::Gltf, file_manager::{AssetHandle, AssetCache, AssetError}, material_manager::MaterialManager, material::PBRMaterialRon};
+use super::{mesh::Gltf, file_manager::{AssetHandle, AssetCache}, material_manager::MaterialManager, material::PBRMaterialRon};
 
 pub struct MeshManager {
     device: Arc<wgpu::Device>,

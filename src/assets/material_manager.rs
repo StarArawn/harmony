@@ -80,7 +80,6 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
             let texture_manager = self.texture_manager.clone();
             let material_thread_handle = material_handle.clone();
             let device = self.device.clone();
-            let queue = self.queue.clone();
             let layout = T::get_layout(self.gpu_resource_manager.clone());
             
             self.pool.spawn_ok(async move {

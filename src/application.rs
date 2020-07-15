@@ -223,11 +223,11 @@ impl Application {
         }
 
         {
-            let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
-            let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
-            let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
-            let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+            // let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            // let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            // let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
+            // let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
+            // let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
             // Unlit pipeline
             // let unlit_pipeline_desc = UnlitPipelineDesc::default();

@@ -31,15 +31,15 @@ pub fn create() -> Box<dyn Schedulable> {
             |_,
              mut world,
              (
-                asset_manager,
+                _asset_manager,
                 command_buffer_queue,
-                render_graph,
+                _render_graph,
                 device,
                 queue,
                 output,
                 resource_manager,
                 depth_texture,
-                pipeline_manager,
+                _pipeline_manager,
             ),
              (transform_query, mesh_query)| {
                 // Create mesh encoder
@@ -51,7 +51,6 @@ pub fn create() -> Box<dyn Schedulable> {
                 // This section is where we upload our transforms to the GPU
                 // ******************************************************************************
                 if transform_query.iter_mut(&mut world).count() > 0 {
-                    let size = std::mem::size_of::<LocalUniform>();
                     let mut_world = &mut world;
                     // let mut temp_buf_data = device.create_buffer(&wgpu::BufferDescriptor {
                     //     size: (transform_query.iter_mut(mut_world).count() * size) as u64,
@@ -75,7 +74,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 // This section is where we actually render our meshes.
                 // ******************************************************************************
                 {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    let mut _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
