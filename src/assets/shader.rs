@@ -1,6 +1,6 @@
 use shaderc;
-use std::path::PathBuf;
 use std::io::BufRead;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 pub struct Shader {
@@ -64,7 +64,7 @@ impl Shader {
         let shader_path = path.join(vert_file_name.clone());
         let vert_contents = std::fs::read_to_string(&shader_path)
             .unwrap_or_else(|_| panic!("Unable to read the file: {}", vert_file_name));
-        
+
         options.add_macro_definition("EP", Some("main"));
 
         let vertex = {
@@ -132,13 +132,10 @@ mod tests {
                 )
                 .await
                 .unwrap();
-            
+
             let device = Arc::new(device);
 
             Shader::new(device, "./assets/core/shaders/pbr.shader");
-            
         });
-
-        
     }
 }

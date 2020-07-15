@@ -1,7 +1,16 @@
-use super::{material::{PBRMaterialRon, PBRMaterial}, file_manager::AssetHandle, material_manager::MaterialManager};
+use super::{
+    file_manager::AssetHandle,
+    material::{PBRMaterial, PBRMaterialRon},
+    material_manager::MaterialManager,
+};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
-use std::{ffi::OsStr, path::{Path, PathBuf}, sync::Arc, collections::HashMap};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -36,15 +45,14 @@ pub struct SubMesh {
     pub(crate) index_buffer: wgpu::Buffer,
 }
 
-
 impl std::fmt::Debug for SubMesh {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SubMesh")
-         .field("vertices", &self.vertices)
-         .field("indices", &self.indices)
-         .field("index_count", &self.index_count)
-         .field("mode", &self.mode)
-         .finish()
+            .field("vertices", &self.vertices)
+            .field("indices", &self.indices)
+            .field("index_count", &self.index_count)
+            .field("mode", &self.mode)
+            .finish()
     }
 }
 
@@ -60,19 +68,22 @@ pub struct Gltf {
 }
 
 impl Gltf {
-    pub async fn from_gltf(device: Arc<wgpu::Device>, material_manager: Arc<MaterialManager<PBRMaterialRon>>, path: PathBuf) -> Gltf {
-
+    pub async fn from_gltf(
+        device: Arc<wgpu::Device>,
+        material_manager: Arc<MaterialManager<PBRMaterialRon>>,
+        path: PathBuf,
+    ) -> Gltf {
         let data: Vec<u8> = async_std::fs::read(path.clone()).await.unwrap();
 
         let document = gltf::Gltf::from_slice(&data).unwrap();
 
-        let files = document.buffers()
+        let files = document
+            .buffers()
             .filter_map(|buffer| match buffer.source() {
                 gltf::buffer::Source::Bin => None,
-                gltf::buffer::Source::Uri(uri) => {
-                    Some(uri.to_string())
-                }
-            }).collect::<Vec<_>>();
+                gltf::buffer::Source::Uri(uri) => Some(uri.to_string()),
+            })
+            .collect::<Vec<_>>();
 
         let mut buffer_data = Vec::new();
         for file in files {
@@ -81,7 +92,8 @@ impl Gltf {
             buffer_data.push(gltf::buffer::Data(file));
         }
 
-        let get_buffer_data = |buffer: gltf::Buffer<'_>| buffer_data.get(buffer.index()).map(|x| &*x.0);
+        let get_buffer_data =
+            |buffer: gltf::Buffer<'_>| buffer_data.get(buffer.index()).map(|x| &*x.0);
 
         let gltf_meshes = document.meshes().collect::<Vec<gltf::Mesh<'_>>>();
 
@@ -129,10 +141,11 @@ impl Gltf {
                 // Load tangents if we have them.
                 if let Some(tangents) = reader.read_tangents() {
                     for (i, tangent) in tangents.enumerate() {
-                        vertices[i].tangent = Vec4::new(tangent[0], tangent[1], tangent[2], tangent[3]);
+                        vertices[i].tangent =
+                            Vec4::new(tangent[0], tangent[1], tangent[2], tangent[3]);
                     }
                     had_tangents = true;
-                } 
+                }
 
                 let indices: Vec<u32> = if let Some(index_enum) = reader.read_indices() {
                     index_enum.into_u32().collect()
@@ -175,10 +188,10 @@ impl Gltf {
                 let roughness_info = pbr.metallic_roughness_texture();
                 let roughness = pbr.roughness_factor();
                 let metallic = pbr.metallic_factor();
-    
+
                 let main_texture = Self::get_texture_url(&main_info, &images);
                 let roughness_texture = Self::get_texture_url(&roughness_info, &images);
-    
+
                 let material = PBRMaterialRon {
                     main_texture: main_texture.unwrap_or("white.png".to_string()),
                     normal_texture: normal_texture.unwrap_or("empty_normal.png".to_string()),
@@ -191,10 +204,12 @@ impl Gltf {
 
                 let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-                let index_buffer = device
-                    .create_buffer_with_data(&bytemuck::cast_slice(&indices), wgpu::BufferUsage::INDEX);
+                let index_buffer = device.create_buffer_with_data(
+                    &bytemuck::cast_slice(&indices),
+                    wgpu::BufferUsage::INDEX,
+                );
                 let index_count = indices.len();
-                
+
                 let mut sub_mesh = SubMesh {
                     vertices,
                     indices,
@@ -205,9 +220,7 @@ impl Gltf {
                 };
 
                 if !had_tangents {
-                    log::info!(
-                        "No tangents found generating tangents instead!",
-                    );
+                    log::info!("No tangents found generating tangents instead!",);
                     mikktspace::generate_tangents(&mut sub_mesh);
                 }
 
@@ -215,7 +228,7 @@ impl Gltf {
                     &bytemuck::cast_slice(&sub_mesh.vertices),
                     wgpu::BufferUsage::VERTEX,
                 );
-    
+
                 sub_mesh.vertex_buffer = Some(vertex_buffer);
 
                 mesh.meshes.insert(material_handle, sub_mesh);
@@ -224,10 +237,7 @@ impl Gltf {
             meshes.push(mesh);
         }
 
-
-        Gltf {
-            meshes,
-        }
+        Gltf { meshes }
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
@@ -275,7 +285,6 @@ impl Gltf {
     }
 }
 
-
 fn vertex(sub_mesh: &SubMesh, face: usize, vert: usize) -> &MeshVertexData {
     &sub_mesh.vertices[sub_mesh.indices[face * 3 + vert] as usize]
 }
@@ -313,8 +322,11 @@ impl mikktspace::Geometry for SubMesh {
 #[cfg(test)]
 mod tests {
     use super::Gltf;
+    use crate::{
+        assets::{material_manager::MaterialManager, texture_manager::TextureManager},
+        graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager},
+    };
     use std::{path::PathBuf, sync::Arc};
-    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{texture_manager::TextureManager, material_manager::MaterialManager}};
 
     #[test]
     fn should_load_mesh() {
@@ -322,7 +334,7 @@ mod tests {
             let (_, device, queue) = async_std::task::block_on(async {
                 let (needed_features, unsafe_features) =
                     (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
-    
+
                 let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
                 let adapter = instance
                     .request_adapter(
@@ -334,7 +346,7 @@ mod tests {
                     )
                     .await
                     .unwrap();
-    
+
                 let adapter_features = adapter.features();
                 let (device, queue) = adapter
                     .request_device(
@@ -351,17 +363,28 @@ mod tests {
                 let arc_queue = Arc::new(queue);
                 (adapter, arc_device, arc_queue)
             });
-    
+
             let texture_manager = TextureManager::new(device.clone(), queue.clone());
 
             let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
 
             let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
-            gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
-    
-            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), gpu_resource_manager));
+            gpu_resource_manager
+                .add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
 
-            let _mesh = Gltf::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
+            let material_manager = Arc::new(MaterialManager::new(
+                device.clone(),
+                queue,
+                Arc::new(texture_manager),
+                gpu_resource_manager,
+            ));
+
+            let _mesh = Gltf::from_gltf(
+                device.clone(),
+                material_manager,
+                PathBuf::from("./assets/example/meshes/cube/cube.gltf"),
+            )
+            .await;
         });
     }
 }

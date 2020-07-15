@@ -93,17 +93,16 @@ impl harmony::AppState for AppState {
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
         let transform = Transform::new(app);
-        app.current_scene.world.insert(
-            (),
-            vec![(
-                Mesh::new("cube.gltf"),
-                transform,
-            )],
-        );
+        app.current_scene
+            .world
+            .insert((), vec![(Mesh::new("cube.gltf"), transform)]);
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
-        let skybox =
-            harmony::graphics::material::Skybox::new_hdr(app, "example/textures/venice_sunrise_4k.hdr", 2048.0);
+        let skybox = harmony::graphics::material::Skybox::new_hdr(
+            app,
+            "example/textures/venice_sunrise_4k.hdr",
+            2048.0,
+        );
         // Or create a realtime skybox:
         // Note: realtime skybox will use the first directional light as the sun position.
         // let skybox =

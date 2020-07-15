@@ -1,6 +1,5 @@
-
-use std::{sync::Arc, path::PathBuf, convert::{TryFrom}, hash::Hash};
-use futures::{executor::{ThreadPool, ThreadPoolBuilder}};
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use std::{convert::TryFrom, hash::Hash, path::PathBuf, sync::Arc};
 
 pub type AssetCache<T> = Arc<dashmap::DashMap<PathBuf, Result<Arc<T>, Arc<AssetError>>>>;
 
@@ -14,7 +13,7 @@ pub struct AssetHandle<T> {
 impl<T> Hash for AssetHandle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.handle_id.hash(state);
-    }   
+    }
 }
 
 impl<T> PartialEq for AssetHandle<T> {
@@ -23,12 +22,12 @@ impl<T> PartialEq for AssetHandle<T> {
     }
 }
 
-impl<T> Eq for AssetHandle<T> {
-    
-}
+impl<T> Eq for AssetHandle<T> {}
 
 impl<T> AssetHandle<T>
-where T: Send + Sync + 'static {
+where
+    T: Send + Sync + 'static,
+{
     pub(crate) fn new(id: PathBuf, cache: AssetCache<T>) -> Self {
         Self {
             handle_id: id,
@@ -44,15 +43,15 @@ where T: Send + Sync + 'static {
         if asset_result.is_none() {
             return Err(Arc::new(AssetError::Loading));
         }
-        let asset_result = asset_result.unwrap(); 
+        let asset_result = asset_result.unwrap();
         let asset = asset_result.as_ref();
         match asset {
             Ok(asset) => {
                 return Ok(asset.clone());
-            },
+            }
             Err(error) => {
                 return Err(error.clone());
-            },
+            }
         }
     }
 
@@ -62,15 +61,15 @@ where T: Send + Sync + 'static {
             asset_result = self.cache.get(&self.handle_id);
         }
 
-        let asset_result = asset_result.unwrap(); 
+        let asset_result = asset_result.unwrap();
         let asset = asset_result.as_ref();
         match asset {
             Ok(asset) => {
                 return Ok(asset.clone());
-            },
+            }
             Err(error) => {
                 return Err(error.clone());
-            },
+            }
         }
     }
 }
@@ -92,16 +91,15 @@ pub struct FileManager<T> {
     cache: AssetCache<T>,
 }
 
-impl<T> FileManager<T> 
-where T: TryFrom<(PathBuf, Vec<u8>)> + Send + Sync + 'static {
+impl<T> FileManager<T>
+where
+    T: TryFrom<(PathBuf, Vec<u8>)> + Send + Sync + 'static,
+{
     pub fn new() -> Self {
         // TODO: One pool that we pass in is probably enough.
         let pool = Arc::new(ThreadPoolBuilder::new().pool_size(4).create().unwrap());
         let cache = Arc::new(dashmap::DashMap::new());
-        Self {
-            pool,
-            cache,
-        }
+        Self { pool, cache }
     }
 
     pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<T>> {
@@ -121,17 +119,13 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Send + Sync + 'static {
                     let file = file.unwrap();
                     match T::try_from((path.clone(), file)) {
                         Ok(f) => Ok(Arc::new(f)),
-                        Err(_e) => {
-                            Err(Arc::new(AssetError::InvalidData))
-                        }
+                        Err(_e) => Err(Arc::new(AssetError::InvalidData)),
                     }
                 } else {
                     let error = file.err().unwrap();
                     match error.kind() {
-                        std::io::ErrorKind::NotFound => {
-                            Err(Arc::new(AssetError::FileNotFound))
-                        },
-                        _ => { Err(Arc::new(AssetError::OtherError(error))) }
+                        std::io::ErrorKind::NotFound => Err(Arc::new(AssetError::FileNotFound)),
+                        _ => Err(Arc::new(AssetError::OtherError(error))),
                     }
                 };
 
@@ -146,8 +140,8 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Send + Sync + 'static {
 #[cfg(test)]
 mod tests {
     use super::{AssetError, FileManager};
-    use crate::assets::image::ImageRon;
     use crate::assets::image::ImageFormat;
+    use crate::assets::image::ImageRon;
     use crate::assets::material::PBRMaterialRon;
     use nalgebra_glm::Vec4;
 
@@ -157,7 +151,10 @@ mod tests {
         let asset_handle = file_manager.get("./assets/core/white.png.ron");
 
         let asset = asset_handle.get();
-        assert!(match *asset.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *asset.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
@@ -174,7 +171,10 @@ mod tests {
         let asset_handle = file_manager.get("./assets/material.ron");
 
         let asset = asset_handle.get();
-        assert!(match *asset.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *asset.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
@@ -191,7 +191,10 @@ mod tests {
         let asset_handle = file_manager.get("./assets/material.ron");
 
         let asset = asset_handle.get();
-        assert!(match *asset.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *asset.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 

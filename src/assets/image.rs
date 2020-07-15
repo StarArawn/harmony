@@ -1,4 +1,4 @@
-use std::{path::PathBuf, convert::TryFrom};
+use std::{convert::TryFrom, path::PathBuf};
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub enum ImageFormat {
@@ -30,7 +30,9 @@ pub struct Image {
 
 impl TryFrom<(Option<ImageRon>, PathBuf, Vec<u8>)> for Image {
     type Error = std::io::Error;
-    fn try_from((image_ron, path, data): (Option<ImageRon>, PathBuf, Vec<u8>)) -> Result<Self, Self::Error> {
+    fn try_from(
+        (image_ron, path, data): (Option<ImageRon>, PathBuf, Vec<u8>),
+    ) -> Result<Self, Self::Error> {
         let format = if image_ron.is_some() {
             image_ron.unwrap().format
         } else {
@@ -40,8 +42,7 @@ impl TryFrom<(Option<ImageRon>, PathBuf, Vec<u8>)> for Image {
         let (image, width, height) = match format {
             ImageFormat::HDR32 | ImageFormat::HDR16 => {
                 // Load the hdr image
-                let decoder = image::hdr::HdrDecoder::new(data.as_slice())
-                    .unwrap();
+                let decoder = image::hdr::HdrDecoder::new(data.as_slice()).unwrap();
                 let metadata = decoder.metadata();
                 let decoded = decoder.read_image_hdr().unwrap();
 
@@ -53,19 +54,22 @@ impl TryFrom<(Option<ImageRon>, PathBuf, Vec<u8>)> for Image {
                     .collect::<Vec<_>>();
 
                 let image_bytes = unsafe {
-                    std::slice::from_raw_parts(image_data.as_ptr() as *const u8, image_data.len() * 4)
+                    std::slice::from_raw_parts(
+                        image_data.as_ptr() as *const u8,
+                        image_data.len() * 4,
+                    )
                 }
                 .to_vec();
                 (image_bytes, w, h)
             }
-            _=> {
+            _ => {
                 let image = image::load_from_memory(&data).unwrap().to_rgba();
                 let (width, height) = image.dimensions();
 
                 (image.into_raw(), width, height)
             }
         };
-        
+
         Ok(Self {
             data: image,
             width,

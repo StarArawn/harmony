@@ -1,7 +1,9 @@
-
-use std::{sync::Arc, path::PathBuf};
-use futures::{executor::{ThreadPool, ThreadPoolBuilder}};
-use super::{Shader, file_manager::{AssetHandle, AssetCache}};
+use super::{
+    file_manager::{AssetCache, AssetHandle},
+    Shader,
+};
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use std::{path::PathBuf, sync::Arc};
 
 pub struct ShaderManager {
     pool: Arc<ThreadPool>,
@@ -35,10 +37,10 @@ impl ShaderManager {
             // TODO: Figure out why shaderc needs to be Send for this to use the pool..
             // TODO: Just fix this when naga comes out..
             // self.pool.spawn_ok(async move {
-                // TODO: Make sure we return errors!!
-                let shader = Shader::new(device, path.clone());
+            // TODO: Make sure we return errors!!
+            let shader = Shader::new(device, path.clone());
 
-                cache.insert(asset_thread_handle.handle_id.clone(), Ok(shader));
+            cache.insert(asset_thread_handle.handle_id.clone(), Ok(shader));
             // });
         }
 
@@ -48,7 +50,7 @@ impl ShaderManager {
 
 #[cfg(test)]
 mod tests {
-    use super::{ShaderManager};
+    use super::ShaderManager;
     use std::sync::Arc;
 
     #[test]
@@ -81,9 +83,9 @@ mod tests {
                 )
                 .await
                 .unwrap();
-            
+
             let device = Arc::new(device);
-            
+
             (adapter, device)
         });
 
@@ -91,6 +93,5 @@ mod tests {
         let handle = shader_manager.get("./assets/core/shaders/pbr.shader");
         let shader = handle.get();
         assert!(shader.is_ok());
-        
     }
 }

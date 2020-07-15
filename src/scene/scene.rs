@@ -13,7 +13,6 @@ pub struct Scene {
 }
 
 impl Scene {
-
     /// Allows you to create a new scene with an optional world and optional schedule(which contains systems).
     /// If None is passed in for world or schedule_builder a default one is created.
     pub fn new(world: Option<World>, schedule_builder: Option<Builder>) -> Self {

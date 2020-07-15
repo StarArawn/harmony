@@ -1,7 +1,11 @@
-
-use std::{sync::Arc, path::PathBuf};
-use futures::{executor::{ThreadPool, ThreadPoolBuilder}};
-use super::{mesh::Gltf, file_manager::{AssetHandle, AssetCache}, material_manager::MaterialManager, material::PBRMaterialRon};
+use super::{
+    file_manager::{AssetCache, AssetHandle},
+    material::PBRMaterialRon,
+    material_manager::MaterialManager,
+    mesh::Gltf,
+};
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use std::{path::PathBuf, sync::Arc};
 
 pub struct MeshManager {
     device: Arc<wgpu::Device>,
@@ -11,7 +15,10 @@ pub struct MeshManager {
 }
 
 impl MeshManager {
-    pub fn new(device: Arc<wgpu::Device>, material_manager: Arc<MaterialManager<PBRMaterialRon>>) -> Self {
+    pub fn new(
+        device: Arc<wgpu::Device>,
+        material_manager: Arc<MaterialManager<PBRMaterialRon>>,
+    ) -> Self {
         // TODO: One pool that we pass in is probably enough.
         let pool = Arc::new(ThreadPoolBuilder::new().pool_size(4).create().unwrap());
         let cache = Arc::new(dashmap::DashMap::new());

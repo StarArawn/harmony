@@ -1,7 +1,7 @@
 use crate::{
     graphics::{
-        pipeline_manager::PipelineManager, renderer::DepthTexture,
-        resources::GPUResourceManager, CommandBufferQueue, CommandQueueItem, RenderGraph,
+        pipeline_manager::PipelineManager, renderer::DepthTexture, resources::GPUResourceManager,
+        CommandBufferQueue, CommandQueueItem, RenderGraph,
     },
     scene::components,
     AssetManager,
@@ -60,13 +60,17 @@ pub fn create() -> Box<dyn Schedulable> {
                     // });
 
                     // FIXME: Align and use `LayoutVerified`
-                    for (mut transform,) in transform_query.iter_mut(mut_world)
-                    {
+                    for (mut transform,) in transform_query.iter_mut(mut_world) {
                         transform.update();
-                        let transform_buffer = resource_manager.get_multi_buffer("transform", transform.index);
-                        queue.write_buffer(&transform_buffer, 0, bytemuck::bytes_of(&LocalUniform {
-                            world: transform.matrix,
-                        }));
+                        let transform_buffer =
+                            resource_manager.get_multi_buffer("transform", transform.index);
+                        queue.write_buffer(
+                            &transform_buffer,
+                            0,
+                            bytemuck::bytes_of(&LocalUniform {
+                                world: transform.matrix,
+                            }),
+                        );
                     }
                 }
 
@@ -81,7 +85,7 @@ pub fn create() -> Box<dyn Schedulable> {
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
                                 store: true,
-                            }
+                            },
                         }],
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {

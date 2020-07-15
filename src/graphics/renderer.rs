@@ -24,15 +24,16 @@ impl Renderer {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
 
-        let (needed_features, unsafe_extensions) = (wgpu::Features::empty(), wgt::UnsafeFeatures::disallow());
+        let (needed_features, unsafe_extensions) =
+            (wgpu::Features::empty(), wgt::UnsafeFeatures::disallow());
 
         let adapter = instance
             .request_adapter(
-               &wgpu::RequestAdapterOptions {
+                &wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::HighPerformance,
                     compatible_surface: Some(&surface),
                 },
-                unsafe_extensions
+                unsafe_extensions,
             )
             .await
             .unwrap();
@@ -40,11 +41,14 @@ impl Renderer {
         let adapter_features = adapter.features();
 
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                features: adapter_features & needed_features,
-                limits: wgpu::Limits::default(),
-                shader_validation: true,
-            }, None)
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    features: adapter_features & needed_features,
+                    limits: wgpu::Limits::default(),
+                    shader_validation: true,
+                },
+                None,
+            )
             .await
             .unwrap();
 

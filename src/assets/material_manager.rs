@@ -1,7 +1,11 @@
-use std::{path::PathBuf, sync::Arc, convert::TryFrom, fmt::Debug};
-use futures::executor::{ThreadPoolBuilder, ThreadPool};
-use super::{file_manager::{AssetHandle, AssetCache, AssetError}, material::{Material, BindMaterial}, texture_manager::TextureManager};
+use super::{
+    file_manager::{AssetCache, AssetError, AssetHandle},
+    material::{BindMaterial, Material},
+    texture_manager::TextureManager,
+};
 use crate::graphics::resources::GPUResourceManager;
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use std::{convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc};
 
 pub struct MaterialManager<T: Material> {
     device: Arc<wgpu::Device>,
@@ -14,7 +18,9 @@ pub struct MaterialManager<T: Material> {
 }
 
 impl<T> MaterialManager<T>
-where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static {
+where
+    T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static,
+{
     pub fn new(
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
@@ -37,7 +43,12 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
 
     pub fn insert(&self, material: T) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = PathBuf::new();
-        let path = path.join(uuid::Builder::nil().set_version(uuid::Version::Random).build().to_string());
+        let path = path.join(
+            uuid::Builder::nil()
+                .set_version(uuid::Version::Random)
+                .build()
+                .to_string(),
+        );
 
         let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));
 
@@ -49,7 +60,10 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
         self.pool.spawn_ok(async move {
             let material_arc = Arc::new(material);
             // Store ron material in cache.
-            ron_cache.insert(material_thread_handle.handle_id.clone(), Ok(material_arc.clone()));
+            ron_cache.insert(
+                material_thread_handle.handle_id.clone(),
+                Ok(material_arc.clone()),
+            );
 
             // TODO: Separate out loading into CPU from loading into the GPU?
 
@@ -63,7 +77,10 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
             // TODO: Create bind_group possible here?
             let material = material_arc.create_material(textures);
 
-            material_cache.insert(material_thread_handle.handle_id.clone(), Ok(Arc::new(material)));
+            material_cache.insert(
+                material_thread_handle.handle_id.clone(),
+                Ok(Arc::new(material)),
+            );
         });
 
         material_handle
@@ -72,7 +89,7 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
     pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = path.into();
         let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));
-        
+
         if !self.material_cache.contains_key(&path) {
             // Cross thread arcs passed to new thread.
             let material_cache = self.material_cache.clone();
@@ -81,7 +98,7 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
             let material_thread_handle = material_handle.clone();
             let device = self.device.clone();
             let layout = T::get_layout(self.gpu_resource_manager.clone());
-            
+
             self.pool.spawn_ok(async move {
                 let ron_file = async_std::fs::read(path.clone()).await;
 
@@ -89,9 +106,7 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
                     Ok(data) => {
                         let material = match T::try_from((path.clone(), data)) {
                             Ok(f) => Ok(Arc::new(f)),
-                            Err(_e) => {
-                                Err(Arc::new(AssetError::InvalidData))
-                            }
+                            Err(_e) => Err(Arc::new(AssetError::InvalidData)),
                         };
 
                         match material {
@@ -99,17 +114,19 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
                                 let material_arc = material.clone();
 
                                 // Store ron material in cache.
-                                ron_cache.insert(material_thread_handle.handle_id.clone(), Ok(material));
+                                ron_cache
+                                    .insert(material_thread_handle.handle_id.clone(), Ok(material));
 
                                 // TODO: Separate out loading into CPU from loading into the GPU?
-                                
+
                                 let texture_paths = material_arc.load_textures();
                                 let mut textures = Vec::new();
                                 for texture_path in texture_paths {
-                                    let texture_handle = texture_manager.get_async(&texture_path).await;
+                                    let texture_handle =
+                                        texture_manager.get_async(&texture_path).await;
                                     textures.push(texture_handle);
                                 }
-                                
+
                                 let mut material = material_arc.create_material(textures);
                                 material.create_bindgroup(device.clone(), layout);
 
@@ -117,21 +134,20 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
                             }
                             Err(err) => {
                                 // Store ron material in cache.
-                                ron_cache.insert(material_thread_handle.handle_id.clone(), Err(err.clone()));
+                                ron_cache.insert(
+                                    material_thread_handle.handle_id.clone(),
+                                    Err(err.clone()),
+                                );
                                 Err(err)
                             }
                         }
-                    },
-                    Err(error) => {
-                        match error.kind() {
-                            std::io::ErrorKind::NotFound => {
-                                Err(Arc::new(AssetError::FileNotFound))
-                            },
-                            _ => { Err(Arc::new(AssetError::OtherError(error))) }
-                        }
                     }
+                    Err(error) => match error.kind() {
+                        std::io::ErrorKind::NotFound => Err(Arc::new(AssetError::FileNotFound)),
+                        _ => Err(Arc::new(AssetError::OtherError(error))),
+                    },
                 };
-                
+
                 material_cache.insert(material_thread_handle.handle_id.clone(), result);
             });
         }
@@ -142,10 +158,13 @@ where T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static 
 
 #[cfg(test)]
 mod tests {
+    use super::AssetError;
     use super::MaterialManager;
-    use super::{AssetError};
+    use crate::{
+        assets::{material::PBRMaterialRon, texture_manager::TextureManager},
+        graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager},
+    };
     use std::sync::Arc;
-    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{material::PBRMaterialRon, texture_manager::TextureManager}};
 
     #[test]
     fn should_load_material() {
@@ -189,10 +208,18 @@ mod tests {
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
 
-        let material_manager = MaterialManager::<PBRMaterialRon>::new(device, queue, Arc::new(texture_manager), gpu_resource_manager);
+        let material_manager = MaterialManager::<PBRMaterialRon>::new(
+            device,
+            queue,
+            Arc::new(texture_manager),
+            gpu_resource_manager,
+        );
         let material_handle = material_manager.get("./assets/material.ron");
         let material = material_handle.get();
-        assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *material.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 

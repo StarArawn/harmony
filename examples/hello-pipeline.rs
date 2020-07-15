@@ -56,7 +56,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
 
                 // Name of our node we created in app state "load".
                 let node = pipeline_manager.get("triangle", None).unwrap();
-                
+
                 let triangle_bind_group = resource_manager.get_bind_group("triangle", 0).unwrap();
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -119,11 +119,11 @@ impl harmony::AppState for AppState {
         // The pipeline manager helps manage pipelines. It's somewhat smart and will cache your pipeline.
         // Remember that adding new pipelines is expensive and should be avoided at runtime.
         pipeline_manager.add_pipeline(
-            "triangle",            // Name of pipeline.
-            &triangle_desc,        // Pipeline description
-            vec!["skybox"],        // Dependencies list as names. Uses skybox so that the triangle draws "after" the clear pass.
-            &device,               // The wgpu device.
-            &asset_manager,        // asset manager from where we can load shaders.
+            "triangle",                   // Name of pipeline.
+            &triangle_desc,               // Pipeline description
+            vec!["skybox"], // Dependencies list as names. Uses skybox so that the triangle draws "after" the clear pass.
+            &device,        // The wgpu device.
+            &asset_manager, // asset manager from where we can load shaders.
             gpu_resource_manager.clone(), // The gpu resource manager.
         );
 
@@ -132,11 +132,11 @@ impl harmony::AppState for AppState {
         // it with the same name. This is useful for example if you want to render your pipeline/shader to the
         // frame buffer and to a render target(with a different format).
         pipeline_manager.add_pipeline(
-            "triangle",            // Name of pipeline.
-            &triangle_desc,        // Pipeline description
-            vec!["skybox"],        // Dependencies list as names.
-            &device,               // The wgpu device.
-            &asset_manager,        // asset manager from where we can load shaders.
+            "triangle",                   // Name of pipeline.
+            &triangle_desc,               // Pipeline description
+            vec!["skybox"],               // Dependencies list as names.
+            &device,                      // The wgpu device.
+            &asset_manager,               // asset manager from where we can load shaders.
             gpu_resource_manager.clone(), // The gpu resource manager.
         );
 

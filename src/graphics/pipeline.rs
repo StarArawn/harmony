@@ -1,6 +1,4 @@
-use super::{
-    resources::{GPUResourceManager, RenderTarget},
-};
+use super::resources::{GPUResourceManager, RenderTarget};
 use crate::AssetManager;
 use std::sync::Arc;
 
@@ -80,7 +78,10 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
         // Once we create the layout we don't need the bind group layout.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts.iter().map(|x| x.as_ref()).collect::<Vec<&wgpu::BindGroupLayout>>(),
+            bind_group_layouts: &bind_group_layouts
+                .iter()
+                .map(|x| x.as_ref())
+                .collect::<Vec<&wgpu::BindGroupLayout>>(),
         });
 
         let vertex_buffers: Vec<wgpu::VertexBufferDescriptor<'_>> = vertex_state_builder

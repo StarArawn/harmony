@@ -1,4 +1,3 @@
-
 use super::{image::ImageRon, Image};
 use std::{path::PathBuf, sync::Arc};
 
@@ -13,15 +12,20 @@ pub struct Texture {
 impl std::fmt::Debug for Texture {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Texture")
-         .field("path", &self.path)
-         .field("extent", &self.extent)
-         .finish()
+            .field("path", &self.path)
+            .field("extent", &self.extent)
+            .finish()
     }
 }
 
 impl Texture {
-    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, image: Arc<Image>, image_ron: Option<ImageRon>, path: PathBuf) -> Self {
-
+    pub fn new(
+        device: Arc<wgpu::Device>,
+        queue: Arc<wgpu::Queue>,
+        image: Arc<Image>,
+        image_ron: Option<ImageRon>,
+        path: PathBuf,
+    ) -> Self {
         let extent = wgpu::Extent3d {
             width: image.width,
             height: image.height,

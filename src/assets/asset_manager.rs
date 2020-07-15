@@ -1,14 +1,17 @@
-use std::{any::{TypeId}, convert::TryFrom, path::PathBuf, sync::Arc, fmt::Debug};
-use legion::{systems::resource::Resource, prelude::Resources};
 use super::{
-    texture_manager::{TextureManager},
+    file_manager::{AssetHandle, FileManager},
+    material::Material,
+    material_manager::MaterialManager,
+    mesh_manager::MeshManager,
+    shader_manager::ShaderManager,
     texture::Texture,
-    material::{Material},
-    file_manager::{FileManager, AssetHandle},
-    material_manager::MaterialManager, shader_manager::ShaderManager, Shader, mesh_manager::MeshManager,
+    texture_manager::TextureManager,
+    Shader,
 };
-use walkdir::WalkDir;
 use crate::graphics::resources::GPUResourceManager;
+use legion::{prelude::Resources, systems::resource::Resource};
+use std::{any::TypeId, convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc};
+use walkdir::WalkDir;
 
 pub struct AssetManager {
     loaders: Resources,
@@ -18,20 +21,30 @@ pub struct AssetManager {
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
     path: PathBuf,
-    gpu_resource_manager: Arc<GPUResourceManager>
+    gpu_resource_manager: Arc<GPUResourceManager>,
 }
 
 impl AssetManager {
-    pub fn new(path: PathBuf, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, gpu_resource_manager: Arc<GPUResourceManager>) -> Self {
+    pub fn new(
+        path: PathBuf,
+        device: Arc<wgpu::Device>,
+        queue: Arc<wgpu::Queue>,
+        gpu_resource_manager: Arc<GPUResourceManager>,
+    ) -> Self {
         let texture_manager = Arc::new(TextureManager::new(device.clone(), queue.clone()));
         let shader_manager = Arc::new(ShaderManager::new(device.clone()));
         let mut loaders = Resources::default();
 
-        let material_manager = Arc::new(MaterialManager::new(device.clone(), queue.clone(), texture_manager.clone(), gpu_resource_manager.clone()));
+        let material_manager = Arc::new(MaterialManager::new(
+            device.clone(),
+            queue.clone(),
+            texture_manager.clone(),
+            gpu_resource_manager.clone(),
+        ));
         let mesh_manager = Arc::new(MeshManager::new(device.clone(), material_manager.clone()));
 
         loaders.insert(material_manager);
-        Self { 
+        Self {
             loaders,
             texture_manager,
             shader_manager,
@@ -48,18 +61,20 @@ impl AssetManager {
             let entry = entry.expect("Error: Could not access asset directory.");
             let file_name = entry.file_name().to_str().unwrap().to_string();
             let path = entry.into_path();
-            if file_name.ends_with(".png") || file_name.ends_with(".jpg") || file_name.ends_with(".hdr") {
+            if file_name.ends_with(".png")
+                || file_name.ends_with(".jpg")
+                || file_name.ends_with(".hdr")
+            {
                 self.get_texture(path);
             } else if file_name.ends_with(".shader") {
                 self.get_shader(path);
-            } else if file_name.ends_with(".gltf"){
+            } else if file_name.ends_with(".gltf") {
                 // self.get_mesh(path);
             }
-
         }
     }
 
-    pub fn register<T: Resource + TryFrom<(PathBuf, Vec<u8>)>>(&mut self) {        
+    pub fn register<T: Resource + TryFrom<(PathBuf, Vec<u8>)>>(&mut self) {
         if self.loaders.contains::<FileManager<T>>() {
             log::warn!("Duplicate registration of key: {:?}", TypeId::of::<T>());
             return;
@@ -69,21 +84,35 @@ impl AssetManager {
         self.loaders.insert(loader);
     }
 
-    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self) {
-        
+    pub fn register_material<
+        T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static,
+    >(
+        &mut self,
+    ) {
         if self.loaders.contains::<Arc<MaterialManager<T>>>() {
-            log::warn!("Duplicate registration of material key: {:?}", TypeId::of::<T>());
+            log::warn!(
+                "Duplicate registration of material key: {:?}",
+                TypeId::of::<T>()
+            );
             return;
         }
 
-        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone(), self.gpu_resource_manager.clone());
+        let loader = MaterialManager::<T>::new(
+            self.device.clone(),
+            self.queue.clone(),
+            self.texture_manager.clone(),
+            self.gpu_resource_manager.clone(),
+        );
         self.loaders.insert(Arc::new(loader));
     }
 
     // Instantly returns Arc<AssetHandle<T>> from a path.
     // Note: You should only call `get` once per path.
     // TODO: Add better checking to make sure we don't load an asset more than once.
-    pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)>, K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<T>> {
+    pub fn get<T: Resource + TryFrom<(PathBuf, Vec<u8>)>, K: Into<PathBuf>>(
+        &self,
+        path: K,
+    ) -> Arc<AssetHandle<T>> {
         let path = self.path.join(path.into());
         let loader = self.loaders.get::<FileManager<T>>();
 
@@ -110,7 +139,13 @@ impl AssetManager {
 
     // Instantly returns a Arc<AssetHandle<T::BindMaterialType>> from a path.
     // Note: If materials have textures they take longer to load as it'll await the loading of the textures.
-    pub fn get_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static, K: Into<PathBuf>>(&self, path: K)-> Arc<AssetHandle<T::BindMaterialType>> {
+    pub fn get_material<
+        T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static,
+        K: Into<PathBuf>,
+    >(
+        &self,
+        path: K,
+    ) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = self.path.join(path.into());
         let loader = self.loaders.get::<Arc<MaterialManager<T>>>();
         if loader.is_none() {
@@ -125,10 +160,13 @@ impl AssetManager {
 
 #[cfg(test)]
 mod tests {
-    use super::AssetManager;
     use super::super::file_manager::AssetError;
+    use super::AssetManager;
+    use crate::{
+        assets::material::PBRMaterialRon,
+        graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager},
+    };
     use std::{path::PathBuf, sync::Arc};
-    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{material::PBRMaterialRon}};
 
     #[test]
     fn should_load_material() {
@@ -165,16 +203,25 @@ mod tests {
             (adapter, arc_device, arc_queue)
         });
         let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
-        
+
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
 
-        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone(), gpu_resource_manager);
+        let mut asset_manager = AssetManager::new(
+            PathBuf::from(""),
+            device.clone(),
+            queue.clone(),
+            gpu_resource_manager,
+        );
 
         asset_manager.register_material::<PBRMaterialRon>();
-        let material_handle = asset_manager.get_material::<PBRMaterialRon, _>("./assets/material.ron");
+        let material_handle =
+            asset_manager.get_material::<PBRMaterialRon, _>("./assets/material.ron");
         let material = material_handle.get();
-        assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *material.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 

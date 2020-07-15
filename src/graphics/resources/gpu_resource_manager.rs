@@ -1,7 +1,10 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
 use super::BindGroup;
-use crate::{scene::components::transform::LocalUniform, graphics::pipelines::{GlobalUniform, LightingUniform}};
+use crate::{
+    graphics::pipelines::{GlobalUniform, LightingUniform},
+    scene::components::transform::LocalUniform,
+};
 use dashmap::DashMap;
 
 /// Stores bind groups for consumption by pipelines.
@@ -46,7 +49,7 @@ impl GPUResourceManager {
                         wgpu::BindingType::UniformBuffer {
                             dynamic: false,
                             min_binding_size: wgpu::BufferSize::new(
-                                std::mem::size_of::<GlobalUniform>() as _
+                                std::mem::size_of::<GlobalUniform>() as _,
                             ),
                         },
                     ),
@@ -56,9 +59,10 @@ impl GPUResourceManager {
                         wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
                         wgpu::BindingType::UniformBuffer {
                             dynamic: false,
-                            min_binding_size: wgpu::BufferSize::new(
-                                std::mem::size_of::<LightingUniform>() as _
-                            ),
+                            min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<
+                                LightingUniform,
+                            >()
+                                as _),
                         },
                     ),
                 ],
@@ -91,7 +95,7 @@ impl GPUResourceManager {
                     wgpu::BindingType::UniformBuffer {
                         dynamic: false,
                         min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<LocalUniform>() as _
+                            std::mem::size_of::<LocalUniform>() as _,
                         ),
                     },
                 )],
@@ -112,11 +116,7 @@ impl GPUResourceManager {
     }
 
     /// Adds a single bind group with a given key.
-    pub fn add_single_bind_group<T: Into<String>>(
-        &self,
-        key: T,
-        bind_group: BindGroup,
-    ) {
+    pub fn add_single_bind_group<T: Into<String>>(&self, key: T, bind_group: BindGroup) {
         let key = key.into();
         let bind_group_index = bind_group.index;
         if self.single_bind_groups.contains_key(&key) {
@@ -125,8 +125,7 @@ impl GPUResourceManager {
         } else {
             let hash_map = DashMap::new();
             hash_map.insert(bind_group_index, Arc::new(bind_group));
-            self.single_bind_groups
-                .insert(key.clone(), hash_map);
+            self.single_bind_groups.insert(key.clone(), hash_map);
         }
     }
 
@@ -146,8 +145,7 @@ impl GPUResourceManager {
             let hashmap_bind_group = DashMap::new();
             hashmap_bind_group.insert(item_index, Arc::new(bind_group));
             bindings_hash_map.insert(bind_group_index, hashmap_bind_group);
-            self.multi_bind_groups
-                .insert(key, bindings_hash_map);
+            self.multi_bind_groups.insert(key, bindings_hash_map);
         } else {
             let bindings_hash_map = self.multi_bind_groups.get_mut(&key).unwrap();
             let mut hashmap_bind_group = bindings_hash_map.get_mut(&bind_group_index);
@@ -163,12 +161,7 @@ impl GPUResourceManager {
     }
 
     /// Same as the multi bind group but for buffers instead.
-    pub fn add_multi_buffer<T: Into<String>>(
-        &self,
-        key: T,
-        buffer: wgpu::Buffer,
-        item_index: u32,
-    ) {
+    pub fn add_multi_buffer<T: Into<String>>(&self, key: T, buffer: wgpu::Buffer, item_index: u32) {
         let key = key.into();
         if self.multi_buffer.contains_key(&key) {
             let item_hash_map = self.multi_buffer.get_mut(&key).unwrap();
@@ -179,18 +172,15 @@ impl GPUResourceManager {
             self.multi_buffer.insert(key, hash_map);
         }
     }
-    
+
     /// Let's you retrieve a multi-buffer.
-    pub fn get_multi_buffer<T: Into<String>>(
-        &self,
-        key: T,
-        item_index: u32,
-    ) -> Arc<wgpu::Buffer> {
+    pub fn get_multi_buffer<T: Into<String>>(&self, key: T, item_index: u32) -> Arc<wgpu::Buffer> {
         self.multi_buffer
             .get(&key.into())
             .unwrap()
             .get(&item_index)
-            .unwrap().clone()
+            .unwrap()
+            .clone()
     }
 
     /// Let's you retrieve a multi-bind group.
@@ -239,12 +229,8 @@ impl GPUResourceManager {
         }
 
         match bind_group {
-            Some(bind_group) => {
-                Some(bind_group.clone())
-            }
-            None => {
-                None
-            }
+            Some(bind_group) => Some(bind_group.clone()),
+            None => None,
         }
     }
 
@@ -260,7 +246,8 @@ impl GPUResourceManager {
                 "Bind group layout already exists use `get_bind_group_layout` or a different key."
             );
         }
-        self.bind_group_layouts.insert(name, Arc::new(bind_group_layout));
+        self.bind_group_layouts
+            .insert(name, Arc::new(bind_group_layout));
     }
 
     /// Gets a bind group layout based on name.
@@ -269,10 +256,8 @@ impl GPUResourceManager {
         name: T,
     ) -> Option<Arc<wgpu::BindGroupLayout>> {
         match self.bind_group_layouts.get(&name.into()) {
-            Some(layout) => {
-                Some(layout.value().clone())
-            }
-            None => { None }
+            Some(layout) => Some(layout.value().clone()),
+            None => None,
         }
     }
 

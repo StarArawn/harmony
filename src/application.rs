@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant, path::PathBuf};
+use std::{path::PathBuf, sync::Arc, time::Instant};
 use winit::{
     event::Event,
     event_loop::{ControlFlow, EventLoop},
@@ -22,8 +22,10 @@ use crate::{
 };
 use graphics::{
     material::skybox::SkyboxType,
+    renderer::{DepthTexture, DEPTH_FORMAT},
     // pipelines::{LinePipelineDesc, UnlitPipelineDesc},
-    CommandBufferQueue, CommandQueueItem, renderer::{DEPTH_FORMAT, DepthTexture},
+    CommandBufferQueue,
+    CommandQueueItem,
 };
 use nalgebra_glm::Vec2;
 
@@ -99,7 +101,12 @@ impl Application {
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
             let gpu_resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
-            AssetManager::new(asset_path.into(), device.clone(), queue.clone(), gpu_resource_manager.clone())
+            AssetManager::new(
+                asset_path.into(),
+                device.clone(),
+                queue.clone(),
+                gpu_resource_manager.clone(),
+            )
         };
 
         let mut render_schedule_builder = create_render_schedule_builder();
@@ -269,7 +276,7 @@ impl Application {
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
         crate::graphics::pipelines::realtime_sky::create(&self.resources);
-        
+
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
 
@@ -452,8 +459,9 @@ impl Application {
                         label: None,
                     })
                 };
-                self.resources.insert(DepthTexture(depth_texture.create_default_view()));
-                
+                self.resources
+                    .insert(DepthTexture(depth_texture.create_default_view()));
+
                 app_state.resize(self);
             }
             _ => (),

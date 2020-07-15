@@ -68,7 +68,7 @@ impl harmony::AppState for AppState {
                     (),
                     vec![(
                         Mesh::new("cube.gltf"),
-                        transform,                          // Transform
+                        transform, // Transform
                     )],
                 );
             }

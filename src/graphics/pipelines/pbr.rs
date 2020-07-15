@@ -1,6 +1,6 @@
 use legion::prelude::Resources;
 
-use crate::assets::{mesh::MeshVertexData, material::PBRMaterialUniform};
+use crate::assets::{material::PBRMaterialUniform, mesh::MeshVertexData};
 
 use crate::{
     graphics::{
@@ -21,7 +21,7 @@ pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroup
                 wgpu::BindingType::UniformBuffer {
                     dynamic: false,
                     min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<PBRMaterialUniform>() as _
+                        std::mem::size_of::<PBRMaterialUniform>() as _,
                     ),
                 },
             ),

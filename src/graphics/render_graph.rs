@@ -5,7 +5,7 @@ use super::{
 use crate::AssetManager;
 use legion::systems::resource::Resources;
 use solvent::DepGraph;
-use std::{sync::Arc, collections::HashMap};
+use std::{collections::HashMap, sync::Arc};
 
 use crossbeam::queue::ArrayQueue;
 
@@ -65,8 +65,13 @@ impl RenderGraph {
         use_output_from_dependency: bool,
     ) {
         let name = name.into();
-        let pipeline =
-            pipeline_desc.pipeline(asset_manager, device, sc_desc, resource_manager.clone(), None);
+        let pipeline = pipeline_desc.pipeline(
+            asset_manager,
+            device,
+            sc_desc,
+            resource_manager.clone(),
+            None,
+        );
         let built_pipeline: Box<dyn SimplePipeline> =
             Box::new(pipeline_desc.build(&device, resource_manager.clone()));
         let node = RenderGraphNode {

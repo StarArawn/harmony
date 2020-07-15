@@ -1,6 +1,11 @@
-use std::{path::PathBuf, sync::Arc, convert::TryFrom};
-use futures::executor::{ThreadPoolBuilder, ThreadPool};
-use super::{Image, file_manager::{AssetHandle, AssetCache, AssetError}, image::ImageRon, texture::Texture};
+use super::{
+    file_manager::{AssetCache, AssetError, AssetHandle},
+    image::ImageRon,
+    texture::Texture,
+    Image,
+};
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
+use std::{convert::TryFrom, path::PathBuf, sync::Arc};
 
 pub struct TextureManager {
     device: Arc<wgpu::Device>,
@@ -12,10 +17,7 @@ pub struct TextureManager {
 }
 
 impl TextureManager {
-    pub fn new(
-        device: Arc<wgpu::Device>,
-        queue: Arc<wgpu::Queue>,
-    ) -> Self {
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
         let pool = Arc::new(ThreadPoolBuilder::new().pool_size(4).create().unwrap());
         let image_cache = Arc::new(dashmap::DashMap::new());
         let ron_cache = Arc::new(dashmap::DashMap::new());
@@ -33,7 +35,7 @@ impl TextureManager {
     pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<Texture>> {
         let path = path.into();
         let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
-        
+
         if !self.texture_cache.contains_key(&path) {
             let ext = path.extension().unwrap().to_str().unwrap().to_string();
 
@@ -47,7 +49,7 @@ impl TextureManager {
 
             self.pool.spawn_ok(async move {
                 let mut ron_path = path.clone();
-                ron_path.set_extension(format!("{}{}", ext,".ron"));
+                ron_path.set_extension(format!("{}{}", ext, ".ron"));
                 let image_file = async_std::fs::read(path.clone()).await;
                 let ron_file = async_std::fs::read(ron_path).await;
 
@@ -60,34 +62,35 @@ impl TextureManager {
                             None
                         };
 
-                        let image = Arc::new(Image::try_from((image_ron, path.clone(), image_data)).unwrap());
+                        let image = Arc::new(
+                            Image::try_from((image_ron, path.clone(), image_data)).unwrap(),
+                        );
                         // Store image in cache.
-                        image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
+                        image_cache
+                            .insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                         // TODO: Separate out loading into CPU from loading into the GPU.
-                        let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));
+                        let result = Ok(Arc::new(Texture::new(
+                            device,
+                            queue,
+                            image,
+                            image_ron,
+                            path.clone(),
+                        )));
 
                         let image_ron = match image_ron {
-                            Some(ron) => {
-                                Ok(Arc::new(ron))
-                            },
-                            None => {
-                                Err(Arc::new(AssetError::FileNotFound))
-                            }
+                            Some(ron) => Ok(Arc::new(ron)),
+                            None => Err(Arc::new(AssetError::FileNotFound)),
                         };
 
                         ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
 
                         result
-                    },
-                    Err(error) => {
-                        match error.kind() {
-                            std::io::ErrorKind::NotFound => {
-                                Err(Arc::new(AssetError::FileNotFound))
-                            },
-                            _ => { Err(Arc::new(AssetError::OtherError(error))) }
-                        }
                     }
+                    Err(error) => match error.kind() {
+                        std::io::ErrorKind::NotFound => Err(Arc::new(AssetError::FileNotFound)),
+                        _ => Err(Arc::new(AssetError::OtherError(error))),
+                    },
                 };
 
                 texture_cache.insert(texture_thread_handle.handle_id.clone(), result);
@@ -101,7 +104,7 @@ impl TextureManager {
     pub async fn get_async<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<Texture>> {
         let path = path.into();
         let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
-        
+
         if !self.texture_cache.contains_key(&path) {
             let ext = path.extension().unwrap().to_str().unwrap().to_string();
 
@@ -114,7 +117,7 @@ impl TextureManager {
             let queue = self.queue.clone();
 
             let mut ron_path = path.clone();
-            ron_path.set_extension(format!("{}{}", ext,".ron"));
+            ron_path.set_extension(format!("{}{}", ext, ".ron"));
             let image_file = async_std::fs::read(path.clone()).await;
             let ron_file = async_std::fs::read(ron_path).await;
 
@@ -127,34 +130,33 @@ impl TextureManager {
                         None
                     };
 
-                    let image = Arc::new(Image::try_from((image_ron, path.clone(), image_data)).unwrap());
+                    let image =
+                        Arc::new(Image::try_from((image_ron, path.clone(), image_data)).unwrap());
                     // Store image in cache.
                     image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                     // TODO: Separate out loading into CPU from loading into the GPU.
-                    let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));
+                    let result = Ok(Arc::new(Texture::new(
+                        device,
+                        queue,
+                        image,
+                        image_ron,
+                        path.clone(),
+                    )));
 
                     let image_ron = match image_ron {
-                        Some(ron) => {
-                            Ok(Arc::new(ron))
-                        },
-                        None => {
-                            Err(Arc::new(AssetError::FileNotFound))
-                        }
+                        Some(ron) => Ok(Arc::new(ron)),
+                        None => Err(Arc::new(AssetError::FileNotFound)),
                     };
 
                     ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
 
                     result
-                },
-                Err(error) => {
-                    match error.kind() {
-                        std::io::ErrorKind::NotFound => {
-                            Err(Arc::new(AssetError::FileNotFound))
-                        },
-                        _ => { Err(Arc::new(AssetError::OtherError(error))) }
-                    }
                 }
+                Err(error) => match error.kind() {
+                    std::io::ErrorKind::NotFound => Err(Arc::new(AssetError::FileNotFound)),
+                    _ => Err(Arc::new(AssetError::OtherError(error))),
+                },
             };
 
             texture_cache.insert(texture_thread_handle.handle_id.clone(), result);
@@ -173,8 +175,8 @@ impl TextureManager {
 
 #[cfg(test)]
 mod tests {
+    use super::AssetError;
     use super::TextureManager;
-    use super::{AssetError};
     use std::sync::Arc;
 
     #[test]
@@ -216,7 +218,10 @@ mod tests {
 
         let handle = texture_manager.get("./assets/core/white.png");
         let asset = handle.get();
-        assert!(match *asset.err().unwrap() { AssetError::Loading => true, _ => false });
+        assert!(match *asset.err().unwrap() {
+            AssetError::Loading => true,
+            _ => false,
+        });
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 

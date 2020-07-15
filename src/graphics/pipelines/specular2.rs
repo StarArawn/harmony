@@ -23,7 +23,7 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
                     wgpu::BindingType::UniformBuffer {
                         dynamic: false,
                         min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<ProbeUniform>() as _
+                            std::mem::size_of::<ProbeUniform>() as _,
                         ),
                     },
                 ),

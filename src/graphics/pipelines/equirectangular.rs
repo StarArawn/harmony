@@ -118,11 +118,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 wgpu::TextureCopyView {
                     texture: &cube_map.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d {
-                        x: 0,
-                        y: 0,
-                        z: i,
-                    },
+                    origin: wgpu::Origin3d { x: 0, y: 0, z: i },
                 },
                 wgpu::Extent3d {
                     width: self.size as u32,
@@ -155,7 +151,12 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         &self,
         asset_manager: &'a crate::AssetManager,
     ) -> Arc<crate::assets::Shader> {
-        futures::executor::block_on(asset_manager.get_shader("core/shaders/calculations/hdr_to_cubemap.shader").get_async()).unwrap()
+        futures::executor::block_on(
+            asset_manager
+                .get_shader("core/shaders/calculations/hdr_to_cubemap.shader")
+                .get_async(),
+        )
+        .unwrap()
     }
 
     fn create_layout<'a>(

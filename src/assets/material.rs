@@ -1,8 +1,8 @@
-use nalgebra_glm::Vec4;
-use std::{path::PathBuf, convert::TryFrom, sync::Arc, fmt::Debug};
-use super::{texture::Texture, file_manager::{AssetHandle}};
-use crate::graphics::{resources::{BindGroup, GPUResourceManager}};
+use super::{file_manager::AssetHandle, texture::Texture};
+use crate::graphics::resources::{BindGroup, GPUResourceManager};
 use bytemuck::{Pod, Zeroable};
+use nalgebra_glm::Vec4;
+use std::{convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -51,7 +51,7 @@ impl Material for PBRMaterialRon {
     }
 
     fn create_material(&self, mut textures: Vec<Arc<AssetHandle<Texture>>>) -> PBRMaterial {
-       PBRMaterial {
+        PBRMaterial {
             main_texture: textures.remove(0),
             roughness_texture: textures.remove(0),
             normal_texture: textures.remove(0),
@@ -63,7 +63,10 @@ impl Material for PBRMaterialRon {
     }
 
     fn get_layout(gpu_resource_manager: Arc<GPUResourceManager>) -> Arc<wgpu::BindGroupLayout> {
-        gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone()
+        gpu_resource_manager
+            .get_bind_group_layout("pbr_material_layout")
+            .unwrap()
+            .clone()
     }
 }
 
@@ -81,13 +84,13 @@ pub struct PBRMaterial {
 impl std::fmt::Debug for PBRMaterial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SubMesh")
-         .field("main_texture", &self.main_texture)
-         .field("roughness_texture", &self.roughness_texture)
-         .field("normal_texture", &self.normal_texture)
-         .field("roughness", &self.roughness)
-         .field("metallic", &self.metallic)
-         .field("roughness", &self.color)
-         .finish()
+            .field("main_texture", &self.main_texture)
+            .field("roughness_texture", &self.roughness_texture)
+            .field("normal_texture", &self.normal_texture)
+            .field("roughness", &self.roughness)
+            .field("metallic", &self.metallic)
+            .field("roughness", &self.color)
+            .finish()
     }
 }
 
@@ -114,8 +117,8 @@ impl BindMaterial for PBRMaterial {
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("PBRMaterialSampler"),
             address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v:  wgpu::AddressMode::Repeat,
-            address_mode_w:  wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear,
@@ -157,7 +160,7 @@ impl BindMaterial for PBRMaterial {
             ],
             label: None,
         });
-        
+
         self.bind_group = Some(Arc::new(BindGroup::new(2, bind_group)));
     }
 }

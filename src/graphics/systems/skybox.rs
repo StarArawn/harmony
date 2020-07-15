@@ -34,28 +34,29 @@ pub fn create() -> Box<dyn Schedulable> {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
-                
+
                 let view_attachment = if current_render_target.0.is_some() {
                     &current_render_target.0.as_ref().unwrap().1
                 } else {
                     &output.view
                 };
-                
+
                 let depth_attachment = if current_render_target.0.is_some() {
                     current_render_target
-                    .0
-                    .as_ref()
-                    .unwrap()
-                    .0
-                    .depth_texture_view
-                    .as_ref()
-                    .unwrap()
+                        .0
+                        .as_ref()
+                        .unwrap()
+                        .0
+                        .depth_texture_view
+                        .as_ref()
+                        .unwrap()
                 } else {
                     &depth_texture.0
                 };
-                
+
                 let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
-                let pipeline_realtime: &Pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
+                let pipeline_realtime: &Pipeline =
+                    pipeline_manager.get("realtime_skybox", None).unwrap();
 
                 for (skybox,) in skyboxes.iter(&world) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
