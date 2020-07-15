@@ -14,7 +14,7 @@ use crate::{
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("encoder_globals")
         .write_resource::<CommandBufferQueue>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<Arc<wgpu::Device>>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<(Read<components::DirectionalLightData>,)>::query())

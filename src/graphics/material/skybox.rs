@@ -40,7 +40,7 @@ impl Skybox {
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
         let device = app.resources.get::<Arc<wgpu::Device>>().unwrap();
         let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = app.resources.get::<Arc<GPUResourceManager>>().unwrap();
 
         let cube_map_target = RenderTarget::new(
             &device,
@@ -61,7 +61,7 @@ impl Skybox {
             &asset_manager,
             &device,
             &sc_desc,
-            &mut resource_manager,
+            resource_manager.clone(),
             "cube_projection",
             cube_projection_pipeline_desc,
             vec![],
@@ -77,7 +77,7 @@ impl Skybox {
         let command_buffer = graph.render_one_time(
             &device,
             &asset_manager,
-            &mut resource_manager,
+            resource_manager.clone(),
             &mut app.current_scene.world,
             None,
             None,
@@ -161,7 +161,7 @@ impl Skybox {
         &mut self,
         device: &wgpu::Device,
         asset_manager: &AssetManager,
-        material_layout: &wgpu::BindGroupLayout,
+        material_layout: Arc<wgpu::BindGroupLayout>,
     ) {
         let rayleigh_texture = asset_manager.get_texture("rayleigh.hdr");
         let mie_texture = asset_manager.get_texture("mie.hdr");
@@ -206,7 +206,7 @@ impl Skybox {
     pub(crate) fn create_bind_group2(
         &mut self,
         device: &wgpu::Device,
-        material_layout: &wgpu::BindGroupLayout,
+        material_layout: Arc<wgpu::BindGroupLayout>,
     ) {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &material_layout,

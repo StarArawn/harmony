@@ -50,11 +50,17 @@ impl std::fmt::Debug for SubMesh {
 
 #[derive(Debug)]
 pub struct Mesh {
-    pub(crate) sub_meshes: HashMap<Arc<AssetHandle<PBRMaterial>>, SubMesh>
+    pub name: String,
+    pub meshes: HashMap<Arc<AssetHandle<PBRMaterial>>, SubMesh>,
 }
 
-impl Mesh {
-    pub async fn from_gltf(device: Arc<wgpu::Device>, material_manager: Arc<MaterialManager<PBRMaterialRon>>, path: PathBuf) -> Vec<Mesh> {
+#[derive(Debug)]
+pub struct Gltf {
+    meshes: Vec<Mesh>,
+}
+
+impl Gltf {
+    pub async fn from_gltf(device: Arc<wgpu::Device>, material_manager: Arc<MaterialManager<PBRMaterialRon>>, path: PathBuf) -> Gltf {
 
         let data: Vec<u8> = async_std::fs::read(path.clone()).await.unwrap();
 
@@ -82,12 +88,14 @@ impl Mesh {
         let mut meshes = Vec::new();
 
         for gltf_mesh in gltf_meshes {
+            let name = gltf_mesh.name().unwrap_or("mesh").to_string();
             let primitives = gltf_mesh.primitives();
 
             let images: Vec<gltf::Image<'_>> = document.images().collect();
 
             let mut mesh = Mesh {
-                sub_meshes: HashMap::new(),
+                name,
+                meshes: HashMap::new(),
             };
 
             for primitive in primitives {
@@ -210,13 +218,16 @@ impl Mesh {
     
                 sub_mesh.vertex_buffer = Some(vertex_buffer);
 
-                mesh.sub_meshes.insert(material_handle, sub_mesh);
+                mesh.meshes.insert(material_handle, sub_mesh);
             }
 
             meshes.push(mesh);
         }
 
-        meshes
+
+        Gltf {
+            meshes,
+        }
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
@@ -301,7 +312,7 @@ impl mikktspace::Geometry for SubMesh {
 
 #[cfg(test)]
 mod tests {
-    use super::Mesh;
+    use super::Gltf;
     use std::{path::PathBuf, sync::Arc};
     use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{texture_manager::TextureManager, material_manager::MaterialManager}};
 
@@ -343,16 +354,14 @@ mod tests {
     
             let texture_manager = TextureManager::new(device.clone(), queue.clone());
 
-            let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
+            let gpu_resource_manager = GPUResourceManager::new(device.clone());
 
             let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
             gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
     
-            let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
+            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), gpu_resource_Manager));
 
-            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), layout));
-
-            let _mesh = Mesh::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
+            let _mesh = Gltf::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
         });
     }
 }

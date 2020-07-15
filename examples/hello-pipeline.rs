@@ -44,7 +44,7 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
         .read_resource::<PipelineManager>()
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::SwapChainTexture>>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .build(
             |_,
              _world,
@@ -90,7 +90,7 @@ impl harmony::AppState for AppState {
         // First we need to access some of the internal data.
         let device = app.resources.get::<Arc<wgpu::Device>>().unwrap();
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
-        let mut gpu_resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let gpu_resource_manager = app.resources.get::<Arc<GPUResourceManager>>().unwrap();
         let mut pipeline_manager = app.resources.get_mut::<PipelineManager>().unwrap();
 
         // Setup our bind groups and layouts

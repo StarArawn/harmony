@@ -195,7 +195,7 @@ impl PipelineManager {
         dependency: Vec<&str>,
         device: &wgpu::Device,
         asset_manager: &AssetManager,
-        gpu_resource_manager: &GPUResourceManager,
+        gpu_resource_manager: Arc<GPUResourceManager>,
     ) {
         let hash = pipeline_desc.create_hash();
         let name = name.into();

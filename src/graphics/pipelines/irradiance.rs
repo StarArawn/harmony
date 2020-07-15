@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
     let device = resources.get::<Arc<wgpu::Device>>().unwrap();
     let irradiance_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -71,6 +71,6 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
         vec![],
         &device,
         &asset_manager,
-        &resource_manager,
+        resource_manager.clone(),
     );
 }

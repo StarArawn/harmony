@@ -65,7 +65,7 @@ pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroup
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
     let device = resources.get::<Arc<wgpu::Device>>().unwrap();
     let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
@@ -144,6 +144,6 @@ pub fn create(resources: &Resources) {
         vec!["globals", "skybox"],
         &device,
         &asset_manager,
-        &resource_manager,
+        resource_manager.clone(),
     );
 }

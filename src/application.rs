@@ -98,7 +98,8 @@ impl Application {
         let asset_manager = {
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
-            AssetManager::new(asset_path.into(), device.clone(), queue.clone())
+            let gpu_resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+            AssetManager::new(asset_path.into(), device.clone(), queue.clone(), gpu_resource_manager.clone())
         };
 
         let mut render_schedule_builder = create_render_schedule_builder();
@@ -224,7 +225,7 @@ impl Application {
         {
             let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
             let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
             let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
             let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
@@ -281,7 +282,7 @@ impl Application {
         app_state.load(self);
 
         {
-            let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 if skybox.skybox_type == SkyboxType::HdrCubemap {

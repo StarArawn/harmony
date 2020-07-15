@@ -5,30 +5,41 @@ use super::{
     texture::Texture,
     material::{Material},
     file_manager::{FileManager, AssetHandle},
-    material_manager::MaterialManager, shader_manager::ShaderManager, Shader,
+    material_manager::MaterialManager, shader_manager::ShaderManager, Shader, mesh_manager::MeshManager,
 };
 use walkdir::WalkDir;
+use crate::graphics::resources::GPUResourceManager;
 
 pub struct AssetManager {
     loaders: Resources,
     texture_manager: Arc<TextureManager>,
     shader_manager: Arc<ShaderManager>,
+    mesh_manager: Arc<MeshManager>,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
     path: PathBuf,
+    gpu_resource_manager: Arc<GPUResourceManager>
 }
 
 impl AssetManager {
-    pub fn new(path: PathBuf, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Self {
+    pub fn new(path: PathBuf, device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, gpu_resource_manager: Arc<GPUResourceManager>) -> Self {
         let texture_manager = Arc::new(TextureManager::new(device.clone(), queue.clone()));
         let shader_manager = Arc::new(ShaderManager::new(device.clone()));
+        let mut loaders = Resources::default();
+
+        let material_manager = Arc::new(MaterialManager::new(device.clone(), queue.clone(), texture_manager.clone(), gpu_resource_manager.clone()));
+        let mesh_manager = Arc::new(MeshManager::new(device.clone(), material_manager.clone()));
+
+        loaders.insert(material_manager);
         Self { 
-            loaders: Resources::default(),
+            loaders,
             texture_manager,
             shader_manager,
+            mesh_manager,
             device,
             queue,
             path,
+            gpu_resource_manager,
         }
     }
 
@@ -65,7 +76,7 @@ impl AssetManager {
             return;
         }
 
-        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone(), layout);
+        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone(), self.gpu_resource_manager.clone());
         self.loaders.insert(Arc::new(loader));
     }
 
@@ -153,13 +164,12 @@ mod tests {
             let arc_queue = Arc::new(queue);
             (adapter, arc_device, arc_queue)
         });
-
-        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone());
-
-        let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
+        let gpu_resource_manager = GPUResourceManager::new(device.clone());
         
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
+
+        let mut asset_manager = AssetManager::new(PathBuf::from(""), device.clone(), queue.clone(), &gpu_resource_manager);
 
         let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
         

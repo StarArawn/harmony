@@ -158,7 +158,7 @@ impl Probe {
         );
 
         // Create bind group
-        let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
         let bind_group_layout = resource_manager
             .get_bind_group_layout("probe_material_layout")
             .unwrap();
@@ -241,7 +241,7 @@ impl Probe {
             current_pipelines = pipeline_manager.current_pipelines.clone();
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let asset_manager = resources.get::<AssetManager>().unwrap();
-            let resource_manager = resources.get::<GPUResourceManager>().unwrap();
+            let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
             let skybox_pipeline = pipeline_manager.get("skybox", None).unwrap();
             let realtime_skybox_pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
             let mut new_skybox_desc = skybox_pipeline.desc.clone();
@@ -256,7 +256,7 @@ impl Probe {
                 vec![],
                 &device,
                 &asset_manager,
-                &resource_manager,
+                resource_manager.clone(),
             );
             pipeline_manager.add_pipeline(
                 "realtime_skybox",
@@ -264,7 +264,7 @@ impl Probe {
                 vec![],
                 &device,
                 &asset_manager,
-                &resource_manager,
+                resource_manager.clone(),
             );
             pipeline_manager.set_current_pipeline_hash("skybox", hash);
             pipeline_manager.set_current_pipeline_hash("realtime_skybox", realtime_hash);
@@ -413,7 +413,7 @@ impl Probe {
         let device = resources.get::<Arc<wgpu::Device>>().unwrap();
         let asset_manager = resources.get::<AssetManager>().unwrap();
         let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-        let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
         let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
 
         // create pipeline if we need to.
@@ -458,7 +458,7 @@ impl Probe {
         );
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: global_bind_group,
+            layout: &global_bind_group,
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
@@ -538,7 +538,7 @@ impl Probe {
 
     fn render_specular(&mut self, resources: &Resources) {
         let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-        let resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
         let pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
         let mip_levels: u32 = 9;
 
@@ -567,7 +567,7 @@ impl Probe {
         let buffer = resource_manager.get_buffer("specular");
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: global_bind_group,
+            layout: &global_bind_group,
             bindings: &[
                 wgpu::Binding {
                     binding: 0,

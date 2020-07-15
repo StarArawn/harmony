@@ -12,7 +12,7 @@ pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
         .write_resource::<CommandBufferQueue>()
         .read_resource::<CurrentRenderTarget>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<PipelineManager>()
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::SwapChainTexture>>()

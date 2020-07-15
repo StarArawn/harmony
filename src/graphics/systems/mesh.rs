@@ -18,7 +18,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::Queue>>()
         .read_resource::<Arc<wgpu::SwapChainTexture>>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<DepthTexture>()
         .read_resource::<PipelineManager>()
         .with_query(<(Write<components::Transform>,)>::query())

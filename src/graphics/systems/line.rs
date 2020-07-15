@@ -17,7 +17,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<RenderGraph>()
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::SwapChainOutput>>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<DepthTexture>()
         .with_query(<(Read<components::CameraData>,)>::query())
         .with_query(<Read<components::Mesh>>::query())

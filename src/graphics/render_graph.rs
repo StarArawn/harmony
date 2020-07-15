@@ -5,7 +5,7 @@ use super::{
 use crate::AssetManager;
 use legion::systems::resource::Resources;
 use solvent::DepGraph;
-use std::collections::HashMap;
+use std::{sync::Arc, collections::HashMap};
 
 use crossbeam::queue::ArrayQueue;
 
@@ -56,7 +56,7 @@ impl RenderGraph {
         asset_manager: &AssetManager,
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
-        resource_manager: &mut GPUResourceManager,
+        resource_manager: Arc<GPUResourceManager>,
         name: T2,
         mut pipeline_desc: T,
         dependency: Vec<&str>,
@@ -66,9 +66,9 @@ impl RenderGraph {
     ) {
         let name = name.into();
         let pipeline =
-            pipeline_desc.pipeline(asset_manager, device, sc_desc, resource_manager, None);
+            pipeline_desc.pipeline(asset_manager, device, sc_desc, resource_manager.clone(), None);
         let built_pipeline: Box<dyn SimplePipeline> =
-            Box::new(pipeline_desc.build(&device, resource_manager));
+            Box::new(pipeline_desc.build(&device, resource_manager.clone()));
         let node = RenderGraphNode {
             name: name.clone(),
             pipeline,
@@ -143,7 +143,7 @@ impl RenderGraph {
         &mut self,
         device: &wgpu::Device,
         asset_manager: &AssetManager,
-        resource_manager: &mut GPUResourceManager,
+        resource_manager: Arc<GPUResourceManager>,
         world: &mut legion::world::World,
         frame: Option<&wgpu::SwapChainTexture>,
         forward_depth: Option<&wgpu::TextureView>,
@@ -188,7 +188,7 @@ impl RenderGraph {
                 output,
                 &node.pipeline,
                 world,
-                resource_manager,
+                resource_manager.clone(),
             );
             if output.is_some() {
                 self.outputs.insert(name.clone(), output);

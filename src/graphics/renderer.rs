@@ -72,7 +72,7 @@ impl Renderer {
         });
         let device = Arc::new(device);
 
-        resources.insert(GPUResourceManager::new(device.clone()));
+        resources.insert(Arc::new(GPUResourceManager::new(device.clone())));
         resources.insert(sc_desc);
         resources.insert(Arc::new(queue));
         resources.insert(device.clone());

@@ -17,3 +17,4 @@ pub use shader::Shader;
 mod shader_manager;
 
 pub mod mesh;
+mod mesh_manager;

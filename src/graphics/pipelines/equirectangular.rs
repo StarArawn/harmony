@@ -36,7 +36,7 @@ impl SimplePipeline for CubeProjectionPipeline {
         output: Option<&RenderTarget>,
         pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        resource_manager: &mut GPUResourceManager,
+        resource_manager: Arc<GPUResourceManager>,
     ) -> Option<RenderTarget> {
         {
             let texture_handle = asset_manager.get_texture(self.texture.clone());
@@ -59,7 +59,7 @@ impl SimplePipeline for CubeProjectionPipeline {
             });
 
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: global_bind_group,
+                layout: &global_bind_group,
                 bindings: &[
                     wgpu::Binding {
                         binding: 0,
@@ -161,8 +161,8 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn create_layout<'a>(
         &self,
         device: &wgpu::Device,
-        resource_manager: &'a mut GPUResourceManager,
-    ) -> Vec<&'a wgpu::BindGroupLayout> {
+        resource_manager: Arc<GPUResourceManager>,
+    ) -> Vec<Arc<wgpu::BindGroupLayout>> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -227,7 +227,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn build(
         self,
         _device: &wgpu::Device,
-        _resource_manager: &mut GPUResourceManager,
+        _resource_manager: Arc<GPUResourceManager>,
     ) -> CubeProjectionPipeline {
         CubeProjectionPipeline {
             texture: self.texture,

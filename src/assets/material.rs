@@ -36,7 +36,7 @@ pub trait Material: Clone {
 
     fn load_textures(&self) -> Vec<PathBuf>;
     fn create_material(&self, textures: Vec<Arc<AssetHandle<Texture>>>) -> Self::BindMaterialType;
-    fn get_layout(gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout>;
+    fn get_layout(gpu_resource_manager: Arc<GPUResourceManager>) -> Arc<wgpu::BindGroupLayout>;
 }
 
 impl Material for PBRMaterialRon {
@@ -62,7 +62,7 @@ impl Material for PBRMaterialRon {
         }
     }
 
-    fn get_layout(gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout> {
+    fn get_layout(gpu_resource_manager: Arc<GPUResourceManager>) -> Arc<wgpu::BindGroupLayout> {
         gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone()
     }
 }

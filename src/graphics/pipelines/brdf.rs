@@ -13,7 +13,7 @@ use std::sync::Arc;
 pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::TextureFormat) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
     let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -33,7 +33,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
             vec![],
             &device,
             &asset_manager,
-            &resource_manager,
+            resource_manager.clone(),
         );
         pipeline = pipeline_manager.get("brdf", None);
     }
