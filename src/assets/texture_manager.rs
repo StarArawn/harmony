@@ -53,16 +53,16 @@ impl TextureManager {
 
                 let result = match image_file {
                     Ok(image_data) => {
-                        let image = Arc::new(Image::try_from((path.clone(), image_data)).unwrap());
-                        // Store image in cache.
-                        image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
-
                         // Attempt to load ron file..
                         let image_ron = if ron_file.is_ok() {
                             Some(ImageRon::try_from((path.clone(), ron_file.unwrap())).unwrap())
                         } else {
                             None
                         };
+
+                        let image = Arc::new(Image::try_from((image_ron, path.clone(), image_data)).unwrap());
+                        // Store image in cache.
+                        image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                         // TODO: Separate out loading into CPU from loading into the GPU.
                         let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));
@@ -120,16 +120,16 @@ impl TextureManager {
 
             let result = match image_file {
                 Ok(image_data) => {
-                    let image = Arc::new(Image::try_from((path.clone(), image_data)).unwrap());
-                    // Store image in cache.
-                    image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
-
                     // Attempt to load ron file..
                     let image_ron = if ron_file.is_ok() {
                         Some(ImageRon::try_from((path.clone(), ron_file.unwrap())).unwrap())
                     } else {
                         None
                     };
+
+                    let image = Arc::new(Image::try_from((image_ron, path.clone(), image_data)).unwrap());
+                    // Store image in cache.
+                    image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                     // TODO: Separate out loading into CPU from loading into the GPU.
                     let result = Ok(Arc::new(Texture::new(device, queue, image, image_ron, path.clone())));

@@ -40,12 +40,7 @@ impl SimplePipeline for CubeProjectionPipeline {
     ) -> Option<RenderTarget> {
         {
             let texture_handle = asset_manager.get_texture(self.texture.clone());
-            let texture = texture_handle.get();
-
-            if texture.is_err() {
-                return None;
-            }
-
+            let texture = futures::executor::block_on(texture_handle.get_async());
             let texture = texture.unwrap();
 
             let global_bind_group = resource_manager

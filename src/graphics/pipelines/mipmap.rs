@@ -78,7 +78,7 @@ pub fn create(
 
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
-        mipmap_desc.shader = "mipmap.shader".to_string();
+        mipmap_desc.shader = "core/shaders/calculations/mipmap.shader".to_string();
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         mipmap_desc.layouts = vec!["mipmap".to_string()];

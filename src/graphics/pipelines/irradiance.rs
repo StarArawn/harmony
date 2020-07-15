@@ -56,7 +56,7 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     resource_manager.add_bind_group_layout("irradiance", irradiance_bind_group_layout);
 
     let mut irradiance_desc = PipelineDesc::default();
-    irradiance_desc.shader = "irradiance2.shader".to_string();
+    irradiance_desc.shader = "core/shaders/calculations/irradiance2.shader".to_string();
     irradiance_desc.color_state.format = format;
 
     irradiance_desc.layouts = vec!["irradiance".to_string()];

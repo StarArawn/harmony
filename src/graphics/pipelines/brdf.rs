@@ -24,7 +24,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
 
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
-        mipmap_desc.shader = "specular_brdf.shader".to_string();
+        mipmap_desc.shader = "core/shaders/calculations/specular_brdf.shader".to_string();
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         pipeline_manager.add_pipeline(

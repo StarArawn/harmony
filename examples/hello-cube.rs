@@ -103,7 +103,7 @@ impl harmony::AppState for AppState {
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         let skybox =
-            harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+            harmony::graphics::material::Skybox::new_hdr(app, "example/textures/venice_sunrise_4k.hdr", 2048.0);
         // Or create a realtime skybox:
         // Note: realtime skybox will use the first directional light as the sun position.
         // let skybox =

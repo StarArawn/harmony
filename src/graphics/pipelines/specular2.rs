@@ -56,7 +56,7 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     resource_manager.add_bind_group_layout("specular_globals", specular_bind_group_layout);
 
     let mut skybox_desc = PipelineDesc::default();
-    skybox_desc.shader = "specular2.shader".to_string();
+    skybox_desc.shader = "core/shaders/calculations/specular2.shader".to_string();
     skybox_desc.color_state.format = format;
 
     skybox_desc.layouts = vec!["specular_globals".to_string()];
