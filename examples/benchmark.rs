@@ -7,13 +7,11 @@ use winit::{
     event_loop::ControlFlow,
 };
 
-use harmony::scene::components::{
-    CameraData, DirectionalLightData, LightType, Material, Mesh, Transform,
-};
+use harmony::scene::components::{CameraData, DirectionalLightData, LightType, Mesh, Transform};
 use harmony::scene::{resources::DeltaTime, Scene};
 use harmony::{
     graphics::resources::{ProbeFormat, ProbeQuality},
-    WinitState,
+    WinitState, AssetManager,
 };
 
 struct WindowSize {
@@ -50,6 +48,17 @@ impl harmony::AppState for AppState {
         let scheduler_builder = Schedule::builder().add_system(create_rotate_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
+        let mesh_handle = {
+            // asset manager lets you retrieve files from disk.
+            let asset_manager = app.resources.get_mut::<AssetManager>().unwrap();
+
+            // Retrieves a mesh handle from disk.
+            // Note: This could be loading still, but in our case we don't care as the system that renders the meshes
+            // will wait until the mesh is finished loading before displaying it. If the loading fails you wont
+            // see it in the scene and the app wont crash. You will see an error message appear in the console.
+            asset_manager.get_mesh("example/meshes/cube/cube.gltf")
+        };
+
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
@@ -67,7 +76,7 @@ impl harmony::AppState for AppState {
                 app.current_scene.world.insert(
                     (),
                     vec![(
-                        Mesh::new("cube.gltf"),
+                        Mesh::new(mesh_handle.clone()),
                         transform, // Transform
                     )],
                 );
@@ -77,7 +86,7 @@ impl harmony::AppState for AppState {
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         // create skybox first for now this *has* to be done in load.
         let skybox =
-            harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+            harmony::graphics::material::Skybox::new_hdr(app, "example/textures/venice_sunrise_4k.hdr", 2048.0);
         // Skybox needs to be added as an entity in legion. (we only should have one).
         app.current_scene.world.insert((), vec![(skybox,)]);
 

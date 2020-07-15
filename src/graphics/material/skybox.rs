@@ -29,6 +29,9 @@ pub struct Skybox {
     pub(crate) pbr_bind_group: Option<wgpu::BindGroup>,
 }
 
+// TODO: Currently this blocks until the skybox texture has loaded, we should move away from that and turn this into an actual asset
+// that can load in memory via async!
+
 impl Skybox {
     pub fn new_hdr<T>(app: &mut Application, texture: T, size: f32) -> Self
     where

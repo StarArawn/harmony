@@ -1,16 +1,13 @@
+use crate::assets::{mesh::Gltf, AssetHandle};
+use std::sync::Arc;
+
 /// A reference to the mesh.
-#[derive(Default)]
 pub struct Mesh {
-    pub mesh_name: String,
+    pub mesh_handle: Arc<AssetHandle<Gltf>>,
 }
 
 impl Mesh {
-    pub fn new<T>(name: T) -> Self
-    where
-        T: Into<String>,
-    {
-        Self {
-            mesh_name: name.into(),
-        }
+    pub fn new(mesh_handle: Arc<AssetHandle<Gltf>>) -> Self {
+        Self { mesh_handle }
     }
 }

@@ -41,8 +41,8 @@ pub struct SubMesh {
     indices: Vec<u32>,
     pub(crate) index_count: usize,
     mode: wgpu::PrimitiveTopology,
-    pub(crate) vertex_buffer: Option<wgpu::Buffer>,
-    pub(crate) index_buffer: wgpu::Buffer,
+    pub(crate) vertex_buffer: Option<Arc<wgpu::Buffer>>,
+    pub(crate) index_buffer: Arc<wgpu::Buffer>,
 }
 
 impl std::fmt::Debug for SubMesh {
@@ -64,7 +64,7 @@ pub struct Mesh {
 
 #[derive(Debug)]
 pub struct Gltf {
-    meshes: Vec<Mesh>,
+    pub meshes: Vec<Mesh>,
 }
 
 impl Gltf {
@@ -200,14 +200,14 @@ impl Gltf {
                     metallic,
                     color,
                 };
-                let material_handle = material_manager.insert(material);
+                let material_handle = material_manager.insert(material, path.clone());
 
                 let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
-                let index_buffer = device.create_buffer_with_data(
+                let index_buffer = Arc::new(device.create_buffer_with_data(
                     &bytemuck::cast_slice(&indices),
                     wgpu::BufferUsage::INDEX,
-                );
+                ));
                 let index_count = indices.len();
 
                 let mut sub_mesh = SubMesh {
@@ -229,7 +229,7 @@ impl Gltf {
                     wgpu::BufferUsage::VERTEX,
                 );
 
-                sub_mesh.vertex_buffer = Some(vertex_buffer);
+                sub_mesh.vertex_buffer = Some(Arc::new(vertex_buffer));
 
                 mesh.meshes.insert(material_handle, sub_mesh);
             }
@@ -247,7 +247,7 @@ impl Gltf {
             gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
             gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
             gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
-            _ => panic!(format!("Error loading mesh topology isn't supported!")),
+            _ => panic!("Error loading mesh topology isn't supported!"),
         }
     }
 

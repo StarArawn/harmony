@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::BindGroup;
+use super::{ArcRenderPass, BindGroup};
 use crate::{
     graphics::pipelines::{GlobalUniform, LightingUniform},
     scene::components::transform::LocalUniform,
@@ -208,7 +208,7 @@ impl GPUResourceManager {
         }
 
         let bind_group = bind_group.as_ref().unwrap();
-        Arc::clone(bind_group)
+        bind_group.value().clone()
     }
 
     /// Get's a bind group.
@@ -232,6 +232,18 @@ impl GPUResourceManager {
             Some(bind_group) => Some(bind_group.clone()),
             None => None,
         }
+    }
+
+    /// Sets a multi-bind group.
+    pub fn set_multi_bind_group<'a, T: Into<String>>(
+        &'a self,
+        render_pass: &mut ArcRenderPass<'a>,
+        key: T,
+        binding_index: u32,
+        item_index: u32,
+    ) {
+        let bind_group: Arc<BindGroup> = self.get_multi_bind_group(key, binding_index, item_index);
+        render_pass.set_bind_group_internal(bind_group);
     }
 
     /// Let's you add bind group layouts.

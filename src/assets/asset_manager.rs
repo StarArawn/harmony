@@ -2,11 +2,12 @@ use super::{
     file_manager::{AssetHandle, FileManager},
     material::Material,
     material_manager::MaterialManager,
+    mesh::Gltf,
     mesh_manager::MeshManager,
+    shader::Shader,
     shader_manager::ShaderManager,
     texture::Texture,
     texture_manager::TextureManager,
-    shader::Shader,
 };
 use crate::graphics::resources::GPUResourceManager;
 use legion::{prelude::Resources, systems::resource::Resource};
@@ -40,6 +41,7 @@ impl AssetManager {
             queue.clone(),
             texture_manager.clone(),
             gpu_resource_manager.clone(),
+            path.clone(),
         ));
         let mesh_manager = Arc::new(MeshManager::new(device.clone(), material_manager.clone()));
 
@@ -102,6 +104,7 @@ impl AssetManager {
             self.queue.clone(),
             self.texture_manager.clone(),
             self.gpu_resource_manager.clone(),
+            self.path.clone(),
         );
         self.loaders.insert(Arc::new(loader));
     }
@@ -137,6 +140,11 @@ impl AssetManager {
         self.shader_manager.get(path)
     }
 
+    pub fn get_mesh<K: Into<PathBuf>>(&self, path: K) -> Arc<AssetHandle<Gltf>> {
+        let path = self.path.join(path.into());
+        self.mesh_manager.get(path)
+    }
+
     // Instantly returns a Arc<AssetHandle<T::BindMaterialType>> from a path.
     // Note: If materials have textures they take longer to load as it'll await the loading of the textures.
     pub fn get_material<
@@ -153,8 +161,21 @@ impl AssetManager {
         }
 
         let loader = loader.unwrap();
-
         loader.get(path)
+    }
+
+    pub(crate) fn get_all_materials<
+        T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static,
+    >(
+        &self,
+    ) -> Vec<Arc<AssetHandle<T::BindMaterialType>>> {
+        let loader = self.loaders.get::<Arc<MaterialManager<T>>>();
+        if loader.is_none() {
+            panic!("Couldn't find material asset loader for the requested file.");
+        }
+
+        let loader = loader.unwrap();
+        loader.get_all()
     }
 }
 
