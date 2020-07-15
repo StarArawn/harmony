@@ -214,7 +214,6 @@ impl RenderGraph {
             queue_items.push(command);
         }
 
-        // TODO: probably shouldn't do this every frame.
         let ordering = self.get_order();
 
         for order in ordering {

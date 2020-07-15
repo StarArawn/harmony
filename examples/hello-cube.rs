@@ -16,7 +16,7 @@ use harmony::scene::{
 use harmony::{
     core::input::{Input, MouseButton},
     graphics::resources::{ProbeFormat, ProbeQuality},
-    WinitState,
+    AssetManager, WinitState,
 };
 
 struct WindowSize {
@@ -85,17 +85,30 @@ impl harmony::AppState for AppState {
             .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
+        // This is scoped to not interfer with other calls below.
+        let mesh_handle = {
+            // asset manager lets you retrieve files from disk.
+            let asset_manager = app.resources.get_mut::<AssetManager>().unwrap();
+
+            // Retrieves a mesh handle from disk.
+            // Note: This could be loading still, but in our case we don't care as the system that renders the meshes
+            // will wait until the mesh is finished loading before displaying it. If the loading fails you wont
+            // see it in the scene and the app wont crash. You will see an error message appear in the console.
+            asset_manager.get_mesh("example/meshes/cube/cube.gltf")
+        };
+
         // Here we create our game entity that contains 3 components.
-        // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
+        // 1. Mesh - This is our handle to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
         // we are picking from the asset manager. In the future we'll have an API to retrieve the material index
         // in a friendly way. For now we only have 1 GLTF file and 1 material in the file so our material index is 0.
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
-        let transform = Transform::new(app);
+
+        let mut transform = Transform::new(app);
         app.current_scene
             .world
-            .insert((), vec![(Mesh::new("cube.gltf"), transform)]);
+            .insert((), vec![(Mesh::new(mesh_handle), transform)]);
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
         let skybox = harmony::graphics::material::Skybox::new_hdr(

@@ -118,7 +118,10 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
     // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
-    fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> Arc<crate::assets::shader::Shader>;
+    fn load_shader<'a>(
+        &self,
+        asset_manager: &'a AssetManager,
+    ) -> Arc<crate::assets::shader::Shader>;
     fn create_layout<'a>(
         &self,
         _device: &wgpu::Device,

@@ -1,7 +1,13 @@
 use crate::{
+    assets::{
+        material::{PBRMaterial, PBRMaterialRon},
+        AssetHandle,
+    },
     graphics::{
-        pipeline_manager::PipelineManager, renderer::DepthTexture, resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, RenderGraph,
+        pipeline_manager::PipelineManager,
+        renderer::DepthTexture,
+        resources::{ArcRenderPass, GPUResourceManager},
+        CommandBufferQueue, CommandQueueItem,
     },
     scene::components,
     AssetManager,
@@ -14,7 +20,6 @@ pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_mesh")
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
-        .read_resource::<RenderGraph>()
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::Queue>>()
         .read_resource::<Arc<wgpu::SwapChainTexture>>()
@@ -22,24 +27,19 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<DepthTexture>()
         .read_resource::<PipelineManager>()
         .with_query(<(Write<components::Transform>,)>::query())
-        .with_query(<(
-            Read<components::Mesh>,
-            Read<components::Material>,
-            Read<components::Transform>,
-        )>::query())
+        .with_query(<(Read<components::Mesh>, Read<components::Transform>)>::query())
         .build(
             |_,
              mut world,
              (
-                _asset_manager,
+                asset_manager,
                 command_buffer_queue,
-                _render_graph,
                 device,
                 queue,
                 output,
                 resource_manager,
                 depth_texture,
-                _pipeline_manager,
+                pipeline_manager,
             ),
              (transform_query, mesh_query)| {
                 // Create mesh encoder
@@ -77,8 +77,10 @@ pub fn create() -> Box<dyn Schedulable> {
                 // ******************************************************************************
                 // This section is where we actually render our meshes.
                 // ******************************************************************************
+                // Collect materials in to their groups.
+                let asset_materials: Vec<Arc<AssetHandle<PBRMaterial>>> = asset_manager.get_all_materials::<PBRMaterialRon>();
                 {
-                    let mut _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
@@ -101,10 +103,66 @@ pub fn create() -> Box<dyn Schedulable> {
                             },
                         ),
                     });
+                    let arena1 = typed_arena::Arena::new();
+                    let arena2 = typed_arena::Arena::new();
+
+                    let mut render_pass = ArcRenderPass::new(&arena1, &arena2, render_pass);
 
                     if mesh_query.iter(&world).count() > 0 {
-                        // Collect materials in to their groups.
-                        // let asset_materials = asset_manager.get_materials();
+                        let pbr_node = pipeline_manager.get("pbr", None).unwrap();
+                        render_pass.set_pipeline(pbr_node);
+                        render_pass.set_bind_group(1, &resource_manager.global_bind_group, &[]);
+                        let probe_material = resource_manager
+                            .get_bind_group("probe_material", 3)
+                            .unwrap();
+                        render_pass.set_bind_group_internal(probe_material);
+                        for material_handle in asset_materials {
+                            let material = material_handle.get();
+                            if material.is_err() {
+                                continue;
+                            }
+                            let material = material.unwrap();
+
+                            // Setup bind group for material.
+                            render_pass.set_bind_group_internal(
+                                material.bind_group.as_ref().unwrap().clone(),
+                            );
+
+                            for (mesh, transform) in mesh_query.iter(&world) {
+                                resource_manager.set_multi_bind_group(
+                                    &mut render_pass,
+                                    "transform",
+                                    0,
+                                    transform.index,
+                                );
+
+                                // If mesh is ready render it!
+                                let asset_mesh_handle = mesh.mesh_handle.get();
+                                if asset_mesh_handle.is_err() {
+                                    continue;
+                                }
+                                let asset_mesh = asset_mesh_handle.unwrap().clone();
+
+                                for mesh in asset_mesh.meshes.iter() {
+                                    let material_mesh = mesh.meshes.get(&material_handle);
+                                    if material_mesh.is_some() {
+                                        let material_mesh = material_mesh.unwrap();
+                                        render_pass
+                                            .set_index_buffer(material_mesh.index_buffer.clone());
+                                        render_pass.set_vertex_buffer(
+                                            0,
+                                            material_mesh.vertex_buffer.as_ref().unwrap().clone(),
+                                        );
+                                        render_pass.draw_indexed(
+                                            0..material_mesh.index_count as u32,
+                                            0,
+                                            0..1,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+
                         // let pbr_materials: Vec<_> = asset_materials
                         //     .iter()
                         //     .filter(|material| match material {

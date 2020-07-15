@@ -903,6 +903,7 @@ dependencies = [
  "serde",
  "shaderc",
  "solvent",
+ "typed-arena",
  "uuid",
  "walkdir",
  "wgpu",

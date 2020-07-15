@@ -15,6 +15,7 @@ pub struct MaterialManager<T: Material> {
     material_cache: AssetCache<T::BindMaterialType>,
     texture_manager: Arc<TextureManager>,
     gpu_resource_manager: Arc<GPUResourceManager>,
+    asset_path: PathBuf,
 }
 
 impl<T> MaterialManager<T>
@@ -26,6 +27,7 @@ where
         queue: Arc<wgpu::Queue>,
         texture_manager: Arc<TextureManager>,
         gpu_resource_manager: Arc<GPUResourceManager>,
+        asset_path: PathBuf,
     ) -> Self {
         let pool = Arc::new(ThreadPoolBuilder::new().pool_size(4).create().unwrap());
         let material_cache = Arc::new(dashmap::DashMap::new());
@@ -38,10 +40,15 @@ where
             ron_cache,
             texture_manager,
             gpu_resource_manager,
+            asset_path,
         }
     }
 
-    pub fn insert(&self, material: T) -> Arc<AssetHandle<T::BindMaterialType>> {
+    pub fn insert<K: Into<PathBuf>>(
+        &self,
+        material: T,
+        relative_path: K,
+    ) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = PathBuf::new();
         let path = path.join(
             uuid::Builder::nil()
@@ -49,13 +56,14 @@ where
                 .build()
                 .to_string(),
         );
-
         let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));
-
+        let relative_path: PathBuf = relative_path.into();
         let material_cache = self.material_cache.clone();
         let ron_cache = self.ron_cache.clone();
         let texture_manager = self.texture_manager.clone();
         let material_thread_handle = material_handle.clone();
+        let device = self.device.clone();
+        let layout = T::get_layout(self.gpu_resource_manager.clone());
 
         self.pool.spawn_ok(async move {
             let material_arc = Arc::new(material);
@@ -65,17 +73,17 @@ where
                 Ok(material_arc.clone()),
             );
 
-            // TODO: Separate out loading into CPU from loading into the GPU?
-
             let texture_paths = material_arc.load_textures();
             let mut textures = Vec::new();
             for texture_path in texture_paths {
-                let texture_handle = texture_manager.get_async(&texture_path).await;
+                let texture_handle = texture_manager
+                    .get_async(&relative_path.parent().unwrap().join(texture_path))
+                    .await;
                 textures.push(texture_handle);
             }
 
-            // TODO: Create bind_group possible here?
-            let material = material_arc.create_material(textures);
+            let mut material = material_arc.create_material(textures);
+            material.create_bindgroup(device.clone(), layout);
 
             material_cache.insert(
                 material_thread_handle.handle_id.clone(),
@@ -98,6 +106,7 @@ where
             let material_thread_handle = material_handle.clone();
             let device = self.device.clone();
             let layout = T::get_layout(self.gpu_resource_manager.clone());
+            let asset_path = self.asset_path.clone();
 
             self.pool.spawn_ok(async move {
                 let ron_file = async_std::fs::read(path.clone()).await;
@@ -117,13 +126,13 @@ where
                                 ron_cache
                                     .insert(material_thread_handle.handle_id.clone(), Ok(material));
 
-                                // TODO: Separate out loading into CPU from loading into the GPU?
-
                                 let texture_paths = material_arc.load_textures();
                                 let mut textures = Vec::new();
                                 for texture_path in texture_paths {
-                                    let texture_handle =
-                                        texture_manager.get_async(&texture_path).await;
+                                    // TODO: The path here might be an issue.
+                                    let texture_handle = texture_manager
+                                        .get_async(&asset_path.clone().join(texture_path))
+                                        .await;
                                     textures.push(texture_handle);
                                 }
 
@@ -154,6 +163,19 @@ where
 
         material_handle
     }
+
+    pub fn get_all(&self) -> Vec<Arc<AssetHandle<T::BindMaterialType>>> {
+        let material_cache = self.material_cache.clone();
+        self.material_cache
+            .iter()
+            .map(|item| {
+                Arc::new(AssetHandle::<T::BindMaterialType>::new(
+                    item.key().clone(),
+                    material_cache.clone(),
+                ))
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -164,7 +186,7 @@ mod tests {
         assets::{material::PBRMaterialRon, texture_manager::TextureManager},
         graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager},
     };
-    use std::sync::Arc;
+    use std::{path::PathBuf, sync::Arc};
 
     #[test]
     fn should_load_material() {
@@ -213,6 +235,7 @@ mod tests {
             queue,
             Arc::new(texture_manager),
             gpu_resource_manager,
+            PathBuf::from("./"),
         );
         let material_handle = material_manager.get("./assets/material.ron");
         let material = material_handle.get();

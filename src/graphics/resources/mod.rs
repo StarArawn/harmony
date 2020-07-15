@@ -13,3 +13,6 @@ pub(crate) use probe::CurrentRenderTarget;
 pub use probe::{Probe, ProbeFormat, ProbeQuality, ProbeUniform};
 
 pub(crate) use probe_manager::ProbeManager;
+
+mod arc_render_pass;
+pub use arc_render_pass::ArcRenderPass;
