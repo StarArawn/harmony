@@ -4,8 +4,10 @@ use crate::{
         AssetHandle,
     },
     graphics::{
-        pipeline_manager::PipelineManager, renderer::DepthTexture, resources::{ArcRenderPass, GPUResourceManager},
-        CommandBufferQueue, CommandQueueItem, RenderGraph,
+        pipeline_manager::PipelineManager,
+        renderer::DepthTexture,
+        resources::{ArcRenderPass, GPUResourceManager},
+        CommandBufferQueue, CommandQueueItem,
     },
     scene::components,
     AssetManager,
@@ -18,7 +20,6 @@ pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_mesh")
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
-        .read_resource::<RenderGraph>()
         .read_resource::<Arc<wgpu::Device>>()
         .read_resource::<Arc<wgpu::Queue>>()
         .read_resource::<Arc<wgpu::SwapChainTexture>>()
@@ -33,7 +34,6 @@ pub fn create() -> Box<dyn Schedulable> {
              (
                 asset_manager,
                 command_buffer_queue,
-                render_graph,
                 device,
                 queue,
                 output,
@@ -84,7 +84,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     .get_bind_group("probe_material", 3)
                     .unwrap();
                 {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
@@ -125,7 +125,9 @@ pub fn create() -> Box<dyn Schedulable> {
                             let material = material.unwrap();
 
                             // Setup bind group for material.
-                            render_pass.set_bind_group_internal(material.bind_group.as_ref().unwrap().clone());
+                            render_pass.set_bind_group_internal(
+                                material.bind_group.as_ref().unwrap().clone(),
+                            );
 
                             for (mesh, transform) in mesh_query.iter(&world) {
                                 resource_manager.set_multi_bind_group(
@@ -146,7 +148,8 @@ pub fn create() -> Box<dyn Schedulable> {
                                     let material_mesh = mesh.meshes.get(&material_handle);
                                     if material_mesh.is_some() {
                                         let material_mesh = material_mesh.unwrap();
-                                        render_pass.set_index_buffer(material_mesh.index_buffer.clone());
+                                        render_pass
+                                            .set_index_buffer(material_mesh.index_buffer.clone());
                                         render_pass.set_vertex_buffer(
                                             0,
                                             material_mesh.vertex_buffer.as_ref().unwrap().clone(),

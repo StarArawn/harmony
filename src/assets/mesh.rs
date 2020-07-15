@@ -377,6 +377,7 @@ mod tests {
                 queue,
                 Arc::new(texture_manager),
                 gpu_resource_manager,
+                PathBuf::from("./"),
             ));
 
             let _mesh = Gltf::from_gltf(
