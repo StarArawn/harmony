@@ -6,7 +6,7 @@ use super::{
     shader_manager::ShaderManager,
     texture::Texture,
     texture_manager::TextureManager,
-    Shader,
+    shader::Shader,
 };
 use crate::graphics::resources::GPUResourceManager;
 use legion::{prelude::Resources, systems::resource::Resource};

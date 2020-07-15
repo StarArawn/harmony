@@ -150,7 +150,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
-    ) -> Arc<crate::assets::Shader> {
+    ) -> Arc<crate::assets::shader::Shader> {
         futures::executor::block_on(
             asset_manager
                 .get_shader("core/shaders/calculations/hdr_to_cubemap.shader")

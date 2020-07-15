@@ -1,6 +1,6 @@
 use super::{
     file_manager::{AssetCache, AssetHandle},
-    Shader,
+    shader::Shader,
 };
 use futures::executor::{ThreadPool, ThreadPoolBuilder};
 use std::{path::PathBuf, sync::Arc};

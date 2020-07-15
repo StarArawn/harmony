@@ -1,19 +1,19 @@
 mod asset_manager;
 pub use asset_manager::AssetManager;
 
-mod image;
+pub mod image;
 pub use self::image::Image;
 
 pub mod material;
 mod material_manager;
 
-mod texture;
+pub mod texture;
 mod texture_manager;
 
 mod file_manager;
+pub use file_manager::{AssetCache, AssetError, AssetHandle, FileManager};
 
-mod shader;
-pub use shader::Shader;
+pub mod shader;
 mod shader_manager;
 
 pub mod mesh;
