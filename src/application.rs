@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::{path::PathBuf, sync::Arc, time::Instant};
 use winit::{
     event::Event,
     event_loop::{ControlFlow, EventLoop},
@@ -22,8 +22,10 @@ use crate::{
 };
 use graphics::{
     material::skybox::SkyboxType,
-    pipelines::{LinePipelineDesc, UnlitPipelineDesc},
-    CommandBufferQueue, CommandQueueItem, renderer::{DEPTH_FORMAT, DepthTexture},
+    renderer::{DepthTexture, DEPTH_FORMAT},
+    // pipelines::{LinePipelineDesc, UnlitPipelineDesc},
+    CommandBufferQueue,
+    CommandQueueItem,
 };
 use nalgebra_glm::Vec2;
 
@@ -82,7 +84,7 @@ impl Application {
         mut render_systems: Vec<Box<dyn Schedulable>>,
     ) -> Self
     where
-        T: Into<String>,
+        T: Into<PathBuf>,
     {
         let scene = Scene::new(None, None);
         let window = window_builder.build(event_loop).unwrap();
@@ -95,7 +97,17 @@ impl Application {
 
         let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
-        let asset_manager = AssetManager::new(asset_path.into());
+        let asset_manager = {
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
+            let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
+            let gpu_resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+            AssetManager::new(
+                asset_path.into(),
+                device.clone(),
+                queue.clone(),
+                gpu_resource_manager.clone(),
+            )
+        };
 
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
@@ -157,8 +169,8 @@ impl Application {
         }
 
         let imgui_renderer = {
-            let device = resources.get::<wgpu::Device>().unwrap();
-            let mut queue = resources.get_mut::<wgpu::Queue>().unwrap();
+            let device = resources.get::<Arc<wgpu::Device>>().unwrap();
+            let mut queue = resources.get_mut::<Arc<wgpu::Queue>>().unwrap();
             let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
             imgui_wgpu::Renderer::new(&mut imgui, &device, &mut queue, sc_desc.format, None)
         };
@@ -213,53 +225,46 @@ impl Application {
         T: AppState,
     {
         {
-            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let device = self.resources.get::<wgpu::Device>().unwrap();
-            let mut queue = self.resources.get_mut::<wgpu::Queue>().unwrap();
-            asset_manager.load(&device, &mut queue);
-        }
-
-        {
             let render_graph = RenderGraph::new(&mut self.resources, true);
             self.resources.insert(render_graph);
         }
 
         {
-            let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
-            let device = self.resources.get::<wgpu::Device>().unwrap();
-            let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+            // let asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            // let mut render_graph = self.resources.get_mut::<RenderGraph>().unwrap();
+            // let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
+            // let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
+            // let sc_desc = self.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
             // Unlit pipeline
-            let unlit_pipeline_desc = UnlitPipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "unlit",
-                unlit_pipeline_desc,
-                vec!["skybox"],
-                true,
-                None,
-                false,
-            );
+            // let unlit_pipeline_desc = UnlitPipelineDesc::default();
+            // render_graph.add(
+            //     &asset_manager,
+            //     &device,
+            //     &sc_desc,
+            //     &mut resource_manager,
+            //     "unlit",
+            //     unlit_pipeline_desc,
+            //     vec!["skybox"],
+            //     true,
+            //     None,
+            //     false,
+            // );
 
             // Line pipeline
-            let line_pipeline_desc = LinePipelineDesc::default();
-            render_graph.add(
-                &asset_manager,
-                &device,
-                &sc_desc,
-                &mut resource_manager,
-                "line",
-                line_pipeline_desc,
-                vec!["skybox"],
-                false,
-                None,
-                false,
-            );
+            // let line_pipeline_desc = LinePipelineDesc::default();
+            // render_graph.add(
+            //     &asset_manager,
+            //     &device,
+            //     &sc_desc,
+            //     &mut resource_manager,
+            //     "line",
+            //     line_pipeline_desc,
+            //     vec!["skybox"],
+            //     false,
+            //     None,
+            //     false,
+            // );
         }
 
         // Global Node
@@ -271,33 +276,30 @@ impl Application {
         // Create new pipelines
         crate::graphics::pipelines::skybox::create(&self.resources);
         crate::graphics::pipelines::realtime_sky::create(&self.resources);
-        
+
         // PBR pipeline
         super::graphics::pipelines::pbr::create(&self.resources);
+
+        {
+            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
+            asset_manager.load();
+        }
 
         // Run user code.
         app_state.load(self);
 
-        // Once materials have been created we need to create more info for them.
         {
-            let mut asset_manager = self.resources.get_mut::<AssetManager>().unwrap();
-            let device = self.resources.get::<wgpu::Device>().unwrap();
-            let mut resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
-            asset_manager.load_materials(&device, &mut resource_manager);
-        }
-
-        {
-            let resource_manager = self.resources.get_mut::<GPUResourceManager>().unwrap();
+            let resource_manager = self.resources.get::<Arc<GPUResourceManager>>().unwrap();
             let query = <(Write<Skybox>,)>::query();
             for (mut skybox,) in query.iter_mut(&mut self.current_scene.world) {
                 if skybox.skybox_type == SkyboxType::HdrCubemap {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
                     let material_layout = resource_manager
                         .get_bind_group_layout("skybox_material")
                         .unwrap();
                     skybox.create_bind_group2(&device, material_layout);
                 } else if skybox.skybox_type == SkyboxType::RealTime {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
                     let asset_manager = self.resources.get::<AssetManager>().unwrap();
                     let material_layout = resource_manager
                         .get_bind_group_layout("realtime_skybox_material")
@@ -363,7 +365,7 @@ impl Application {
 
                 // Store current frame buffer.
                 {
-                    let output = Arc::new(self.renderer.render());
+                    let output = Arc::new(self.renderer.render().output);
                     self.resources.insert(output);
                 }
 
@@ -385,8 +387,8 @@ impl Application {
 
                 // Draw UI.
                 {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
-                    let frame = self.resources.get::<Arc<wgpu::SwapChainOutput>>().unwrap();
+                    let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
+                    let frame = self.resources.get::<Arc<wgpu::SwapChainTexture>>().unwrap();
                     let command_buffer_queue = self.resources.get::<CommandBufferQueue>().unwrap();
                     let mut encoder: wgpu::CommandEncoder =
                         device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -417,7 +419,7 @@ impl Application {
                 // We need to let the swap drop so the frame renderers.
                 let _swap_chain_output = self
                     .resources
-                    .remove::<Arc<wgpu::SwapChainOutput>>()
+                    .remove::<Arc<wgpu::SwapChainTexture>>()
                     .unwrap();
 
                 self.renderer.window.request_redraw();
@@ -427,7 +429,7 @@ impl Application {
                 ..
             } => {
                 {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
                     let mut sc_desc = self
                         .resources
                         .get_mut::<wgpu::SwapChainDescriptor>()
@@ -442,7 +444,7 @@ impl Application {
 
                 // Resize depth buffer too
                 let depth_texture = {
-                    let device = self.resources.get::<wgpu::Device>().unwrap();
+                    let device = self.resources.get::<Arc<wgpu::Device>>().unwrap();
                     device.create_texture(&wgpu::TextureDescriptor {
                         size: wgpu::Extent3d {
                             width: size.width,
@@ -457,8 +459,9 @@ impl Application {
                         label: None,
                     })
                 };
-                self.resources.insert(DepthTexture(depth_texture.create_default_view()));
-                
+                self.resources
+                    .insert(DepthTexture(depth_texture.create_default_view()));
+
                 app_state.resize(self);
             }
             _ => (),

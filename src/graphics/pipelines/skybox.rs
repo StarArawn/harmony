@@ -8,16 +8,17 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<wgpu::Device>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
     let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
     let mut skybox_desc = PipelineDesc::default();
-    skybox_desc.shader = "skybox.shader".to_string();
+    skybox_desc.shader = "core/shaders/skybox.shader".to_string();
     skybox_desc.color_state.format = sc_desc.format;
     skybox_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,
@@ -32,20 +33,20 @@ pub fn create(resources: &Resources) {
     let skybox_material_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
+                wgpu::BindGroupLayoutEntry::new(
+                    0,
+                    wgpu::ShaderStage::FRAGMENT,
+                    wgpu::BindingType::SampledTexture {
                         component_type: wgpu::TextureComponentType::Float,
                         multisampled: false,
                         dimension: wgpu::TextureViewDimension::Cube,
                     },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
-                },
+                ),
+                wgpu::BindGroupLayoutEntry::new(
+                    1,
+                    wgpu::ShaderStage::FRAGMENT,
+                    wgpu::BindingType::Sampler { comparison: false },
+                ),
             ],
             label: None,
         });
@@ -62,6 +63,6 @@ pub fn create(resources: &Resources) {
         vec!["globals"],
         &device,
         &asset_manager,
-        &resource_manager,
+        resource_manager.clone(),
     );
 }

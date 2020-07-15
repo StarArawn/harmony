@@ -12,10 +12,10 @@ pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
         .write_resource::<CommandBufferQueue>()
         .read_resource::<CurrentRenderTarget>()
-        .read_resource::<GPUResourceManager>()
+        .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<PipelineManager>()
-        .read_resource::<wgpu::Device>()
-        .read_resource::<Arc<wgpu::SwapChainOutput>>()
+        .read_resource::<Arc<wgpu::Device>>()
+        .read_resource::<Arc<wgpu::SwapChainTexture>>()
         .read_resource::<DepthTexture>()
         .with_query(<(Read<Skybox>,)>::query())
         .build(
@@ -34,52 +34,53 @@ pub fn create() -> Box<dyn Schedulable> {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("skybox_clear_pass"),
                 });
-                
+
                 let view_attachment = if current_render_target.0.is_some() {
                     &current_render_target.0.as_ref().unwrap().1
                 } else {
                     &output.view
                 };
-                
+
                 let depth_attachment = if current_render_target.0.is_some() {
                     current_render_target
-                    .0
-                    .as_ref()
-                    .unwrap()
-                    .0
-                    .depth_texture_view
-                    .as_ref()
-                    .unwrap()
+                        .0
+                        .as_ref()
+                        .unwrap()
+                        .0
+                        .depth_texture_view
+                        .as_ref()
+                        .unwrap()
                 } else {
                     &depth_texture.0
                 };
-                
+
                 let pipeline: &Pipeline = pipeline_manager.get("skybox", None).unwrap();
-                let pipeline_realtime: &Pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
+                let pipeline_realtime: &Pipeline =
+                    pipeline_manager.get("realtime_skybox", None).unwrap();
 
                 for (skybox,) in skyboxes.iter(&world) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: view_attachment,
                             resolve_target: None,
-                            load_op: wgpu::LoadOp::Clear,
-                            store_op: wgpu::StoreOp::Store,
-                            clear_color: wgpu::Color {
-                                r: skybox.clear_color.x as f64,
-                                g: skybox.clear_color.y as f64,
-                                b: skybox.clear_color.z as f64,
-                                a: 1.0,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: skybox.clear_color.x as f64,
+                                    g: skybox.clear_color.y as f64,
+                                    b: skybox.clear_color.z as f64,
+                                    a: 1.0,
+                                }),
+                                store: true,
                             },
                         }],
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: depth_attachment,
-                                depth_load_op: wgpu::LoadOp::Clear,
-                                depth_store_op: wgpu::StoreOp::Store,
-                                stencil_load_op: wgpu::LoadOp::Clear,
-                                stencil_store_op: wgpu::StoreOp::Store,
-                                clear_depth: 1.0,
-                                clear_stencil: 0,
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(1.0),
+                                    store: true,
+                                }),
+                                stencil_ops: None,
                             },
                         ),
                     });

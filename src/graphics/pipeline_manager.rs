@@ -1,6 +1,9 @@
 use ordered_float::OrderedFloat;
 use std::collections::{hash_map::DefaultHasher, HashMap};
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
 use super::{
     renderer::FRAME_FORMAT, resources::GPUResourceManager, CommandBufferQueue, VertexStateBuilder,
@@ -8,7 +11,7 @@ use super::{
 use crate::AssetManager;
 use solvent::DepGraph;
 
-/// A description of a render pipeline. 
+/// A description of a render pipeline.
 /// Note: You can call `default()` to get a base implementation.
 /// You'll still need to specify the correct shader at the very least.
 #[derive(Debug, Hash, Clone)]
@@ -71,6 +74,7 @@ impl PipelineDesc {
         gpu_resource_manager: &GPUResourceManager,
     ) -> Pipeline {
         let shader = asset_manager.get_shader(self.shader.clone());
+        let shader = futures::executor::block_on(shader.get_async()).unwrap();
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
             entry_point: "main",
@@ -80,13 +84,14 @@ impl PipelineDesc {
             entry_point: "main",
         });
 
-        let bind_group_layouts: Vec<&wgpu::BindGroupLayout> = self
+        let bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>> = self
             .layouts
             .iter()
             .map(|group_name| {
                 gpu_resource_manager
                     .get_bind_group_layout(group_name)
                     .unwrap()
+                    .clone()
             })
             .collect();
         let rasterization_state = wgpu::RasterizationStateDescriptor {
@@ -106,7 +111,10 @@ impl PipelineDesc {
 
         // Once we create the layout we don't need the bind group layouts.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts,
+            bind_group_layouts: &bind_group_layouts
+                .iter()
+                .map(|x| x.as_ref())
+                .collect::<Vec<&wgpu::BindGroupLayout>>(),
         });
 
         // Creates our vertex descriptor.
@@ -171,7 +179,7 @@ pub struct PipelineManager {
 }
 
 impl PipelineManager {
-    /// Creates a new pipeline manager. 
+    /// Creates a new pipeline manager.
     pub fn new() -> Self {
         let mut dep_graph = DepGraph::new();
         dep_graph.register_node("root".to_string());
@@ -193,7 +201,7 @@ impl PipelineManager {
         dependency: Vec<&str>,
         device: &wgpu::Device,
         asset_manager: &AssetManager,
-        gpu_resource_manager: &GPUResourceManager,
+        gpu_resource_manager: Arc<GPUResourceManager>, // TODO: This is an arc so just throw it in via new
     ) {
         let hash = pipeline_desc.create_hash();
         let name = name.into();

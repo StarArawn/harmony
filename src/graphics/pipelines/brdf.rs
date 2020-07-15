@@ -7,13 +7,14 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 // mipmaps always run pretty much right away.
 pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::TextureFormat) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<wgpu::Device>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("brdf"),
@@ -23,7 +24,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
 
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
-        mipmap_desc.shader = "specular_brdf.shader".to_string();
+        mipmap_desc.shader = "core/shaders/calculations/specular_brdf.shader".to_string();
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         pipeline_manager.add_pipeline(
@@ -32,7 +33,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
             vec![],
             &device,
             &asset_manager,
-            &resource_manager,
+            resource_manager.clone(),
         );
         pipeline = pipeline_manager.get("brdf", None);
     }
@@ -42,13 +43,14 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &output.texture_view,
                 resolve_target: None,
-                load_op: wgpu::LoadOp::Clear,
-                store_op: wgpu::StoreOp::Store,
-                clear_color: wgpu::Color {
-                    r: 0.0,
-                    g: 0.0,
-                    b: 0.0,
-                    a: 1.0,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    }),
+                    store: true,
                 },
             }],
             depth_stencil_attachment: None,
@@ -57,7 +59,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
         render_pass.draw(0..3, 0..1);
     }
 
-    let queue = resources.get::<wgpu::Queue>().unwrap();
+    let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
     queue.submit(Some(encoder.finish()));
 
     device.poll(wgpu::Maintain::Wait);

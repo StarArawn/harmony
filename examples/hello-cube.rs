@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::{
-    components::{CameraData, DirectionalLightData, LightType, Material, Mesh, Transform},
+    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform},
     resources::DeltaTime,
     Scene,
 };
@@ -43,8 +43,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         .with_query(<Write<Transform>>::query())
         .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
-                // transform.rotate_on_y(-0.5 * delta_time.0);
-                // transform.rotate_on_x(-0.5 * delta_time.0);
+                transform.rotate_on_y(-0.5 * delta_time.0);
+                transform.rotate_on_x(-0.5 * delta_time.0);
             }
         })
 }
@@ -85,16 +85,6 @@ impl harmony::AppState for AppState {
             .add_system(create_camera_orbit_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
-        // We need to find the material index for the material that automatically gets created when loading in the GLTF.
-        // It's easy enough:
-        let cube_material_index = app
-            .resources
-            .get::<harmony::AssetManager>()
-            .unwrap()
-            .get_mesh("cube.gltf")
-            .sub_meshes[0]
-            .material_index;
-
         // Here we create our game entity that contains 3 components.
         // 1. Mesh - This is our reference to let the renderer know which asset to use from the asset pipeline.
         // 2. Material - GLTF files come with their own materials this is a reference to which material globally
@@ -103,18 +93,16 @@ impl harmony::AppState for AppState {
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
         let transform = Transform::new(app);
-        app.current_scene.world.insert(
-            (),
-            vec![(
-                Mesh::new("cube.gltf"),
-                Material::new(cube_material_index),
-                transform,
-            )],
-        );
+        app.current_scene
+            .world
+            .insert((), vec![(Mesh::new("cube.gltf"), transform)]);
 
         // Here we create our skybox entity and populate it with a HDR skybox texture.
-        let skybox =
-            harmony::graphics::material::Skybox::new_hdr(app, "venice_sunrise_4k.hdr", 2048.0);
+        let skybox = harmony::graphics::material::Skybox::new_hdr(
+            app,
+            "example/textures/venice_sunrise_4k.hdr",
+            2048.0,
+        );
         // Or create a realtime skybox:
         // Note: realtime skybox will use the first directional light as the sun position.
         // let skybox =

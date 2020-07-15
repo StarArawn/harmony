@@ -6,6 +6,7 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 pub struct CubeProjectionPipeline {
     texture: String,
@@ -30,30 +31,43 @@ impl SimplePipeline for CubeProjectionPipeline {
         _depth: Option<&wgpu::TextureView>,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
-        _frame: Option<&wgpu::SwapChainOutput>,
+        _frame: Option<&wgpu::SwapChainTexture>,
         _input: Option<&RenderTarget>,
         output: Option<&RenderTarget>,
         pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        resource_manager: &mut GPUResourceManager,
+        resource_manager: Arc<GPUResourceManager>,
     ) -> Option<RenderTarget> {
         {
-            let image = asset_manager.get_image(self.texture.clone());
+            let texture_handle = asset_manager.get_texture(self.texture.clone());
+            let texture = futures::executor::block_on(texture_handle.get_async());
+            let texture = texture.unwrap();
 
             let global_bind_group = resource_manager
                 .get_bind_group_layout("equirectangular_globals")
                 .unwrap();
 
+            let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+                label: None,
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Linear,
+                ..Default::default()
+            });
+
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: global_bind_group,
+                layout: &global_bind_group,
                 bindings: &[
                     wgpu::Binding {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&image.view),
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
                     },
                     wgpu::Binding {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&image.sampler),
+                        resource: wgpu::BindingResource::Sampler(&sampler),
                     },
                 ],
                 label: None,
@@ -63,13 +77,14 @@ impl SimplePipeline for CubeProjectionPipeline {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.as_ref().unwrap().texture_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
                     },
                 }],
                 depth_stencil_attachment: None,
@@ -103,11 +118,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                 wgpu::TextureCopyView {
                     texture: &cube_map.texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d {
-                        x: 0,
-                        y: 0,
-                        z: i,
-                    },
+                    origin: wgpu::Origin3d { x: 0, y: 0, z: i },
                 },
                 wgpu::Extent3d {
                     width: self.size as u32,
@@ -139,33 +150,38 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn load_shader<'a>(
         &self,
         asset_manager: &'a crate::AssetManager,
-    ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("hdr_to_cubemap.shader")
+    ) -> Arc<crate::assets::shader::Shader> {
+        futures::executor::block_on(
+            asset_manager
+                .get_shader("core/shaders/calculations/hdr_to_cubemap.shader")
+                .get_async(),
+        )
+        .unwrap()
     }
 
     fn create_layout<'a>(
         &self,
         device: &wgpu::Device,
-        resource_manager: &'a mut GPUResourceManager,
-    ) -> Vec<&'a wgpu::BindGroupLayout> {
+        resource_manager: Arc<GPUResourceManager>,
+    ) -> Vec<Arc<wgpu::BindGroupLayout>> {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 bindings: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::SampledTexture {
+                    wgpu::BindGroupLayoutEntry::new(
+                        0,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
                             multisampled: false,
                             component_type: wgpu::TextureComponentType::Float,
                             dimension: wgpu::TextureViewDimension::D2,
                         },
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        1,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::Sampler { comparison: false },
+                    ),
                 ],
                 label: None,
             });
@@ -212,7 +228,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
     fn build(
         self,
         _device: &wgpu::Device,
-        _resource_manager: &mut GPUResourceManager,
+        _resource_manager: Arc<GPUResourceManager>,
     ) -> CubeProjectionPipeline {
         CubeProjectionPipeline {
             texture: self.texture,

@@ -1,24 +1,76 @@
 use legion::prelude::Resources;
 
+use crate::assets::{material::PBRMaterialUniform, mesh::MeshVertexData};
+
 use crate::{
     graphics::{
-        mesh::MeshVertexData,
         pipeline_manager::{PipelineDesc, PipelineManager},
         renderer::DEPTH_FORMAT,
         resources::GPUResourceManager,
     },
     AssetManager,
 };
+use std::sync::Arc;
+
+pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        bindings: &[
+            wgpu::BindGroupLayoutEntry::new(
+                0,
+                wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::UniformBuffer {
+                    dynamic: false,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<PBRMaterialUniform>() as _,
+                    ),
+                },
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                1,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::Sampler { comparison: false },
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                2,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
+                    multisampled: false,
+                    component_type: wgpu::TextureComponentType::Float,
+                    dimension: wgpu::TextureViewDimension::D2,
+                },
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                3,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
+                    multisampled: false,
+                    component_type: wgpu::TextureComponentType::Float,
+                    dimension: wgpu::TextureViewDimension::D2,
+                },
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                4,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
+                    multisampled: false,
+                    component_type: wgpu::TextureComponentType::Float,
+                    dimension: wgpu::TextureViewDimension::D2,
+                },
+            ),
+        ],
+        label: Some("pbr_material_layout"),
+    })
+}
 
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<wgpu::Device>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
     let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
 
     let mut pbr_desc = PipelineDesc::default();
-    pbr_desc.shader = "pbr.shader".to_string();
+    pbr_desc.shader = "core/shaders/pbr.shader".to_string();
     pbr_desc.color_state.format = sc_desc.format;
     pbr_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,
@@ -31,84 +83,43 @@ pub fn create(resources: &Resources) {
     });
 
     // Create skybox bind group layouts.
-    let pbr_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer { dynamic: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::Sampler { comparison: false },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 4,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
-            },
-        ],
-        label: Some("pbr_material"),
-    });
+    let pbr_material_layout = create_pbr_bindgroup_layout(device.clone());
     resource_manager.add_bind_group_layout("pbr_material_layout", pbr_material_layout);
 
-    let pbr_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    let probe_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
+            wgpu::BindGroupLayoutEntry::new(
+                0,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
                     multisampled: false,
                     component_type: wgpu::TextureComponentType::Float,
                     dimension: wgpu::TextureViewDimension::Cube,
                 },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                1,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
                     multisampled: false,
                     component_type: wgpu::TextureComponentType::Float,
                     dimension: wgpu::TextureViewDimension::Cube,
                 },
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::SampledTexture {
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                2,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
                     multisampled: false,
                     component_type: wgpu::TextureComponentType::Float,
                     dimension: wgpu::TextureViewDimension::D2,
                 },
-            },
+            ),
         ],
-        label: Some("pbr_probe_material"),
+        label: Some("probe_material_layout"),
     });
 
-    resource_manager.add_bind_group_layout("probe_material_layout", pbr_bind_group_layout);
+    resource_manager.add_bind_group_layout("probe_material_layout", probe_material_layout);
 
     pbr_desc.layouts = vec![
         "locals".to_string(),
@@ -133,6 +144,6 @@ pub fn create(resources: &Resources) {
         vec!["globals", "skybox"],
         &device,
         &asset_manager,
-        &resource_manager,
+        resource_manager.clone(),
     );
 }

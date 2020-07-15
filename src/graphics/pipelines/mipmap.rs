@@ -7,6 +7,7 @@ use crate::{
     },
     AssetManager,
 };
+use std::sync::Arc;
 
 // mipmaps always run pretty much right away.
 pub fn create(
@@ -20,8 +21,8 @@ pub fn create(
 ) -> wgpu::Texture {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
     let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<wgpu::Device>().unwrap();
+    let resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("mipmap"),
@@ -53,20 +54,20 @@ pub fn create(
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mipmap"),
             bindings: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
+                wgpu::BindGroupLayoutEntry::new(
+                    0,
+                    wgpu::ShaderStage::FRAGMENT,
+                    wgpu::BindingType::SampledTexture {
                         component_type: wgpu::TextureComponentType::Float,
                         multisampled: false,
                         dimension: wgpu::TextureViewDimension::D2,
                     },
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
-                },
+                ),
+                wgpu::BindGroupLayoutEntry::new(
+                    1,
+                    wgpu::ShaderStage::FRAGMENT,
+                    wgpu::BindingType::Sampler { comparison: false },
+                ),
             ],
         });
         resource_manager.add_bind_group_layout("mipmap", layout);
@@ -77,7 +78,7 @@ pub fn create(
 
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
-        mipmap_desc.shader = "mipmap.shader".to_string();
+        mipmap_desc.shader = "core/shaders/calculations/mipmap.shader".to_string();
         mipmap_desc.color_state.format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         mipmap_desc.layouts = vec!["mipmap".to_string()];
@@ -87,7 +88,7 @@ pub fn create(
             vec![],
             &device,
             &asset_manager,
-            &resource_manager,
+            resource_manager.clone(),
         );
         pipeline = pipeline_manager.get("mipmap", None);
     }
@@ -102,7 +103,7 @@ pub fn create(
         mipmap_filter: wgpu::FilterMode::Linear,
         lod_min_clamp: -100.0,
         lod_max_clamp: 100.0,
-        compare: wgpu::CompareFunction::Undefined,
+        ..Default::default()
     });
 
     for face_id in 0..depth {
@@ -149,9 +150,10 @@ pub fn create(
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &new_view,
                     resolve_target: None,
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color::WHITE,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+                        store: true,
+                    },
                 }],
                 depth_stencil_attachment: None,
             });
@@ -161,7 +163,7 @@ pub fn create(
         }
     }
 
-    let queue = resources.get::<wgpu::Queue>().unwrap();
+    let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
     queue.submit(Some(encoder.finish()));
 
     // device.poll(wgpu::Maintain::Wait);

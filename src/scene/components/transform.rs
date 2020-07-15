@@ -4,6 +4,7 @@ use crate::{
 };
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
+use std::sync::Arc;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -98,17 +99,17 @@ impl Transform {
     }
 
     pub(crate) fn create_bindings(app: &Application, index: u32) {
-        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = app.resources.get::<Arc<GPUResourceManager>>().unwrap();
         let bind_group_layout = resource_manager.get_bind_group_layout("locals").unwrap();
         // This data needs to be saved and passed onto the pipeline.
-        let device = app.resources.get_mut::<wgpu::Device>().unwrap();
+        let device = app.resources.get_mut::<Arc<wgpu::Device>>().unwrap();
         let local_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&LocalUniform::default()),
             wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         );
 
         let local_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: bind_group_layout,
+            layout: &bind_group_layout,
             bindings: &[wgpu::Binding {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(local_buffer.slice(..)),

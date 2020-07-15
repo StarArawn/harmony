@@ -10,31 +10,34 @@ edition = "2018"
 default = []
 
 [dependencies]
-arrayvec = "0.5.1"
+async-std = "1.6.2"
 bytemuck = { version = "1.2.0", features = ["extern_crate_alloc"] }
 crossbeam = "0.7.3"
+dashmap = "3.11.7"
 env_logger = "0.7.1"
-futures = "0.3"
+futures = { version = "0.3.5", features = ["default", "thread-pool"] }
 gltf="0.15.2"
-glyph_brush = "0.6"
 image = "0.23.4"
 imgui = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0" }
-imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="c647602f38943ef87155adcc7caa7d40800b96bb" }
+imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="c13c6dbc04dfd5189828afac980ce3d2fc39859c" }
 imgui-winit-support = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0", default-features = true }
 legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"
 mikktspace = "0.2.0"
 nalgebra = "0.21.0"
-nalgebra-glm = "0.7"
+nalgebra-glm = { version = "0.7", features = ["serde-serialize"] }
 ordered-float = "1.0"
-png = "0.16.3"
-ron = "0.5"
+resources = "1.0.0"
+ron = "0.6.0"
 serde = { version = "1.0", features = ["derive"] }
 shaderc = "0.6"
 solvent = "0.8.1"
-stretch = "0.3.2"
+uuid = "0.8.1"
 walkdir = "2"
-wasm-bindgen = "0.2.62"
-wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="d12d1422a75e08fc2aee3691292a960bd47416e4" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="0c7c3afebb12bf411d6964887b85e5fd152057f5" }
 winit = { version = "0.22.0", features = ["web-sys"] }
-zerocopy = "0.3"
+
+[dependencies.wgt]
+package = "wgpu-types"
+git = "https://github.com/gfx-rs/wgpu"
+rev = "43c67ac59c2dedaa4d78601bc460aab7c3257973"

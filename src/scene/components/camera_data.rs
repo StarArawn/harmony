@@ -158,13 +158,13 @@ mod tests {
     ///just tests for projection matrix calculation
     #[test]
     fn test_perspective_projection() {
-        let fov = 70f32.to_radians();
+        let fov = 70.0;
         let (width, height) = (800f32, 600f32);
         let (z_near, z_far) = (0.01f32, 10f32);
         let camera_data = CameraData::new_perspective(fov, width, height, z_near, z_far);
         assert_eq!(
             camera_data.projection,
-            nalgebra_glm::perspective_fov_rh_no(fov, width, height, z_near, z_far)
+            nalgebra_glm::perspective_fov_rh_no(fov.to_radians(), width, height, z_near, z_far)
         );
     }
     ///just tests for projection matrix calculation

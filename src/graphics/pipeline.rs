@@ -1,8 +1,6 @@
-use super::{
-    material::Shader,
-    resources::{GPUResourceManager, RenderTarget},
-};
+use super::resources::{GPUResourceManager, RenderTarget};
 use crate::AssetManager;
+use std::sync::Arc;
 
 pub struct BindGroupWithData {
     pub(crate) uniform_buf: wgpu::Buffer,
@@ -31,12 +29,12 @@ pub trait SimplePipeline: Send + Sync + 'static {
         _depth: Option<&wgpu::TextureView>,
         _device: &wgpu::Device,
         _encoder: &mut wgpu::CommandEncoder,
-        _frame: Option<&wgpu::SwapChainOutput>,
+        _frame: Option<&wgpu::SwapChainTexture>,
         _input: Option<&RenderTarget>,
         _output: Option<&RenderTarget>,
         _pipeline: &wgpu::RenderPipeline,
         _world: &mut legion::world::World,
-        _resource_manager: &mut GPUResourceManager,
+        _resource_manager: Arc<GPUResourceManager>,
     ) -> Option<RenderTarget> {
         None
     }
@@ -51,8 +49,8 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         asset_manager: &'a AssetManager,
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
-        resource_manager: &mut GPUResourceManager,
-        local_bind_group_layout: Option<&wgpu::BindGroupLayout>,
+        resource_manager: Arc<GPUResourceManager>,
+        local_bind_group_layout: Option<Arc<wgpu::BindGroupLayout>>,
     ) -> wgpu::RenderPipeline {
         let shader = self.load_shader(asset_manager);
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
@@ -75,12 +73,15 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         let alpha_to_coverage_enabled = self.alpha_to_coverage_enabled();
 
         if local_bind_group_layout.is_some() {
-            bind_group_layouts.insert(0, local_bind_group_layout.as_ref().unwrap());
+            bind_group_layouts.insert(0, local_bind_group_layout.unwrap().clone());
         }
 
         // Once we create the layout we don't need the bind group layout.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts,
+            bind_group_layouts: &bind_group_layouts
+                .iter()
+                .map(|x| x.as_ref())
+                .collect::<Vec<&wgpu::BindGroupLayout>>(),
         });
 
         let vertex_buffers: Vec<wgpu::VertexBufferDescriptor<'_>> = vertex_state_builder
@@ -117,12 +118,12 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
     // TODO: Support other types of shaders like compute.
     // Also support having only a vertex shader.
-    fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> &'a Shader;
+    fn load_shader<'a>(&self, asset_manager: &'a AssetManager) -> Arc<crate::assets::shader::Shader>;
     fn create_layout<'a>(
         &self,
         _device: &wgpu::Device,
-        _resource_manager: &'a mut GPUResourceManager,
-    ) -> Vec<&'a wgpu::BindGroupLayout>;
+        _resource_manager: Arc<GPUResourceManager>,
+    ) -> Vec<Arc<wgpu::BindGroupLayout>>;
     fn rasterization_state_desc(&self) -> wgpu::RasterizationStateDescriptor;
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology;
     fn color_states_desc(
@@ -144,7 +145,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
     fn build<'a>(
         self,
         device: &wgpu::Device,
-        resource_manager: &mut GPUResourceManager,
+        resource_manager: Arc<GPUResourceManager>,
     ) -> Self::Pipeline;
 }
 

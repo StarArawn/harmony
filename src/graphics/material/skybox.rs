@@ -7,6 +7,7 @@ use crate::{
     },
     Application, AssetManager,
 };
+use std::sync::Arc;
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -37,9 +38,9 @@ impl Skybox {
         let mut graph = { RenderGraph::new(&mut app.resources, false) };
 
         let asset_manager = app.resources.get::<AssetManager>().unwrap();
-        let device = app.resources.get::<wgpu::Device>().unwrap();
+        let device = app.resources.get::<Arc<wgpu::Device>>().unwrap();
         let sc_desc = app.resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-        let mut resource_manager = app.resources.get_mut::<GPUResourceManager>().unwrap();
+        let resource_manager = app.resources.get::<Arc<GPUResourceManager>>().unwrap();
 
         let cube_map_target = RenderTarget::new(
             &device,
@@ -60,7 +61,7 @@ impl Skybox {
             &asset_manager,
             &device,
             &sc_desc,
-            &mut resource_manager,
+            resource_manager.clone(),
             "cube_projection",
             cube_projection_pipeline_desc,
             vec![],
@@ -76,13 +77,13 @@ impl Skybox {
         let command_buffer = graph.render_one_time(
             &device,
             &asset_manager,
-            &mut resource_manager,
+            resource_manager.clone(),
             &mut app.current_scene.world,
             None,
             None,
         );
         // Push to all command buffers to the queue
-        let queue = app.resources.get::<wgpu::Queue>().unwrap();
+        let queue = app.resources.get::<Arc<wgpu::Queue>>().unwrap();
         queue.submit(vec![command_buffer]);
 
         // Note that we're not calling `.await` here.
@@ -115,7 +116,7 @@ impl Skybox {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
+            ..Default::default()
         });
 
         Self {
@@ -160,10 +161,13 @@ impl Skybox {
         &mut self,
         device: &wgpu::Device,
         asset_manager: &AssetManager,
-        material_layout: &wgpu::BindGroupLayout,
+        material_layout: Arc<wgpu::BindGroupLayout>,
     ) {
-        let rayleigh_texture = asset_manager.get_image("rayleigh.hdr");
-        let mie_texture = asset_manager.get_image("mie.hdr");
+        let rayleigh_texture = asset_manager.get_texture("rayleigh.hdr");
+        let mie_texture = asset_manager.get_texture("mie.hdr");
+
+        let rayleigh_texture = futures::executor::block_on(rayleigh_texture.get_async()).unwrap();
+        let mie_texture = futures::executor::block_on(mie_texture.get_async()).unwrap();
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
@@ -175,7 +179,7 @@ impl Skybox {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Undefined,
+            ..Default::default()
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -202,7 +206,7 @@ impl Skybox {
     pub(crate) fn create_bind_group2(
         &mut self,
         device: &wgpu::Device,
-        material_layout: &wgpu::BindGroupLayout,
+        material_layout: Arc<wgpu::BindGroupLayout>,
     ) {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &material_layout,

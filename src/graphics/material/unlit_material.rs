@@ -47,6 +47,7 @@ impl UnlitMaterial {
             size: material_uniform_size,
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
             label: None,
+            mapped_at_creation: false,
         });
 
         // Asset manager will panic if image doesn't exist, but we don't want that.

@@ -72,7 +72,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
         &self,
         asset_manager: &'a crate::AssetManager,
     ) -> &'a crate::graphics::material::Shader {
-        asset_manager.get_shader("unlit.shader")
+        asset_manager.get_shader("core/shaders/unlit.shader")
     }
 
     fn create_layout<'a>(
