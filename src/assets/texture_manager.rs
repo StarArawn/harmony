@@ -69,7 +69,6 @@ impl TextureManager {
                         image_cache
                             .insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
-                        // TODO: Separate out loading into CPU from loading into the GPU.
                         let result = Ok(Arc::new(Texture::new(
                             device,
                             queue,
@@ -135,7 +134,6 @@ impl TextureManager {
                     // Store image in cache.
                     image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
-                    // TODO: Separate out loading into CPU from loading into the GPU.
                     let result = Ok(Arc::new(Texture::new(
                         device,
                         queue,

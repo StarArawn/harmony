@@ -76,8 +76,6 @@ where
                 Ok(material_arc.clone()),
             );
 
-            // TODO: Separate out loading into CPU from loading into the GPU?
-
             let texture_paths = material_arc.load_textures();
             let mut textures = Vec::new();
             for texture_path in texture_paths {
@@ -87,7 +85,6 @@ where
                 textures.push(texture_handle);
             }
 
-            // TODO: Create bind_group possible here?
             let mut material = material_arc.create_material(textures);
             material.create_bindgroup(device.clone(), layout);
 
