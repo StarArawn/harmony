@@ -39,14 +39,14 @@ impl AssetManager {
         self.loaders.insert(loader);
     }
 
-    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self) {
+    pub fn register_material<T: TryFrom<(PathBuf, Vec<u8>)> + Debug + Material + Send + Sync + 'static>(&mut self, layout: Arc<wgpu::BindGroupLayout>) {
         
         if self.loaders.contains::<Arc<MaterialManager<T>>>() {
             log::warn!("Duplicate registration of material key: {:?}", TypeId::of::<T>());
             return;
         }
 
-        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone());
+        let loader = MaterialManager::<T>::new(self.device.clone(), self.queue.clone(), self.texture_manager.clone(), layout);
         self.loaders.insert(Arc::new(loader));
     }
 
@@ -96,7 +96,7 @@ mod tests {
     use super::AssetManager;
     use super::super::file_manager::AssetError;
     use std::sync::Arc;
-    use crate::assets::{material::PBRMaterialRon};
+    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{material::PBRMaterialRon}};
 
     #[test]
     fn should_load_material() {
@@ -135,7 +135,14 @@ mod tests {
 
         let mut asset_manager = AssetManager::new(device.clone(), queue.clone());
 
-        asset_manager.register_material::<PBRMaterialRon>();
+        let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
+        
+        let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
+        gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
+
+        let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
+        
+        asset_manager.register_material::<PBRMaterialRon>(layout);
         let material_handle = asset_manager.get_material::<PBRMaterialRon, _>("./assets/material.ron");
         let material = material_handle.get();
         assert!(match *material.err().unwrap() { AssetError::Loading => true, _ => false });

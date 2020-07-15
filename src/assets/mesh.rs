@@ -1,4 +1,4 @@
-use super::{material::{PBRMaterialRon, Material, PBRMaterial}, file_manager::AssetHandle, material_manager::MaterialManager};
+use super::{material::{PBRMaterialRon, PBRMaterial}, file_manager::AssetHandle, material_manager::MaterialManager};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Vec2, Vec3, Vec4};
 use std::{ffi::OsStr, path::{Path, PathBuf}, sync::Arc, collections::HashMap};
@@ -303,7 +303,7 @@ impl mikktspace::Geometry for SubMesh {
 mod tests {
     use super::Mesh;
     use std::{path::PathBuf, sync::Arc};
-    use crate::assets::{texture_manager::TextureManager, material_manager::MaterialManager};
+    use crate::{graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager}, assets::{texture_manager::TextureManager, material_manager::MaterialManager}};
 
     #[test]
     fn should_load_mesh() {
@@ -343,9 +343,16 @@ mod tests {
     
             let texture_manager = TextureManager::new(device.clone(), queue.clone());
 
-            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager)));
+            let mut gpu_resource_manager = GPUResourceManager::new(device.clone());
 
-            let mesh = Mesh::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
+            let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
+            gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);
+    
+            let layout = gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone();
+
+            let material_manager = Arc::new(MaterialManager::new(device.clone(), queue, Arc::new(texture_manager), layout));
+
+            let _mesh = Mesh::from_gltf(device.clone(), material_manager, PathBuf::from("./assets/example/meshes/cube/cube.gltf")).await;
         });
     }
 }

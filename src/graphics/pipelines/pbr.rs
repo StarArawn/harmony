@@ -11,28 +11,8 @@ use crate::{
 };
 use std::sync::Arc;
 
-pub fn create(resources: &Resources) {
-    let asset_manager = resources.get_mut::<AssetManager>().unwrap();
-    let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
-    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
-    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
-    let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
-
-    let mut pbr_desc = PipelineDesc::default();
-    pbr_desc.shader = "pbr.shader".to_string();
-    pbr_desc.color_state.format = sc_desc.format;
-    pbr_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
-        format: DEPTH_FORMAT,
-        depth_write_enabled: true,
-        depth_compare: wgpu::CompareFunction::Less,
-        stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-        stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-        stencil_read_mask: 0,
-        stencil_write_mask: 0,
-    });
-
-    // Create skybox bind group layouts.
-    let pbr_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry::new(
                 0,
@@ -77,11 +57,35 @@ pub fn create(resources: &Resources) {
                 },
             ),
         ],
-        label: Some("pbr_material"),
+        label: Some("pbr_material_layout"),
+    })
+}
+
+pub fn create(resources: &Resources) {
+    let asset_manager = resources.get_mut::<AssetManager>().unwrap();
+    let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
+    let mut resource_manager = resources.get_mut::<GPUResourceManager>().unwrap();
+    let device = resources.get::<Arc<wgpu::Device>>().unwrap();
+    let sc_desc = resources.get::<wgpu::SwapChainDescriptor>().unwrap();
+
+    let mut pbr_desc = PipelineDesc::default();
+    pbr_desc.shader = "pbr.shader".to_string();
+    pbr_desc.color_state.format = sc_desc.format;
+    pbr_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
+        format: DEPTH_FORMAT,
+        depth_write_enabled: true,
+        depth_compare: wgpu::CompareFunction::Less,
+        stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+        stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+        stencil_read_mask: 0,
+        stencil_write_mask: 0,
     });
+
+    // Create skybox bind group layouts.
+    let pbr_material_layout = create_pbr_bindgroup_layout(device.clone());
     resource_manager.add_bind_group_layout("pbr_material_layout", pbr_material_layout);
 
-    let pbr_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    let probe_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         bindings: &[
             wgpu::BindGroupLayoutEntry::new(
                 0,
@@ -111,10 +115,10 @@ pub fn create(resources: &Resources) {
                 },
             ),
         ],
-        label: Some("pbr_probe_material"),
+        label: Some("probe_material_layout"),
     });
 
-    resource_manager.add_bind_group_layout("probe_material_layout", pbr_bind_group_layout);
+    resource_manager.add_bind_group_layout("probe_material_layout", probe_material_layout);
 
     pbr_desc.layouts = vec![
         "locals".to_string(),

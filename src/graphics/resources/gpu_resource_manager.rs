@@ -20,7 +20,7 @@ pub struct GPUResourceManager {
 }
 
 impl GPUResourceManager {
-    pub fn new(device: &wgpu::Device) -> Self {
+    pub fn new(device: Arc<wgpu::Device>) -> Self {
         let mut bind_group_layouts = HashMap::new();
 
         // Create our global uniforms buffers, layouts, and bindgroups here.

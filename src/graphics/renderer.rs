@@ -70,11 +70,12 @@ impl Renderer {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             label: None,
         });
+        let device = Arc::new(device);
 
-        resources.insert(GPUResourceManager::new(&device));
+        resources.insert(GPUResourceManager::new(device.clone()));
         resources.insert(sc_desc);
         resources.insert(Arc::new(queue));
-        resources.insert(Arc::new(device));
+        resources.insert(device.clone());
         resources.insert(DepthTexture(depth_texture.create_default_view()));
 
         Self {

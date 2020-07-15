@@ -27,7 +27,7 @@ pub trait Material: Clone {
 
     fn load_textures(&self) -> Vec<PathBuf>;
     fn create_material(&self, textures: Vec<Arc<AssetHandle<Texture>>>) -> Self::BindMaterialType;
-    fn get_layout(&self, gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout>;
+    fn get_layout(gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout>;
 }
 
 impl Material for PBRMaterialRon {
@@ -49,15 +49,16 @@ impl Material for PBRMaterialRon {
             roughness: self.roughness,
             metallic: self.metallic,
             color: self.color,
+            bind_group: None,
         }
     }
 
-    fn get_layout(&self, gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout> {
+    fn get_layout(gpu_resource_manager: &GPUResourceManager) -> Arc<wgpu::BindGroupLayout> {
         gpu_resource_manager.get_bind_group_layout("pbr_material_layout").unwrap().clone()
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PBRMaterial {
     pub main_texture: Arc<AssetHandle<Texture>>,
     pub roughness_texture: Arc<AssetHandle<Texture>>,
@@ -65,14 +66,28 @@ pub struct PBRMaterial {
     pub roughness: f32,
     pub metallic: f32,
     pub color: Vec4,
+    pub(crate) bind_group: Option<Arc<BindGroup>>,
+}
+
+impl std::fmt::Debug for PBRMaterial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SubMesh")
+         .field("main_texture", &self.main_texture)
+         .field("roughness_texture", &self.roughness_texture)
+         .field("normal_texture", &self.normal_texture)
+         .field("roughness", &self.roughness)
+         .field("metallic", &self.metallic)
+         .field("roughness", &self.color)
+         .finish()
+    }
 }
 
 pub trait BindMaterial {
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) -> Result<BindGroup, Arc<AssetError>>;
+    fn create_bindgroup(&mut self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>);
 }
 
 impl BindMaterial for PBRMaterial {
-    fn create_bindgroup(&self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) -> Result<BindGroup, Arc<AssetError>> {
+    fn create_bindgroup(&mut self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) {
         let uniform = PBRMaterialUniform {
             color: self.color,
             info: Vec4::new(self.metallic, self.roughness, 0.0, 0.0),
@@ -98,23 +113,11 @@ impl BindMaterial for PBRMaterial {
             ..Default::default()
         });
 
-        // Ideally textures are loaded before we get here..
         let main_texture = self.main_texture.get();
         let normal_texture = self.normal_texture.get();
         let roughness_texture = self.roughness_texture.get();
 
-        if main_texture.is_err() {
-            return Err(main_texture.err().unwrap());
-        }
-
-        if normal_texture.is_err() {
-            return Err(normal_texture.err().unwrap());
-        }
-
-        if roughness_texture.is_err() {
-            return Err(roughness_texture.err().unwrap());
-        }
-
+        // By this point these should be loaded. Panicing here is probably good.
         let main_texture = main_texture.unwrap();
         let normal_texture = normal_texture.unwrap();
         let roughness_texture = roughness_texture.unwrap();
@@ -145,7 +148,7 @@ impl BindMaterial for PBRMaterial {
             ],
             label: None,
         });
-
-        Ok(BindGroup::new(2, bind_group))
+        
+        self.bind_group = Some(Arc::new(BindGroup::new(2, bind_group)));
     }
 }
