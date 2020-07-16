@@ -193,15 +193,15 @@ impl Gltf {
                 let roughness_texture = Self::get_texture_url(&roughness_info, &images);
 
                 let material = PBRMaterialRon {
-                    main_texture: main_texture.unwrap_or("white.png".to_string()),
-                    normal_texture: normal_texture.unwrap_or("empty_normal.png".to_string()),
-                    roughness_texture: roughness_texture.unwrap_or("white.png".to_string()),
+                    main_texture: main_texture.unwrap_or("core/white.png".to_string()),
+                    normal_texture: normal_texture.unwrap_or("core/empty_normal.png".to_string()),
+                    roughness_texture: roughness_texture.unwrap_or("core/pbr_flat.png".to_string()),
                     roughness,
                     metallic,
                     color,
                 };
                 let material_handle = material_manager.insert(material, path.clone());
-
+                
                 let primitive_topology = Self::get_primitive_mode(primitive.mode());
 
                 let index_buffer = Arc::new(device.create_buffer_with_data(
@@ -228,11 +228,11 @@ impl Gltf {
                     &bytemuck::cast_slice(&sub_mesh.vertices),
                     wgpu::BufferUsage::VERTEX,
                 );
-
                 sub_mesh.vertex_buffer = Some(Arc::new(vertex_buffer));
 
                 mesh.meshes.insert(material_handle, sub_mesh);
             }
+
 
             meshes.push(mesh);
         }
@@ -268,8 +268,7 @@ impl Gltf {
                     gltf::image::Source::Uri { uri, .. } => {
                         let texture_file_name = Some(
                             Path::new(&uri)
-                                .file_name()
-                                .and_then(OsStr::to_str)
+                                .to_str()    
                                 .unwrap()
                                 .to_string(),
                         );

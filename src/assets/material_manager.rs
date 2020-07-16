@@ -51,10 +51,7 @@ where
     ) -> Arc<AssetHandle<T::BindMaterialType>> {
         let path = PathBuf::new();
         let path = path.join(
-            uuid::Builder::nil()
-                .set_version(uuid::Version::Random)
-                .build()
-                .to_string(),
+            uuid::Uuid::new_v4().to_string()
         );
         let material_handle = Arc::new(AssetHandle::new(path.clone(), self.material_cache.clone()));
         let relative_path: PathBuf = relative_path.into();
@@ -64,6 +61,7 @@ where
         let material_thread_handle = material_handle.clone();
         let device = self.device.clone();
         let layout = T::get_layout(self.gpu_resource_manager.clone());
+        let asset_path = self.asset_path.clone();
 
         self.pool.spawn_ok(async move {
             let material_arc = Arc::new(material);
@@ -76,8 +74,14 @@ where
             let texture_paths = material_arc.load_textures();
             let mut textures = Vec::new();
             for texture_path in texture_paths {
+                let str_texture_path = texture_path.to_str().unwrap();
+                let texture_path = if str_texture_path.contains("core/white.png") || str_texture_path.contains("core/empty_normal.png") || str_texture_path.contains("core/pbr_flat.png") || str_texture_path.contains("core/black.png") {
+                    asset_path.join(texture_path)
+                } else {
+                    relative_path.parent().unwrap().join(texture_path)
+                };
                 let texture_handle = texture_manager
-                    .get_async(&relative_path.parent().unwrap().join(texture_path))
+                    .get_async(&texture_path)
                     .await;
                 textures.push(texture_handle);
             }
