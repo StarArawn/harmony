@@ -14,6 +14,8 @@ pub struct DirectionalLightData {
     pub direction: Vec3,
     /// The color of the light.
     pub color: Vec3,
+    /// Light intensity
+    pub intensity: f32,
 }
 
 impl Default for DirectionalLightData {
@@ -21,6 +23,7 @@ impl Default for DirectionalLightData {
         Self {
             direction: Vec3::zeros(),
             color: Vec3::zeros(),
+            intensity: 10.0,
         }
     }
 }
@@ -34,6 +37,8 @@ pub struct PointLightData {
     pub color: Vec3,
     /// Light attenuation.
     pub attenuation: f32,
+    /// Light intensity
+    pub intensity: f32,
 }
 
 impl Default for PointLightData {
@@ -41,6 +46,7 @@ impl Default for PointLightData {
         Self {
             color: Vec3::zeros(),
             attenuation: 0.0,
+            intensity: 10.0,
         }
     }
 }

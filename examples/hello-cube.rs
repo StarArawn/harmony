@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::{
-    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform},
+    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform, PointLightData},
     resources::DeltaTime,
     Scene,
 };
@@ -138,20 +138,21 @@ impl harmony::AppState for AppState {
             LightType::Directional(DirectionalLightData {
                 direction: Vec3::new(0.0, 1.0, 0.0),
                 color: Vec3::new(0.9, 0.55, 0.42),
+                intensity: 10.0,
             }),
             light_transform,
         );
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
-        // Point lights currently don't work.
         // let mut transform = Transform::new(app);
         // transform.position = Vec3::new(-5.0, 0.0, 0.0);
         // harmony::scene::entities::light::create(
-        //     &mut scene.world,
+        //     &mut app.current_scene.world,
         //     LightType::Point(PointLightData {
         //         color: Vec3::new(1.0, 0.0, 0.0),
         //         attenuation: 10.0,
+        //         intensity: 10.0,
         //     }),
         //     transform,
         // );
