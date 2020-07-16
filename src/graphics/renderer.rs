@@ -12,7 +12,7 @@ pub struct Renderer {
     pub size: winit::dpi::PhysicalSize<u32>,
     adapter: wgpu::Adapter,
     pub(crate) swap_chain: wgpu::SwapChain,
-    pub(crate) window: winit::window::Window,
+    pub window: winit::window::Window,
 }
 
 impl Renderer {
