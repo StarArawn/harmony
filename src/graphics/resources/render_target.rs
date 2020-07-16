@@ -46,7 +46,7 @@ impl RenderTarget {
                 dimension: wgpu::TextureViewDimension::Cube,
                 aspect: wgpu::TextureAspect::default(),
                 base_mip_level: 0,
-                level_count: 1,
+                level_count: mip_count,
                 base_array_layer: 0,
                 array_layer_count: 6,
             });

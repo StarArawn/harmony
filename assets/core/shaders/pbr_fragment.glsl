@@ -12,9 +12,10 @@ layout(set = 2, binding = 0) uniform Material {
 };
 
 layout(set = 2, binding = 1) uniform sampler tex_sampler;
-layout(set = 2, binding = 2) uniform texture2D main_map;
-layout(set = 2, binding = 3) uniform texture2D normal_map;
-layout(set = 2, binding = 4) uniform texture2D metallic_roughness_map;
+layout(set = 2, binding = 2) uniform sampler brdf_sampler;
+layout(set = 2, binding = 3) uniform texture2D main_map;
+layout(set = 2, binding = 4) uniform texture2D normal_map;
+layout(set = 2, binding = 5) uniform texture2D metallic_roughness_map;
 
 layout(set = 3, binding = 0) uniform textureCube irradiance_cube_map;
 layout(set = 3, binding = 1) uniform textureCube spec_cube_map;
@@ -28,7 +29,7 @@ layout(location = 4) in float i_tbn_handedness;
 layout(location = 0) out vec4 outColor;
 
 const float roughnessRescale = 1.0;
-const float specularIntensity = 0.1;
+const float specularIntensity = 0.0;
 
 const float PI = 3.14159265358979323;
 
@@ -68,7 +69,7 @@ shade (float vdotn,
 {
     roughness = roughness * (1.0 / roughnessRescale);
 
-    vec2 brdfTerm = texture(sampler2D(spec_brdf_map, tex_sampler), vec2(vdotn, 1.0 - roughness)).rg;
+    vec2 brdfTerm = texture(sampler2D(spec_brdf_map, tex_sampler), vec2(vdotn, 1.0 - roughness)).xy;
     vec3 metalSpecularIBL = specularIBL.rgb; 
 
     vec3 dielectricColor = vec3(0.04, 0.04, 0.04);
@@ -78,7 +79,7 @@ shade (float vdotn,
     // TODO: Add AO.
     // diffuseIBL.rgb = lerp(diffuseIBL.rgb * 0.3f, diffuseIBL.rgb, bakedAO);
     
-    vec3 albedoByDiffuse = diffColor.rgb * diffuseIBL.rgb;
+    vec3 albedoByDiffuse = diffuseIBL.rgb;
 
     vec3 litColor =  (albedoByDiffuse.rgb + (metalSpecularIBL * (specColor * brdfTerm.x + (brdfTerm.y)))); // * bakedAO;
     return litColor;
@@ -141,12 +142,18 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}   
+
+// TODO: Point-lights?
 void main() {
     vec3 main_color = texture(sampler2D(main_map, tex_sampler), i_uv).rgb * color.rgb;
     
-    vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).bg;
-    float metallic = mix(metallic_roughness.x, pbr_info.x, pbr_info.z);
-    float roughness = mix(metallic_roughness.y, pbr_info.y, pbr_info.w);
+    vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).xy;
+    float metallic = metallic_roughness.x;
+    float roughness = metallic_roughness.y;
     
     vec3 normal = texture(sampler2D(normal_map, tex_sampler), i_uv).rgb;
     normal = normal * 2.0 - 1.0;
@@ -157,33 +164,35 @@ void main() {
     mat3 TBN = mat3(T, B, N);
     N = TBN * normalize(normal);
     
-    float VdotN = dot(V, N);
+    // float VdotN = dot(V, N);
     vec3 R = reflect(-V, N);
 
     vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, tex_sampler), N).rgb;
-    vec3 ambient_spec = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
-    // vec2 env_brdf = texture(sampler2D(spec_brdf_map, tex_sampler), vec2(NdotV, roughness)).rg;
-
-    // vec3 f0 = mix(vec3(0.04), main_color.xyz, metallic);
-
-    // vec3 ambient_spec_fres = f_schlick(f0, NdotV);
-
-    // vec3 ambient_diffuse_fac = vec3(1.0) - ambient_spec_fres;
-    // ambient_diffuse_fac *= 1.0 - metallic;
-
-    // vec3 ambient = (ambient_irradiance * main_color.xyz * ambient_diffuse_fac) + (ambient_spec * (ambient_spec_fres * env_brdf.x + env_brdf.y));
-
+    // vec3 ambient_spec = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
+    
     // Convert irradiance to radiance
     ambient_irradiance = (ambient_irradiance / 3.145) * 1.0; // 1.0 is enviroment scale
 
-    roughness = mix(roughness, 1.0 - roughness, 0.0);
-    metallic = mix(metallic, 1.0 - metallic, 0.0);
+    // vec3 ambient = shade(VdotN, roughness, metallic, main_color.rgb, ambient_irradiance, ambient_spec, N);
 
-    // TODO: Point-lights?
-    vec3 ambient = shade(VdotN, roughness, metallic, main_color.rgb, ambient_irradiance, ambient_spec, N);
-
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
     vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, main_color, metallic);
+    F0 = mix(F0, main_color.rgb, metallic);
+
+    // ambient lighting (we now use IBL as the ambient term)
+    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 diffuse = ambient_irradiance * main_color.rgb;
+    
+    vec3 prefilteredColor = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
+    vec2 brdf  = texture(sampler2D(spec_brdf_map, brdf_sampler), vec2(max(dot(N, V), 0), 1.0 - roughness)).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 ambient = (kD * diffuse + specular);
 
     // Directional Lighting
     vec3 light_acc = vec3(0.0);
@@ -213,7 +222,9 @@ void main() {
         light_acc += (kD * main_color / PI + specular) * radiance * NdotL; 
     }
 
-    vec3 color = Uncharted2ToneMapping(ambient + light_acc);
+    vec3 color = ambient + light_acc; //Uncharted2ToneMapping(ambient + light_acc);
+
+    // color = pow(color, vec3(1.0/2.2));
 
     outColor = vec4(color, 1.0);
 }

@@ -115,11 +115,11 @@ impl Probe {
                 512.0,
                 1,
                 1,
-                wgpu_format,
+                wgpu::TextureFormat::Rgba8Unorm,
                 wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             )
         };
-        crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu_format);
+        crate::graphics::pipelines::brdf::create(resources, &brdf_texture, wgpu::TextureFormat::Rgba8Unorm);
 
         let device = resources.get::<Arc<wgpu::Device>>().unwrap();
 

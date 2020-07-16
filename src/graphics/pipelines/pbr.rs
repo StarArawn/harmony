@@ -33,11 +33,7 @@ pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroup
             wgpu::BindGroupLayoutEntry::new(
                 2,
                 wgpu::ShaderStage::FRAGMENT,
-                wgpu::BindingType::SampledTexture {
-                    multisampled: false,
-                    component_type: wgpu::TextureComponentType::Float,
-                    dimension: wgpu::TextureViewDimension::D2,
-                },
+                wgpu::BindingType::Sampler { comparison: false },
             ),
             wgpu::BindGroupLayoutEntry::new(
                 3,
@@ -50,6 +46,15 @@ pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroup
             ),
             wgpu::BindGroupLayoutEntry::new(
                 4,
+                wgpu::ShaderStage::FRAGMENT,
+                wgpu::BindingType::SampledTexture {
+                    multisampled: false,
+                    component_type: wgpu::TextureComponentType::Float,
+                    dimension: wgpu::TextureViewDimension::D2,
+                },
+            ),
+            wgpu::BindGroupLayoutEntry::new(
+                5,
                 wgpu::ShaderStage::FRAGMENT,
                 wgpu::BindingType::SampledTexture {
                     multisampled: false,

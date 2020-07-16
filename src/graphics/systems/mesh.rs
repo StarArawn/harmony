@@ -128,7 +128,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                 material.bind_group.as_ref().unwrap().clone(),
                             );
 
-                            for (mesh, transform) in mesh_query.iter(&world) {
+                            for (mesh_component, transform) in mesh_query.iter(&world) {
                                 resource_manager.set_multi_bind_group(
                                     &mut render_pass,
                                     "transform",
@@ -137,7 +137,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                 );
 
                                 // If mesh is ready render it!
-                                let asset_mesh_handle = mesh.mesh_handle.get();
+                                let asset_mesh_handle = mesh_component.mesh_handle.get();
                                 if asset_mesh_handle.is_err() {
                                     continue;
                                 }
@@ -153,6 +153,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                             0,
                                             material_mesh.vertex_buffer.as_ref().unwrap().clone(),
                                         );
+                                        
                                         render_pass.draw_indexed(
                                             0..material_mesh.index_count as u32,
                                             0,

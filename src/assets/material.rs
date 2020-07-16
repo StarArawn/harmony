@@ -125,9 +125,32 @@ impl BindMaterial for PBRMaterial {
             ..Default::default()
         });
 
+        let brdf_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("PBRMaterialSampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+
         let main_texture = self.main_texture.get();
         let normal_texture = self.normal_texture.get();
         let roughness_texture = self.roughness_texture.get();
+
+        if main_texture.is_err() {
+            log::error!("Couldn't load material texture: {:?}", self.main_texture.handle_id);
+        }
+
+        if normal_texture.is_err() {
+            log::error!("Couldn't load material texture: {:?}", self.normal_texture.handle_id);
+        }
+
+        if roughness_texture.is_err() {
+            log::error!("Couldn't load material texture: {:?}", self.roughness_texture.handle_id);
+        }
 
         // By this point these should be loaded. Panicing here is probably good.
         let main_texture = main_texture.unwrap();
@@ -147,14 +170,18 @@ impl BindMaterial for PBRMaterial {
                 },
                 wgpu::Binding {
                     binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&main_texture.view),
+                    resource: wgpu::BindingResource::Sampler(&brdf_sampler),
                 },
                 wgpu::Binding {
                     binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&normal_texture.view),
+                    resource: wgpu::BindingResource::TextureView(&main_texture.view),
                 },
                 wgpu::Binding {
                     binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&normal_texture.view),
+                },
+                wgpu::Binding {
+                    binding: 5,
                     resource: wgpu::BindingResource::TextureView(&roughness_texture.view),
                 },
             ],
