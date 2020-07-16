@@ -79,7 +79,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 // ******************************************************************************
                 // This section is where we upload our lighting uniforms to the GPU
                 // ******************************************************************************
-                if directional_lights.iter(&world).count() > 0 {
+                if directional_lights.iter(&world).count() > 0 || point_lights.iter(&world).count() > 0  {
                     let mut directional_light_data_vec: Vec<DirectionalLight> = directional_lights
                         .iter(&world)
                         .map(|(data,)| DirectionalLight {
