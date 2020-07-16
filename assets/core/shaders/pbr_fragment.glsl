@@ -202,7 +202,7 @@ void main() {
         // calculate per-light radiance
         vec3 L = normalize(light.direction.xyz);
         vec3 H = normalize(V + L);
-        vec3 radiance = light.color.xyz * 10;        
+        vec3 radiance = light.color.xyz * light.color.w; // w is intensity       
         
         // cook-torrance brdf
         float NDF = DistributionGGX(N, H, roughness);        
@@ -220,6 +220,48 @@ void main() {
         // add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);                
         light_acc += (kD * main_color / PI + specular) * radiance * NdotL; 
+    }
+
+    // Point Lighting
+    for (int i=0; i < int(light_num.y) && i < MAX_LIGHTS; ++i) {
+
+        PointLight light = point_lights[i];
+        // calculate per-light radiance
+        vec3 L = light.position.xyz - i_position.xyz;
+        const float dist2 = dot(L, L);
+	    const float range2 = light.attenuation.x * light.attenuation.x;
+
+        if (dist2 < range2)
+	    {
+            vec3 Lunnormalized = L;
+            float dist = sqrt(dist2);
+            L /= dist;
+
+            vec3 H = normalize(V + L);
+
+            vec3 radiance = light.color.xyz * light.color.w; // w is intensity
+            
+            // cook-torrance brdf
+            float NDF = DistributionGGX(N, H, roughness);        
+            float G   = GeometrySmith(N, V, L, roughness);      
+            vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);  
+
+            vec3 kS = F;
+            vec3 kD = vec3(1.0) - kS;
+            kD *= 1.0 - metallic;	  
+
+            vec3 numerator    = NDF * G * F;
+            float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+            vec3 specular     = numerator / max(denominator, 0.001);  
+
+            float att = saturate(1.0 - (dist2 / range2));
+            float attenuation = att * att;
+            radiance *= attenuation;
+
+            // add to outgoing radiance Lo
+            float NdotL = max(dot(N, L), 0.0);                
+            light_acc += (kD * main_color / PI + specular) * radiance * NdotL; 
+        }     
     }
 
     vec3 color = ambient + light_acc; //Uncharted2ToneMapping(ambient + light_acc);

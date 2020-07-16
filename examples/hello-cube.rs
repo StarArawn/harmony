@@ -9,7 +9,7 @@ use winit::{
 };
 
 use harmony::scene::{
-    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform},
+    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform, PointLightData},
     resources::DeltaTime,
     Scene,
 };
@@ -43,8 +43,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         .with_query(<Write<Transform>>::query())
         .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
-                // transform.rotate_on_y(-0.5 * delta_time.0);
-                // transform.rotate_on_x(-0.5 * delta_time.0);
+                transform.rotate_on_y(-0.5 * delta_time.0);
+                transform.rotate_on_x(-0.5 * delta_time.0);
             }
         })
 }
@@ -94,7 +94,7 @@ impl harmony::AppState for AppState {
             // Note: This could be loading still, but in our case we don't care as the system that renders the meshes
             // will wait until the mesh is finished loading before displaying it. If the loading fails you wont
             // see it in the scene and the app wont crash. You will see an error message appear in the console.
-            asset_manager.get_mesh("example/map/map01.gltf")
+            asset_manager.get_mesh("example/meshes/cube/cube.gltf")
         };
 
         // Here we create our game entity that contains 3 components.
@@ -105,10 +105,7 @@ impl harmony::AppState for AppState {
         // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
         // rotation and scale.
 
-        let mut transform = Transform::new(app);
-        transform.scale = Vec3::new(0.01, 0.01, 0.01);
-        // transform.position = Vec3::new(400.0, 0.0, 0.0);
-        transform.rotate_on_x(90.0f32.to_radians());
+        let transform = Transform::new(app);
         app.current_scene
             .world
             .insert((), vec![(Mesh::new(mesh_handle), transform)]);
@@ -141,20 +138,21 @@ impl harmony::AppState for AppState {
             LightType::Directional(DirectionalLightData {
                 direction: Vec3::new(0.0, 1.0, 0.0),
                 color: Vec3::new(0.9, 0.55, 0.42),
+                intensity: 10.0,
             }),
             light_transform,
         );
 
         // Add red point light to our scene.
         // Uncomment this code to see point light.
-        // Point lights currently don't work.
         // let mut transform = Transform::new(app);
         // transform.position = Vec3::new(-5.0, 0.0, 0.0);
         // harmony::scene::entities::light::create(
-        //     &mut scene.world,
+        //     &mut app.current_scene.world,
         //     LightType::Point(PointLightData {
         //         color: Vec3::new(1.0, 0.0, 0.0),
         //         attenuation: 10.0,
+        //         intensity: 10.0,
         //     }),
         //     transform,
         // );

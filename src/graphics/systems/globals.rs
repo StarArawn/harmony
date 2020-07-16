@@ -89,7 +89,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                 data.direction.z,
                                 0.0,
                             ),
-                            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+                            color: Vec4::new(data.color.x, data.color.y, data.color.z, data.intensity),
                         })
                         .collect();
 
@@ -98,7 +98,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         .iter(&world)
                         .map(|(data, transform)| PointLight {
                             attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
-                            color: Vec4::new(data.color.x, data.color.y, data.color.z, 1.0),
+                            color: Vec4::new(data.color.x, data.color.y, data.color.z, data.intensity),
                             position: Vec4::new(
                                 transform.position.x,
                                 transform.position.y,
