@@ -61,6 +61,9 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     // FIXME: Align and use `LayoutVerified`
                     for (mut transform,) in transform_query.iter_mut(mut_world) {
+                        if transform.cull {
+                            continue;
+                        }
                         transform.update();
                         let transform_buffer =
                             resource_manager.get_multi_buffer("transform", transform.index);
@@ -129,6 +132,10 @@ pub fn create() -> Box<dyn Schedulable> {
                             );
 
                             for (mesh_component, transform) in mesh_query.iter(&world) {
+                                if transform.cull {
+                                    continue;
+                                }
+
                                 resource_manager.set_multi_bind_group(
                                     &mut render_pass,
                                     "transform",

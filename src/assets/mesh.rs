@@ -11,6 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use crate::core::BoundingSphere;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -43,6 +44,7 @@ pub struct SubMesh {
     mode: wgpu::PrimitiveTopology,
     pub(crate) vertex_buffer: Option<Arc<wgpu::Buffer>>,
     pub(crate) index_buffer: Arc<wgpu::Buffer>,
+    pub bounding_sphere: BoundingSphere,
 }
 
 impl std::fmt::Debug for SubMesh {
@@ -60,11 +62,13 @@ impl std::fmt::Debug for SubMesh {
 pub struct Mesh {
     pub name: String,
     pub meshes: HashMap<Arc<AssetHandle<PBRMaterial>>, SubMesh>,
+    pub bounding_sphere: BoundingSphere,
 }
 
 #[derive(Debug)]
 pub struct Gltf {
     pub meshes: Vec<Mesh>,
+    pub bounding_sphere: BoundingSphere,
 }
 
 impl Gltf {
@@ -108,6 +112,7 @@ impl Gltf {
             let mut mesh = Mesh {
                 name,
                 meshes: HashMap::new(),
+                bounding_sphere: BoundingSphere::new(),
             };
 
             for primitive in primitives {
@@ -210,6 +215,8 @@ impl Gltf {
                 ));
                 let index_count = indices.len();
 
+                let bounding_sphere = BoundingSphere::from_points(vertices.iter().map(|x| x.position).collect());
+
                 let mut sub_mesh = SubMesh {
                     vertices,
                     indices,
@@ -217,6 +224,7 @@ impl Gltf {
                     mode: primitive_topology,
                     vertex_buffer: None,
                     index_buffer,
+                    bounding_sphere,
                 };
 
                 if !had_tangents {
@@ -233,11 +241,14 @@ impl Gltf {
                 mesh.meshes.insert(material_handle, sub_mesh);
             }
 
+            mesh.bounding_sphere = BoundingSphere::from_bounding_spheres(mesh.meshes.values().map(|x| &x.bounding_sphere).collect());
 
             meshes.push(mesh);
         }
 
-        Gltf { meshes }
+        let bounding_sphere = BoundingSphere::from_bounding_spheres(meshes.iter().map(|x| &x.bounding_sphere).collect());
+
+        Gltf { meshes, bounding_sphere }
     }
 
     fn get_primitive_mode(mode: gltf::mesh::Mode) -> wgpu::PrimitiveTopology {

@@ -143,6 +143,8 @@ where
                                 let mut material = material_arc.create_material(textures);
                                 material.create_bindgroup(device.clone(), layout);
 
+                                log::info!("{:?} loaded.", path.file_name().unwrap());
+
                                 Ok(Arc::new(material))
                             }
                             Err(err) => {

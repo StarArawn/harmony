@@ -1,5 +1,7 @@
 use nalgebra_glm::{Mat4, Vec3};
+use crate::core::Frustum;
 
+#[derive(Clone)]
 enum ProjectionData {
     Perspective {
         fov: f32,
@@ -44,6 +46,7 @@ impl ProjectionData {
 
 /// CameraData holds all necessary data to calculate the cameras matrices
 /// and offers basic constructors.
+#[derive(Clone)]
 pub struct CameraData {
     pub active: bool,
     pub position: Vec3,
@@ -53,13 +56,19 @@ pub struct CameraData {
     pub pitch: f32,
     pub width: f32,
     pub height: f32,
+    /// If true this will cull objects from the scene.
+    pub cull: bool,
     projection_data: ProjectionData,
+    pub frustum: Frustum,
 }
 
 impl Default for CameraData {
     fn default() -> Self {
         Self {
             active: false,
+            cull: false,
+            frustum: Frustum::new(),
+            height: 0.0,
             pitch: 0.0,
             position: Vec3::zeros(),
             projection: Mat4::identity(),
@@ -69,9 +78,8 @@ impl Default for CameraData {
                 z_far: 100.0,
             },
             view: Mat4::identity(),
-            yaw: 0.0,
             width: 0.0,
-            height: 0.0,
+            yaw: 0.0,
         }
     }
 }
@@ -90,6 +98,8 @@ impl CameraData {
         let projection_data = ProjectionData::Perspective { fov, z_near, z_far };
         Self {
             active: true,
+            cull: false,
+            frustum: Frustum::new(),
             height,
             pitch: 0.0,
             position: Vec3::zeros(),
@@ -125,6 +135,8 @@ impl CameraData {
         };
         Self {
             active: true,
+            cull: false,
+            frustum: Frustum::new(),
             height,
             pitch: 0.0,
             position: Vec3::zeros(),
@@ -139,11 +151,13 @@ impl CameraData {
     /// resize recalculates the projection matrix. Needs to be called on window resize
     pub fn resize(&mut self, width: f32, height: f32) {
         self.projection = self.projection_data.get_projection(width, height);
+        self.frustum = Frustum::from_matrix(self.projection * self.view);
     }
 
     /// updates the view matrix. Needs to be called when the camera moved
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {
         self.view = nalgebra_glm::look_at_rh(&eye, &at, &up);
+        self.frustum = Frustum::from_matrix(self.projection * self.view);
     }
 
     /// returns the view-projection matrix

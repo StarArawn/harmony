@@ -30,11 +30,21 @@ impl Default for LocalUniform {
 /// matrix: A world matrix.
 #[derive(Debug)]
 pub struct Transform {
-    pub index: u32,
+    /// Index of the transform used internally.
+    pub(crate) index: u32,
+    /// Position of the transform.
     pub position: Vec3,
+    /// Scale of the transform.
     pub scale: Vec3,
+    /// Rotation quaternion.
     pub rotation: Quat,
+    /// Transformation matrix.
     pub matrix: Mat4,
+     /* 
+        Represents if this entity is culled or not.
+        Automatically set by an internal system.
+     */
+    pub cull: bool,
 }
 
 impl Transform {
@@ -50,6 +60,7 @@ impl Transform {
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Quat::identity(),
             matrix: Mat4::identity(),
+            cull: false,
         }
     }
 
