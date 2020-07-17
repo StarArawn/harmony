@@ -44,8 +44,9 @@ impl MeshManager {
             let material_manager = self.material_manager.clone();
 
             self.pool.spawn_ok(async move {
-                let gltf = Gltf::from_gltf(device, material_manager, path).await;
+                let gltf = Gltf::from_gltf(device, material_manager, path.clone()).await;
 
+                log::info!("{:?} loaded.", path.file_name().unwrap());
                 cache.insert(asset_thread_handle.handle_id.clone(), Ok(Arc::new(gltf)));
             });
         }

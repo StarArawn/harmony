@@ -171,6 +171,8 @@ impl harmony::AppState for AppState {
             0.01,
             2000.0,
         );
+        // Turns on frustum culling.
+        camera_data.cull = true;
         camera_data.position = Vec3::new(0.0, 0.0, 5.0);
         camera_data.update_view(
             camera_data.position,     // This is our camera's "position".
@@ -195,10 +197,8 @@ impl harmony::AppState for AppState {
 
 fn main() {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module("wgpu_core", log::LevelFilter::Error)
-        .filter_module("naga", log::LevelFilter::Error)
-        .filter_module("gfx_memory", log::LevelFilter::Error)
+        .filter_level(log::LevelFilter::Error)
+        .filter_module("harmony", log::LevelFilter::Info)
         .init();
 
     let (wb, event_loop) = WinitState::create(

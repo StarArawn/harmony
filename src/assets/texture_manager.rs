@@ -84,6 +84,8 @@ impl TextureManager {
 
                         ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
 
+                        log::info!("{:?} loaded.", path.file_name().unwrap());
+
                         result
                     }
                     Err(error) => match error.kind() {
@@ -148,7 +150,8 @@ impl TextureManager {
                     };
 
                     ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
-
+                    
+                    log::info!("{:?} loaded.", path.file_name().unwrap());
                     result
                 }
                 Err(error) => match error.kind() {

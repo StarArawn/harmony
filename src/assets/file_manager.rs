@@ -118,7 +118,10 @@ where
                     // Do something
                     let file = file.unwrap();
                     match T::try_from((path.clone(), file)) {
-                        Ok(f) => Ok(Arc::new(f)),
+                        Ok(f) => {
+                            log::info!("{:?} loaded.", path.file_name().unwrap());
+                            Ok(Arc::new(f))
+                        },
                         Err(_e) => Err(Arc::new(AssetError::InvalidData)),
                     }
                 } else {

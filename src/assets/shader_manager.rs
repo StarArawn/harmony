@@ -39,7 +39,8 @@ impl ShaderManager {
             // self.pool.spawn_ok(async move {
             // TODO: Make sure we return errors!!
             let shader = Shader::new(device, path.clone());
-
+            
+            log::info!("{:?} loaded.", path.file_name().unwrap());
             cache.insert(asset_thread_handle.handle_id.clone(), Ok(shader));
             // });
         }

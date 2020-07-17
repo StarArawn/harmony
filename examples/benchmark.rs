@@ -1,9 +1,9 @@
 use legion::prelude::*;
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Quat, Vec3, Vec4};
 
 use winit::{
     dpi::LogicalSize,
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, VirtualKeyCode},
     event_loop::ControlFlow,
 };
 
@@ -11,7 +11,7 @@ use harmony::scene::components::{CameraData, DirectionalLightData, LightType, Me
 use harmony::scene::{resources::DeltaTime, Scene};
 use harmony::{
     graphics::resources::{ProbeFormat, ProbeQuality},
-    AssetManager, WinitState,
+    AssetManager, WinitState, core::input::Input,
 };
 
 struct WindowSize {
@@ -32,6 +32,77 @@ impl AppState {
     }
 }
 
+#[allow(dead_code)]
+fn create_camera_fps_system() -> Box<dyn Schedulable> {
+    SystemBuilder::new("Camera Orbit")
+        .read_resource::<DeltaTime>()
+        .read_resource::<Input>()
+        .with_query(<Write<CameraData>>::query())
+        .build(|_, mut world, (delta_time, input), camera_query| {
+            for mut camera in camera_query.iter_mut(&mut world) {
+                
+                let forward = input.is_key_down(VirtualKeyCode::W);
+                let back = input.is_key_down(VirtualKeyCode::S);
+                let right = input.is_key_down(VirtualKeyCode::D);
+                let left = input.is_key_down(VirtualKeyCode::A);
+                
+                let frontv = Vec3::z();
+                let rightv = Vec3::x();
+        
+                let mut movement = Vec3::zeros();
+        
+                if forward {
+                    movement = movement + frontv
+                }
+        
+                if back {
+                    movement = movement - frontv
+                }
+        
+                if right {
+                    movement = movement - rightv
+                }
+        
+                if left {
+                    movement = movement + rightv
+                }
+                
+                camera.yaw -= input.mouse_delta.x * 0.5 * delta_time.0;
+                camera.pitch -= input.mouse_delta.y * 0.5 * delta_time.0;  
+                camera.pitch = camera
+                    .pitch
+                    .max(-std::f32::consts::FRAC_PI_2 + 0.0001)
+                    .min(std::f32::consts::FRAC_PI_2 - 0.0001);
+                
+                let camera_dir: Vec3 = Vec3::new(
+                    camera.yaw.sin() * camera.pitch.cos(),
+                    camera.pitch.sin(),
+                    camera.yaw.cos() * camera.pitch.cos(),
+                );
+
+                let axis_x = nalgebra_glm::quat_angle_axis(-camera.yaw, &Vec3::new(0.0, -1.0, 0.0));
+                let axis_y = nalgebra_glm::quat_angle_axis(-camera.pitch, &Vec3::new(1.0, 0.0, 0.0));
+
+                let camera_rot: Quat = axis_x * axis_y;
+                
+                let camera_rot = nalgebra_glm::quat_to_mat4(&camera_rot);
+                
+                let movement = camera_rot * Vec4::new(movement.x, movement.y, movement.z, 1.0);
+
+                let move_speed = 1.0;
+
+                camera.position += movement.xyz() * move_speed;
+                let camera_position = camera.position;
+                let look_at = camera_position + camera_dir;
+                camera.update_view(
+                    camera_position,     // This is our camera's "position".
+                    look_at, // Where the camera is looking at.
+                    Vec3::new(0.0, 1.0, 0.0), // Our camera's up vector.
+                );
+            }
+        })
+}
+
 fn create_rotate_system() -> Box<dyn Schedulable> {
     SystemBuilder::new("Rotate Cube")
         .read_resource::<DeltaTime>()
@@ -45,7 +116,9 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
 
 impl harmony::AppState for AppState {
     fn load(&mut self, app: &mut harmony::Application) {
-        let scheduler_builder = Schedule::builder().add_system(create_rotate_system());
+        let scheduler_builder = Schedule::builder()
+            // .add_system(create_camera_fps_system()) // Uncomment for a fps style camera
+            .add_system(create_rotate_system());
         app.current_scene = Scene::new(None, Some(scheduler_builder));
 
         let mesh_handle = {
@@ -73,6 +146,7 @@ impl harmony::AppState for AppState {
                 let mut transform = Transform::new(app);
                 transform.position.x = x as f32 * scale;
                 transform.position.y = y as f32 * scale;
+                transform.update();
                 app.current_scene.world.insert(
                     (),
                     vec![(
@@ -131,6 +205,7 @@ impl harmony::AppState for AppState {
             0.01,
             200.0,
         );
+        camera_data.cull = true;
         camera_data.update_view(
             Vec3::new(
                 (size as f32 * scale) / 2.0,
@@ -150,10 +225,8 @@ impl harmony::AppState for AppState {
 
 fn main() {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module("wgpu_core", log::LevelFilter::Error)
-        .filter_module("naga", log::LevelFilter::Error)
-        .filter_module("gfx_memory", log::LevelFilter::Error)
+        .filter_level(log::LevelFilter::Error)
+        .filter_module("harmony", log::LevelFilter::Info)
         .init();
 
     let (wb, event_loop) = WinitState::create(

@@ -150,10 +150,8 @@ impl harmony::AppState for AppState {
 
 fn main() {
     env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Warn)
-        .filter_module("wgpu_core", log::LevelFilter::Error)
-        .filter_module("naga", log::LevelFilter::Error)
-        .filter_module("gfx_memory", log::LevelFilter::Error)
+        .filter_level(log::LevelFilter::Error)
+        .filter_module("harmony", log::LevelFilter::Info)
         .init();
 
     let (wb, event_loop) = WinitState::create(

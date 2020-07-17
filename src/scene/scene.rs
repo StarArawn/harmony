@@ -20,7 +20,8 @@ impl Scene {
         let world = world.unwrap_or(universe.create_world());
 
         // Add our systems here..
-        let game_schedule_builder = schedule_builder.unwrap_or(Schedule::builder());
+        let game_schedule_builder = schedule_builder.unwrap_or(Schedule::builder())
+            .add_system(super::systems::culling::create());
         let game_schedule = game_schedule_builder.build();
 
         Scene {
