@@ -114,6 +114,7 @@ impl harmony::AppState for AppState {
             LightType::Directional(DirectionalLightData {
                 direction: Vec3::new(0.0, 1.0, -0.5),
                 color: Vec3::new(1.0, 1.0, 1.0),
+                intensity: 10.0,
             }),
             light_transform,
         );
@@ -150,7 +151,9 @@ impl harmony::AppState for AppState {
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Warn)
-        .filter_module("harmony", log::LevelFilter::Info)
+        .filter_module("wgpu_core", log::LevelFilter::Error)
+        .filter_module("naga", log::LevelFilter::Error)
+        .filter_module("gfx_memory", log::LevelFilter::Error)
         .init();
 
     let (wb, event_loop) = WinitState::create(

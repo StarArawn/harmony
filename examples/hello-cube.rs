@@ -9,10 +9,12 @@ use winit::{
 };
 
 use harmony::scene::{
-    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform, PointLightData},
+    components::{CameraData, DirectionalLightData, LightType, Mesh, Transform},
     resources::DeltaTime,
     Scene,
 };
+// use harmony::scene::components::PointLightData;
+
 use harmony::{
     core::input::{Input, MouseButton},
     graphics::resources::{ProbeFormat, ProbeQuality},
@@ -194,7 +196,9 @@ impl harmony::AppState for AppState {
 fn main() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Warn)
-        .filter_module("harmony", log::LevelFilter::Info)
+        .filter_module("wgpu_core", log::LevelFilter::Error)
+        .filter_module("naga", log::LevelFilter::Error)
+        .filter_module("gfx_memory", log::LevelFilter::Error)
         .init();
 
     let (wb, event_loop) = WinitState::create(
