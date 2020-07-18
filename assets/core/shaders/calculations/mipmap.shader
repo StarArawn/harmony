@@ -1,2 +1,2 @@
-mipmap_vert.glsl
-mipmap_frag.glsl
+mipmap.vert.glsl
+mipmap.frag.glsl

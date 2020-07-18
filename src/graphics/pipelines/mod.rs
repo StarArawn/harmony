@@ -83,6 +83,7 @@ impl Default for PointLight {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct LightingUniform {
+    pub cluster_count: [u32; 4],
     pub light_num: Vec4,
     pub directional_lights: [DirectionalLight; MAX_LIGHTS / 2],
     pub point_lights: [PointLight; MAX_LIGHTS / 2],
@@ -91,6 +92,7 @@ pub struct LightingUniform {
 impl Default for LightingUniform {
     fn default() -> Self {
         Self {
+            cluster_count: [0; 4],
             light_num: Vec4::zeros(),
             directional_lights: [
                 DirectionalLight::default(),

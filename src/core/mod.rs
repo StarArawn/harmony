@@ -9,6 +9,6 @@ pub use theme::Theme;
 mod bounding_sphere;
 mod plane;
 mod frustum;
-pub use frustum::Frustum;
-pub use plane::Plane;
+pub use frustum::{Frustum, GpuFrustum};
+pub use plane::{Plane, GpuPlane};
 pub use bounding_sphere::BoundingSphere;

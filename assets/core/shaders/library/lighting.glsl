@@ -1,7 +1,7 @@
 #ifndef LIGHTING_INCLUDES
 #define LIGHTING_INCLUDES
 
-const int MAX_LIGHTS = 10;
+const int MAX_LIGHTS = 100;
 
 struct DirectionalLight {
     vec4 direction;
@@ -15,9 +15,10 @@ struct PointLight {
 };
 
 layout (set = 1, binding = 1) uniform LightingData {
-    vec4 light_num;
-    DirectionalLight directional_lights[MAX_LIGHTS / 2];
-    PointLight point_lights[MAX_LIGHTS / 2];
+    uvec4 cluster_count;
+    vec4 light_num; // Max depth stored in W.
+    DirectionalLight directional_lights[10];
+    PointLight point_lights[MAX_LIGHTS];
 };
 
 DirectionalLight get_directional_light(int index) {
@@ -27,5 +28,10 @@ DirectionalLight get_directional_light(int index) {
 PointLight get_point_light(int index) {
     return point_lights[index];
 }
+
+struct LightIndexSet {
+    uint count;
+    uint indices[MAX_LIGHTS];
+};
 
 #endif

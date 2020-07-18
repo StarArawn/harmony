@@ -1,5 +1,6 @@
-use super::{bounding_sphere::BoundingSphere, plane::Plane};
+use super::{bounding_sphere::BoundingSphere, plane::{GpuPlane, Plane}};
 use nalgebra_glm::Mat4;
+use bytemuck::{Pod, Zeroable};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Frustum {
@@ -73,5 +74,35 @@ impl Frustum {
         self.planes
             .iter()
             .all(|plane| plane.distance(sphere.center) >= -sphere.radius)
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct GpuFrustum {
+    pub planes: [GpuPlane; 4],
+}
+
+unsafe impl Zeroable for GpuFrustum { }
+unsafe impl Pod for GpuFrustum { }
+
+impl From<Frustum> for GpuFrustum {
+    fn from(frustum: Frustum) -> Self {
+        Self {
+            planes: [
+                GpuPlane {
+                    data: [frustum.planes[0].normal.x, frustum.planes[0].normal.y, frustum.planes[0].normal.z, frustum.planes[0].distance],
+                },
+                GpuPlane {
+                    data: [frustum.planes[1].normal.x, frustum.planes[1].normal.y, frustum.planes[1].normal.z, frustum.planes[1].distance],
+                },
+                GpuPlane {
+                    data: [frustum.planes[2].normal.x, frustum.planes[2].normal.y, frustum.planes[2].normal.z, frustum.planes[2].distance],
+                },
+                GpuPlane {
+                    data: [frustum.planes[3].normal.x, frustum.planes[3].normal.y, frustum.planes[3].normal.z, frustum.planes[3].distance],
+                },
+            ],
+        }
     }
 }

@@ -205,6 +205,7 @@ impl Gltf {
                     metallic,
                     color,
                 };
+                dbg!(&material);
                 let material_handle = material_manager.insert(material, path.clone());
                 
                 let primitive_topology = Self::get_primitive_mode(primitive.mode());

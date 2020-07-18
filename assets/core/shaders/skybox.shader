@@ -1,2 +1,2 @@
-skybox_vert.glsl
-skybox_frag.glsl
+skybox.vert.glsl
+skybox.frag.glsl

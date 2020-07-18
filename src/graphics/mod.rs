@@ -16,3 +16,5 @@ pub mod resources;
 pub mod systems;
 
 pub mod pipeline_manager;
+
+pub(crate) mod lighting;

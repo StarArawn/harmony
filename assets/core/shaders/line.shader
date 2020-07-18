@@ -1,2 +1,2 @@
-line_vert.glsl
-line_frag.glsl
+line.vert.glsl
+line.frag.glsl

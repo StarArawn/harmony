@@ -8,7 +8,7 @@ use std::{
 use super::{
     renderer::FRAME_FORMAT, resources::GPUResourceManager, CommandBufferQueue, VertexStateBuilder,
 };
-use crate::AssetManager;
+use crate::{assets::shader::Shader, AssetManager};
 use solvent::DepGraph;
 
 /// A description of a render pipeline.
@@ -73,8 +73,12 @@ impl PipelineDesc {
         device: &wgpu::Device,
         gpu_resource_manager: &GPUResourceManager,
     ) -> Pipeline {
-        let shader = asset_manager.get_shader(self.shader.clone());
-        let shader = futures::executor::block_on(shader.get_async()).unwrap();
+        let shader_handle = asset_manager.get_shader(self.shader.clone());
+        let shader = futures::executor::block_on(shader_handle.get_async()).unwrap();
+        let shader = match *shader {
+            Shader::Core(ref shader) => shader,
+            _ => panic!("Pipeline/shader mismatch!"),
+        };
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
             entry_point: "main",
@@ -154,6 +158,77 @@ impl PipelineDesc {
     }
 }
 
+#[derive(Debug, Hash, Clone)]
+pub struct ComputePipelineDesc {
+    pub shader: String,
+    pub layouts: Vec<String>,
+}
+
+impl ComputePipelineDesc {
+    pub fn new<T: Into<String>>(shader: T) -> Self {
+        Self {
+            shader: shader.into(),
+            layouts: vec![],
+        }
+    }
+
+    /// Creates a hash of the pipeline.
+    pub fn create_hash(&self) -> u64 {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        s.finish()
+    }
+
+    /// Builds a Pipeline from the description.
+    pub fn build(
+        &self,
+        asset_manager: &AssetManager,
+        device: &wgpu::Device,
+        gpu_resource_manager: &GPUResourceManager,
+    ) -> ComputePipeline {
+        let shader_handle = asset_manager.get_shader(self.shader.clone());
+        let shader = futures::executor::block_on(shader_handle.get_async()).unwrap();
+        let shader = match *shader {
+            Shader::Compute(ref shader) => shader,
+            _ => panic!("Pipeline/shader mismatch!"),
+        };
+
+        let compute_stage = wgpu::ProgrammableStageDescriptor {
+            module: &shader.compute,
+            entry_point: "main",
+        };
+
+        let bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>> = self
+            .layouts
+            .iter()
+            .map(|group_name| {
+                gpu_resource_manager
+                    .get_bind_group_layout(group_name)
+                    .unwrap()
+                    .clone()
+            })
+            .collect();
+
+        // Once we create the layout we don't need the bind group layouts.
+        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            bind_group_layouts: &bind_group_layouts
+                .iter()
+                .map(|x| x.as_ref())
+                .collect::<Vec<&wgpu::BindGroupLayout>>(),
+        });
+
+        let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            layout: &layout,
+            compute_stage,
+        });
+
+        ComputePipeline {
+            desc: self.clone(),
+            compute_pipeline,
+        }
+    }
+}
+
 /// An actual Render Pipeline that should be stored in the manager.
 /// Also contains a description of the pipeline.
 pub struct Pipeline {
@@ -161,9 +236,15 @@ pub struct Pipeline {
     pub render_pipeline: wgpu::RenderPipeline,
 }
 
+pub struct ComputePipeline {
+    pub desc: ComputePipelineDesc,
+    pub compute_pipeline: wgpu::ComputePipeline,
+}
+
 /// The type of pipeline.
 pub enum PipelineType {
     Pipeline(Pipeline),
+    ComputePipeline(ComputePipeline),
     /// Node is used for things that run on the GPU without a pipeline. Such as globals.
     Node,
     // TODO: Add group type.
@@ -238,6 +319,55 @@ impl PipelineManager {
         // Recalculate order.
         self.get_order();
     }
+
+    /// This lets you add new compute pipelines. Note: You can have multiple pipelines for the same shader. It's recommended that you store
+    /// PipelineDesc and pass it in when retrieving the pipeline.
+    /// Note: Pipeline's are considered a fairly costly operation, try not to create a new one every frame.
+    pub fn add_compute_pipeline<T: Into<String>>(
+        &mut self,
+        name: T,
+        pipeline_desc: &ComputePipelineDesc,
+        dependency: Vec<&str>,
+        device: &wgpu::Device,
+        asset_manager: &AssetManager,
+        gpu_resource_manager: Arc<GPUResourceManager>,
+    ) {
+        let hash = pipeline_desc.create_hash();
+        let name = name.into();
+
+        if !self.pipelines.contains_key(&name) {
+            let pipeline_hashmap = HashMap::new();
+            self.pipelines.insert(name.clone(), pipeline_hashmap);
+
+            // Save the first pipeline into our special hashmap for keeping track of that.
+            self.current_pipelines.insert(name.clone(), hash);
+        }
+
+        let pipeline_hashmap = self.pipelines.get_mut(&name).unwrap();
+        if pipeline_hashmap.contains_key(&hash) {
+            // Already exists do nothing in this case.
+            return;
+        }
+
+        let pipeline = pipeline_desc.build(&asset_manager, &device, &gpu_resource_manager);
+        pipeline_hashmap.insert(hash, PipelineType::ComputePipeline(pipeline));
+
+        // Add to our graph
+        self.dep_graph.register_node(name.clone());
+
+        if dependency.len() > 0 {
+            let dependency = dependency
+                .iter()
+                .map(|name| name.to_string())
+                .collect::<Vec<String>>();
+            self.dep_graph
+                .register_dependencies(name.clone(), dependency);
+        }
+
+        // Recalculate order.
+        self.get_order();
+    }
+
 
     /// A node is an encoder you want to run at some step inside of the pipeline workflow.
     pub fn add_node<T: Into<String>>(&mut self, name: T, dependency: Vec<&str>) {
@@ -325,6 +455,35 @@ impl PipelineManager {
         }
         match pipeline_type.as_ref().unwrap() {
             PipelineType::Pipeline(pipeline) => Some(pipeline),
+            _ => None,
+        }
+    }
+
+    /// Let's you retrieve a reference to a pipeline from the manager.
+    /// Note if you don't pass in a pipeline description it defaults to whatever the current pipeline is.
+    pub fn get_compute<T: Into<String>>(
+        &self,
+        name: T,
+        pipeline_desc: Option<&PipelineDesc>,
+    ) -> Option<&ComputePipeline> {
+        let name = name.into();
+        let pipeline_hashmap = self.pipelines.get(&name);
+        if pipeline_hashmap.is_none() {
+            return None;
+        }
+
+        let hash = if pipeline_desc.is_some() {
+            pipeline_desc.unwrap().create_hash()
+        } else {
+            *self.current_pipelines.get(&name).unwrap()
+        };
+
+        let pipeline_type = pipeline_hashmap.unwrap().get(&hash);
+        if pipeline_type.is_none() {
+            return None;
+        }
+        match pipeline_type.as_ref().unwrap() {
+            PipelineType::ComputePipeline(pipeline) => Some(pipeline),
             _ => None,
         }
     }

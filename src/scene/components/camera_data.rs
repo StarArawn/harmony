@@ -160,6 +160,10 @@ impl CameraData {
         self.frustum = Frustum::from_matrix(self.projection * self.view);
     }
 
+    pub fn get_inverse_proj(&self) -> Mat4 {
+        self.projection.try_inverse().unwrap()
+    }
+
     /// returns the view-projection matrix
     pub fn get_matrix(&self) -> Mat4 {
         self.projection * self.view

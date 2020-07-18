@@ -6,7 +6,7 @@ use crate::{
     graphics::{
         pipelines::{DirectionalLight, GlobalUniform, LightingUniform, PointLight, MAX_LIGHTS},
         resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem,
+        CommandBufferQueue, CommandQueueItem, lighting::cluster::{FROXELS_Y, FROXELS_X, FROXELS_Z},
     },
     scene::components,
 };
@@ -117,6 +117,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         .resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
 
                     let light_uniform = LightingUniform {
+                        cluster_count: [FROXELS_X, FROXELS_Y, FROXELS_Z, 0],
                         light_num: Vec4::new(
                             total_dir_lights as f32,
                             total_point_lights as f32,

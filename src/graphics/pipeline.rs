@@ -1,5 +1,5 @@
 use super::resources::{GPUResourceManager, RenderTarget};
-use crate::AssetManager;
+use crate::{assets::shader::Shader, AssetManager};
 use std::sync::Arc;
 
 pub struct BindGroupWithData {
@@ -53,6 +53,12 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
         local_bind_group_layout: Option<Arc<wgpu::BindGroupLayout>>,
     ) -> wgpu::RenderPipeline {
         let shader = self.load_shader(asset_manager);
+
+        let shader = match *shader {
+            Shader::Core(ref shader) => shader,
+            _ => panic!("Use pipeline manager instead"),
+        };
+
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
             entry_point: "main",
