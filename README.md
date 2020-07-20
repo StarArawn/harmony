@@ -73,6 +73,5 @@ If more help is needed or you feel as though the issue you encountered is direct
 - Floatingmountain: https://github.com/floatingmountain for helping out a ton!
 
 ### Help?
-You can find me on the rust game development discord server here:
-https://discord.gg/rHxrAPW
+You can find me on the rust game development discord server.
 I'm more than happy to help out if I am around!
