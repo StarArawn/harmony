@@ -28,17 +28,15 @@ impl FrustumCreation {
         gpu_resource_manager: Arc<GPUResourceManager>,
         pipeline_manager: &mut PipelineManager,
         device: Arc<wgpu::Device>,
-        frustum_buffer: &wgpu::Buffer,
         frustum_count: Vec2,
     ) -> Self {
         let uniform = FroxelUniform {
             frustum: Frustum::new().into(),
-            frustum_count: [frustum_count.x as u32, frustum_count.y as u32, 0, 0],
             i_proj: Mat4::identity(),
+            frustum_count: [frustum_count.x as u32, frustum_count.y as u32, 0, 0],
         };
 
         let uniform_buffer = device.create_buffer_with_data(bytemuck::bytes_of(&uniform), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
-
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[
@@ -64,7 +62,7 @@ impl FrustumCreation {
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Buffer(frustum_buffer.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(gpu_resource_manager.frustum_buffer.slice(..)),
                 },
             ],
             label: Some("froxel bindings"),

@@ -5,7 +5,7 @@ use crate::{
         CommandQueueItem,
         lighting::cluster::Clustering,
     },
-    scene::components
+    scene::components, core::Frustum
 };
 use legion::prelude::*;
 use std::sync::Arc;
@@ -44,14 +44,16 @@ pub fn create() -> Box<dyn Schedulable> {
                 }
                 let camera_data = camera_data.unwrap();
 
-                clustering.resize(&mut encoder, device.clone(), camera_data.frustum, camera_data.get_inverse_proj());
+                let i_proj =  camera_data.get_inverse_proj();
+
+                clustering.resize(&mut encoder, device.clone(), Frustum::from_matrix(camera_data.projection), i_proj);
 
                 clustering.compute(&mut encoder, pipeline_manager);
 
                 command_buffer_queue
                     .push(CommandQueueItem {
                         buffer: encoder.finish(),
-                        name: "froxel_creation".to_string(),
+                        name: "froxel_cull".to_string(),
                     })
                     .unwrap();
             },

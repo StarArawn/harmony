@@ -20,7 +20,7 @@ impl ProjectionData {
     fn get_projection(&self, width: f32, height: f32) -> Mat4 {
         match self {
             ProjectionData::Perspective { fov, z_near, z_far } => {
-                nalgebra_glm::perspective_fov_rh_no(
+                nalgebra_glm::perspective_fov_lh_no(
                     fov.to_radians(),
                     width,
                     height,
@@ -156,7 +156,7 @@ impl CameraData {
 
     /// updates the view matrix. Needs to be called when the camera moved
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {
-        self.view = nalgebra_glm::look_at_rh(&eye, &at, &up);
+        self.view = nalgebra_glm::look_at_lh(&eye, &at, &up);
         self.frustum = Frustum::from_matrix(self.projection * self.view);
     }
 

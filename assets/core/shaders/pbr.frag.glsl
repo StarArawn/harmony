@@ -4,6 +4,7 @@
 #include "library/lighting.glsl"
 #include "library/pbr.glsl"
 #include "library/common.glsl"
+#include "clustered/frustum.glsl"
 
 layout(set = 2, binding = 0) uniform Material {
     vec4 color;
@@ -21,69 +22,27 @@ layout(set = 3, binding = 0) uniform textureCube irradiance_cube_map;
 layout(set = 3, binding = 1) uniform textureCube spec_cube_map;
 layout(set = 3, binding = 2) uniform texture2D spec_brdf_map;
 
+layout(set = 1, binding = 2) readonly buffer Frustums {
+    Frustum frustums[];
+};
+
+layout(set = 1, binding = 3) readonly buffer GlobalIndices {
+    LightIndexSet light_index_list[];
+};
+
 layout(location = 0) in vec2 i_uv;
 layout(location = 1) in vec3 i_normal;
 layout(location = 2) in vec3 i_position;
 layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
+layout(location = 5) in vec4 i_clip_position;
+layout(location = 6) in vec4 i_view_position;
 layout(location = 0) out vec4 outColor;
 
 const float roughnessRescale = 1.0;
 const float specularIntensity = 0.0;
 
 const float PI = 3.14159265358979323;
-
-// case RoughnessMetal:
-// {
-// specularModifiers.x = 0.0;
-// specularModifiers.y = 0.0;
-// break;
-// }
-// case GlossMetal:
-// {
-// specularModifiers.x = 1.0;
-// specularModifiers.y = 0.0;
-// break;
-// }
-// case RoughnessInverseMetal:
-// {
-// specularModifiers.x = 0.0;
-// specularModifiers.y = 1.0;
-// break;
-// }
-// case GlossInverseMetal:
-// {
-// specularModifiers.x  = 1.0;
-// specularModifiers.y = 1.0;
-// break;
-// }
-
-vec3
-shade (float vdotn, 
-       float roughness, 
-       float metalness, 
-       vec3 diffuseColor,
-       vec3 diffuseIBL, 
-       vec3 specularIBL,
-       vec3 normal)
-{
-    roughness = roughness * (1.0 / roughnessRescale);
-
-    vec2 brdfTerm = texture(sampler2D(spec_brdf_map, tex_sampler), vec2(vdotn, 1.0 - roughness)).xy;
-    vec3 metalSpecularIBL = specularIBL.rgb; 
-
-    vec3 dielectricColor = vec3(0.04, 0.04, 0.04);
-    vec3 diffColor = diffuseColor.rgb * (1.0 - metalness);
-    vec3 specColor = mix(dielectricColor.rgb, diffuseColor.rgb, metalness) * specularIntensity;
-   
-    // TODO: Add AO.
-    // diffuseIBL.rgb = lerp(diffuseIBL.rgb * 0.3f, diffuseIBL.rgb, bakedAO);
-    
-    vec3 albedoByDiffuse = diffuseIBL.rgb;
-
-    vec3 litColor =  (albedoByDiffuse.rgb + (metalSpecularIBL * (specColor * brdfTerm.x + (brdfTerm.y)))); // * bakedAO;
-    return litColor;
-} 
 
 vec3 Uncharted2ToneMapping(vec3 color)
 {
@@ -147,13 +106,50 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }   
 
+vec3 get_clip_position() {
+    return i_clip_position.xyz / i_clip_position.w;
+}
+
+// TODO: Pass view position and clip position in via a parameter so we can share this code with other shaders
+// in lighting.glsl
+uvec3 compute_froxel() {
+    // normalize clip position to 0-1 in xy
+    vec2 scale = get_clip_position().xy * 0.5 + 0.5;
+    vec2 frustum_raw = scale * vec2(cluster_count.xy);
+    uvec2 frustum_xy = uvec2(floor(frustum_raw));
+    float depth = i_view_position.z;
+    uint depth_frustum = uint(floor((depth / light_num.w) * cluster_count.z)); // light_num.w is the max depth.
+    return uvec3(frustum_xy, min(depth_frustum, cluster_count.z - 1));
+}
+
 // TODO: Point-lights?
 void main() {
+
+    // Debug froxel code:
+    // TODO: Perhaps move this into it's own shader that we can render for debugging?
+    // uint z = compute_froxel().z;
+    // for (int x = 0; x < cluster_count.x; ++x) {
+    //     for (int y = 0; y < cluster_count.y; ++y) {
+    //         uint frustum_index = get_frustum_list_index(uvec2(x, y), cluster_count.xy);
+    //         Frustum frustum = frustums[frustum_index];
+    //         if (contains_point(frustum, i_view_position.xyz)) {
+    //             uint total_count = light_index_list[get_cluster_list_index(uvec3(x, y, z), cluster_count.xyz)].count;
+    //             vec4 color_dif = vec4(vec3(x, y, z) / vec3(cluster_count.xy - 1, 3), 1.0); 
+    //             // Lerps between black and blue depending on the total number of lights in this "froxel".
+    //             // Good for measuring how "complex" the lighting is in a given scene.
+    //             outColor = vec4(mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), float(total_count) / MAX_LIGHTS), 1.0);
+    //             return;
+    //         } else {
+    //         }
+    //     }
+    // }
+    // return;
+
     vec3 main_color = texture(sampler2D(main_map, tex_sampler), i_uv).rgb * color.rgb;
     
     vec2 metallic_roughness = texture(sampler2D(metallic_roughness_map, tex_sampler), i_uv).xy;
-    float metallic = metallic_roughness.x;
-    float roughness = metallic_roughness.y;
+    float metallic = mix(metallic_roughness.x, pbr_info.x, pbr_info.z);
+    float roughness = mix(metallic_roughness.y, pbr_info.y, pbr_info.w);
     
     vec3 normal = texture(sampler2D(normal_map, tex_sampler), i_uv).rgb;
     normal = normal * 2.0 - 1.0;
@@ -164,19 +160,15 @@ void main() {
     mat3 TBN = mat3(T, B, N);
     N = TBN * normalize(normal);
     
-    // float VdotN = dot(V, N);
-    vec3 R = reflect(-V, N);
+    vec3 R = reflect(V, N);
 
     vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, tex_sampler), N).rgb;
-    // vec3 ambient_spec = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
     
     // Convert irradiance to radiance
     ambient_irradiance = (ambient_irradiance / 3.145) * 1.0; // 1.0 is enviroment scale
 
-    // vec3 ambient = shade(VdotN, roughness, metallic, main_color.rgb, ambient_irradiance, ambient_spec, N);
-
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
-    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, main_color.rgb, metallic);
 
@@ -223,9 +215,11 @@ void main() {
     }
 
     // Point Lighting
-    for (int i=0; i < int(light_num.y) && i < MAX_LIGHTS; ++i) {
-
-        PointLight light = point_lights[i];
+    uvec3 froxel = compute_froxel();
+    uint froxel_index = get_cluster_list_index(froxel, cluster_count.xyz);
+    uint count = light_index_list[froxel_index].count; // Total number of lights in a froxel maxes out at 128.
+    for (uint l = 0; l < count; ++l) {
+        PointLight light = point_lights[light_index_list[froxel_index].indices[l]];
         // calculate per-light radiance
         vec3 L = light.position.xyz - i_position.xyz;
         const float dist2 = dot(L, L);
@@ -265,8 +259,6 @@ void main() {
     }
 
     vec3 color = ambient + light_acc; //Uncharted2ToneMapping(ambient + light_acc);
-
-    // color = pow(color, vec3(1.0/2.2));
 
     outColor = vec4(color, 1.0);
 }

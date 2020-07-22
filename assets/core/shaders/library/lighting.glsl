@@ -1,7 +1,8 @@
 #ifndef LIGHTING_INCLUDES
 #define LIGHTING_INCLUDES
 
-const int MAX_LIGHTS = 100;
+const int MAX_LIGHTS = 16;
+const int MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct DirectionalLight {
     vec4 direction;
@@ -10,6 +11,7 @@ struct DirectionalLight {
 
 struct PointLight {
     vec4 position;
+    vec4 view_position; // Used to cull lights in view space.
     vec4 color;
     vec4 attenuation;
 };
@@ -17,7 +19,7 @@ struct PointLight {
 layout (set = 1, binding = 1) uniform LightingData {
     uvec4 cluster_count;
     vec4 light_num; // Max depth stored in W.
-    DirectionalLight directional_lights[10];
+    DirectionalLight directional_lights[4];
     PointLight point_lights[MAX_LIGHTS];
 };
 
@@ -31,7 +33,7 @@ PointLight get_point_light(int index) {
 
 struct LightIndexSet {
     uint count;
-    uint indices[MAX_LIGHTS];
+    uint indices[MAX_LIGHTS_PER_CLUSTER - 1];
 };
 
 #endif

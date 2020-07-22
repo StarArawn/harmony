@@ -676,27 +676,27 @@ impl Probe {
 
     fn update_camera(position: Vec3, camera: &mut CameraData, face_id: u32) {
         let mut eye = Vec3::zeros();
-        let mut up = Vec3::new(0.0, -1.0, 0.0);
+        let mut up = Vec3::new(0.0, 1.0, 0.0);
         match face_id {
             0 => {
-                eye = Vec3::new(-1.0, 0.0, 0.0);
+                eye = Vec3::new(1.0, 0.0, 0.0);
             } // X+
             1 => {
-                eye = Vec3::new(1.0, 0.0, 0.0);
+                eye = Vec3::new(-1.0, 0.0, 0.0);
             } // X-
             2 => {
-                eye = Vec3::new(0.0, -1.0, 0.0);
-                up = Vec3::new(0.0, 0.0, 1.0);
-            } // Y+
-            3 => {
                 eye = Vec3::new(0.0, 1.0, 0.0);
                 up = Vec3::new(0.0, 0.0, -1.0);
+            } // Y+
+            3 => {
+                eye = Vec3::new(0.0, -1.0, 0.0);
+                up = Vec3::new(0.0, 0.0, 1.0);
             } // Y-
             4 => {
-                eye = Vec3::new(0.0, 0.0, -1.0);
+                eye = Vec3::new(0.0, 0.0, 1.0);
             } // Z+
             5 => {
-                eye = Vec3::new(0.0, 0.0, 1.0);
+                eye = Vec3::new(0.0, 0.0, -1.0);
             } // Z-
             _ => (),
         }

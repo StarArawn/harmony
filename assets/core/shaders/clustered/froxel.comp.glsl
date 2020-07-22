@@ -1,3 +1,10 @@
+/*************************************************************
+* This code is a modified version from the following code
+* base: https://github.com/BVE-Reborn/bve-reborn
+* You can find licensing information here:
+* https://github.com/BVE-Reborn/bve-reborn/blob/master/LICENSE
+**************************************************************/
+
 #version 450
 
 #include "frustum.glsl"

@@ -188,7 +188,7 @@ impl harmony::AppState for AppState {
             LightType::Directional(DirectionalLightData {
                 direction: Vec3::new(0.0, 1.0, -0.5),
                 color: Vec3::new(1.0, 1.0, 1.0),
-                intensity: 10.0,
+                intensity: 5.0,
             }),
             light_transform,
         );

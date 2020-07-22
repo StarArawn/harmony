@@ -1,19 +1,29 @@
+/*************************************************************
+* This code is a modified version from the following code
+* base: https://github.com/BVE-Reborn/bve-reborn
+* You can find licensing information here:
+* https://github.com/BVE-Reborn/bve-reborn/blob/master/LICENSE
+**************************************************************/
+
 #version 450
 
 #include "frustum.glsl"
 #include "../library/lighting.glsl"
+#include "../library/common.glsl"
+
+layout(set = 0, binding = 0) readonly buffer Frustums {
+    Frustum frustums[];
+};
+
+layout(set = 0, binding = 1) buffer GlobalIndices {
+    LightIndexSet light_index_list[];
+};
+
 
 // 1 light across 64 clusters.
 // x is light
 // y is cluster
 layout (local_size_x = 1, local_size_y = 64, local_size_z = 1) in;
-
-layout(set = 0, binding = 0) readonly buffer Frustums {
-    Frustum frustums[];
-};
-layout(set = 0, binding = 1) buffer GlobalIndices {
-    LightIndexSet light_index_list[];
-};
 
 void main() {
     uint cluster_index = gl_GlobalInvocationID.y;
@@ -27,10 +37,10 @@ void main() {
     // light_num.y is the point light count.
     for (uint i = 0; i < int(light_num.y); i++) {
         PointLight light = point_lights[i];
-        Sphere sphere = Sphere(light.position.xyz, light.attenuation.x);
+        Sphere sphere = Sphere(light.view_position.xyz, light.attenuation.x);
 
         if (contains_sphere(frustum, sphere) && contains_sphere(z_bounds, sphere)) {
-            if (light_count < MAX_LIGHTS) {
+            if (light_count < (MAX_LIGHTS_PER_CLUSTER - 1)) {
                 light_index_list[cluster_index].indices[light_count] = i;
                 light_count += 1;
             } else {

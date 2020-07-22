@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::{AssetManager, graphics::{pipeline_manager::{ComputePipelineDesc, PipelineManager}, resources::GPUResourceManager}};
-use super::cluster::{FROXELS_Y, FROXELS_X};
+use super::cluster::{FROXEL_COUNT};
 
 pub struct LightCulling {
     gpu_resource_manager: Arc<GPUResourceManager>,
@@ -13,8 +13,6 @@ impl LightCulling {
         gpu_resource_manager: Arc<GPUResourceManager>,
         pipeline_manager: &mut PipelineManager,
         asset_manager: &AssetManager,
-        frustum_buffer: &wgpu::Buffer,
-        light_list_buffer: &wgpu::Buffer
     ) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             bindings: &[
@@ -37,11 +35,11 @@ impl LightCulling {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(frustum_buffer.slice(..)),
+                    resource: wgpu::BindingResource::Buffer(gpu_resource_manager.frustum_buffer.slice(..)),
                 },
                 wgpu::Binding {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(light_list_buffer.slice(..)),
+                    binding: 1,
+                    resource: wgpu::BindingResource::Buffer(gpu_resource_manager.light_list_buffer.slice(..)),
                 },
             ],
             label: Some("light culling bind group"),
@@ -50,9 +48,9 @@ impl LightCulling {
         gpu_resource_manager.add_bind_group_layout("froxel_cull_layout", bind_group_layout);
 
         let mut pipeline_desc = ComputePipelineDesc::new("core/shaders/clustered/light_culling.shader");
-        pipeline_desc.layouts = vec!["globals".to_string(), "froxel_cull_layout".to_string()];
+        pipeline_desc.layouts = vec!["froxel_cull_layout".to_string(), "globals".to_string()];
 
-        pipeline_manager.add_compute_pipeline("froxel_cull", &pipeline_desc, vec![], &device, asset_manager, gpu_resource_manager.clone());
+        pipeline_manager.add_compute_pipeline("froxel_cull", &pipeline_desc, vec!["globals"], &device, asset_manager, gpu_resource_manager.clone());
 
         Self {
             gpu_resource_manager,
@@ -65,6 +63,6 @@ impl LightCulling {
         pass.set_pipeline(&pipeline.compute_pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
         pass.set_bind_group(1, &self.gpu_resource_manager.global_bind_group, &[]);
-        pass.dispatch(FROXELS_X / 8, FROXELS_Y / 8, 1);
+        pass.dispatch(1, FROXEL_COUNT / 64, 1);
     }
 }
