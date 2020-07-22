@@ -1,2 +1,2 @@
-equirectangular_to_cube_faces_vert.glsl
-env_specular_frag.glsl
+equirectangular_to_cube_faces.vert.glsl
+env_specular.frag.glsl

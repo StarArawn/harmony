@@ -1,12 +1,12 @@
 use legion::prelude::*;
-use nalgebra_glm::Vec4;
+use nalgebra_glm::{Mat4, Vec4};
 use std::{convert::TryInto, sync::Arc};
 
 use crate::{
     graphics::{
         pipelines::{DirectionalLight, GlobalUniform, LightingUniform, PointLight, MAX_LIGHTS},
         resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem,
+        CommandBufferQueue, CommandQueueItem, lighting::cluster::{FROXELS_Y, FROXELS_X, FROXELS_Z, FAR_PLANE_DISTANCE},
     },
     scene::components,
 };
@@ -31,6 +31,8 @@ pub fn create() -> Box<dyn Schedulable> {
                     label: Some("globals"),
                 });
 
+                let mut camera_view: Option<Mat4> = None;
+
                 // ******************************************************************************
                 // This section is meant to prepare our global uniforms and pass them to the GPU.
                 // ******************************************************************************
@@ -49,6 +51,8 @@ pub fn create() -> Box<dyn Schedulable> {
 
                     let camera_data = &camera_data.as_ref().unwrap().0;
                     let camera_matrix = camera_data.get_matrix();
+
+                    camera_view = Some(camera_data.view);
 
                     let uniforms = GlobalUniform {
                         view_projection: camera_matrix,
@@ -96,15 +100,19 @@ pub fn create() -> Box<dyn Schedulable> {
                     // TODO: Use some sort of distance calculation to get the closest lights.
                     let mut point_light_data_vec: Vec<PointLight> = point_lights
                         .iter(&world)
-                        .map(|(data, transform)| PointLight {
-                            attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
-                            color: Vec4::new(data.color.x, data.color.y, data.color.z, data.intensity),
-                            position: Vec4::new(
+                        .map(|(data, transform)| {
+                            let position = Vec4::new(
                                 transform.position.x,
                                 transform.position.y,
                                 transform.position.z,
-                                0.0,
-                            ),
+                                1.0,
+                            );
+                            PointLight {
+                                attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
+                                color: Vec4::new(data.color.x, data.color.y, data.color.z, data.intensity),
+                                position,
+                                view_position: camera_view.unwrap() * position,
+                            }
                         })
                         .collect();
 
@@ -112,16 +120,17 @@ pub fn create() -> Box<dyn Schedulable> {
                     let total_point_lights = point_light_data_vec.len() as u32;
 
                     // Fill in missing data if we don't have it.
-                    point_light_data_vec.resize_with(MAX_LIGHTS / 2, || PointLight::default());
+                    point_light_data_vec.resize_with(MAX_LIGHTS, || PointLight::default());
                     directional_light_data_vec
-                        .resize_with(MAX_LIGHTS / 2, || DirectionalLight::default());
+                        .resize_with(4, || DirectionalLight::default());
 
                     let light_uniform = LightingUniform {
+                        cluster_count: [FROXELS_X, FROXELS_Y, FROXELS_Z, 0],
                         light_num: Vec4::new(
                             total_dir_lights as f32,
                             total_point_lights as f32,
                             0.0,
-                            0.0,
+                            FAR_PLANE_DISTANCE,
                         ),
                         directional_lights: directional_light_data_vec
                             .as_slice()

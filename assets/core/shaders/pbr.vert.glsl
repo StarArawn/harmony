@@ -11,6 +11,8 @@ layout(location = 1) out vec3 o_normal;
 layout(location = 2) out vec3 o_position;
 layout(location = 3) out vec3 o_tangent;
 layout(location = 4) out float o_tbn_handedness;
+layout(location = 5) out vec4 o_clip_position;
+layout(location = 6) out vec4 o_view_position;
 
 layout(set = 0, binding = 0) uniform Locals {
     mat4 world;
@@ -23,5 +25,8 @@ void main() {
     o_normal = normalMatrix * i_normal.xyz;
     o_tangent = normalMatrix * i_tangent.xyz;
     o_tbn_handedness = i_tangent.w;
-    gl_Position = view_projection * world * vec4(i_Pos, 1.0);
+    o_view_position = view * world * vec4(i_Pos, 1.0);
+    vec4 clip_space = projection * view * world * vec4(i_Pos, 1.0);
+    gl_Position = clip_space;
+    o_clip_position = clip_space;
 }

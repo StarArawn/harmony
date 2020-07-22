@@ -197,12 +197,16 @@ impl Gltf {
                 let main_texture = Self::get_texture_url(&main_info, &images);
                 let roughness_texture = Self::get_texture_url(&roughness_info, &images);
 
+                let has_pbr_texture = roughness_texture.is_some();
+
                 let material = PBRMaterialRon {
                     main_texture: main_texture.unwrap_or("core/white.png".to_string()),
                     normal_texture: normal_texture.unwrap_or("core/empty_normal.png".to_string()),
                     roughness_texture: roughness_texture.unwrap_or("core/pbr_flat.png".to_string()),
                     roughness,
                     metallic,
+                    roughness_override: if has_pbr_texture { 0.0 } else { 1.0 },
+                    metallic_override: if has_pbr_texture { 0.0 } else { 1.0 },
                     color,
                 };
                 let material_handle = material_manager.insert(material, path.clone());

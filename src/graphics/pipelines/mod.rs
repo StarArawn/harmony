@@ -21,6 +21,7 @@ pub(crate) mod skybox;
 
 pub(crate) mod equirectangular;
 
+// TODO: Move all global uniforms out of here.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct GlobalUniform {
@@ -44,7 +45,10 @@ impl Default for GlobalUniform {
 unsafe impl Zeroable for GlobalUniform {}
 unsafe impl Pod for GlobalUniform {}
 
-pub const MAX_LIGHTS: usize = 10;
+
+// TODO: We can support more lights, but a uniform buffer probably isn't the best.
+// We likely want to use wgpu's belt buffer.
+pub const MAX_LIGHTS: usize = 16;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -66,6 +70,7 @@ impl Default for DirectionalLight {
 #[derive(Debug, Clone, Copy)]
 pub struct PointLight {
     pub position: Vec4,
+    pub view_position: Vec4,
     pub color: Vec4,
     pub attenuation: Vec4,
 }
@@ -76,35 +81,30 @@ impl Default for PointLight {
             attenuation: Vec4::zeros(),
             position: Vec4::zeros(),
             color: Vec4::zeros(),
+            view_position: Vec4::zeros(),
         }
     }
 }
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct LightingUniform {
+    pub cluster_count: [u32; 4],
     pub light_num: Vec4,
-    pub directional_lights: [DirectionalLight; MAX_LIGHTS / 2],
-    pub point_lights: [PointLight; MAX_LIGHTS / 2],
+    pub directional_lights: [DirectionalLight; 4],
+    pub point_lights: [PointLight; MAX_LIGHTS],
 }
 
 impl Default for LightingUniform {
     fn default() -> Self {
         Self {
+            cluster_count: [0; 4],
             light_num: Vec4::zeros(),
             directional_lights: [
-                DirectionalLight::default(),
-                DirectionalLight::default(),
-                DirectionalLight::default(),
-                DirectionalLight::default(),
-                DirectionalLight::default(),
+                DirectionalLight::default(); 4
             ],
             point_lights: [
-                PointLight::default(),
-                PointLight::default(),
-                PointLight::default(),
-                PointLight::default(),
-                PointLight::default(),
+                PointLight::default(); MAX_LIGHTS
             ],
         }
     }

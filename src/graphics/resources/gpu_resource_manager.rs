@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::{ArcRenderPass, BindGroup};
 use crate::{
-    graphics::pipelines::{GlobalUniform, LightingUniform},
+    graphics::{lighting::cluster::{LIGHT_LIST_BUFFER_SIZE, FRUSTUM_BUFFER_SIZE}, pipelines::{GlobalUniform, LightingUniform}},
     scene::components::transform::LocalUniform,
 };
 use dashmap::DashMap;
@@ -20,6 +20,9 @@ pub struct GPUResourceManager {
     pub global_uniform_buffer: wgpu::Buffer,
     pub global_lighting_buffer: wgpu::Buffer,
     pub global_bind_group: wgpu::BindGroup,
+
+    pub light_list_buffer: wgpu::Buffer,
+    pub frustum_buffer: wgpu::Buffer,
 }
 
 impl GPUResourceManager {
@@ -28,6 +31,20 @@ impl GPUResourceManager {
 
         // Create our global uniforms buffers, layouts, and bindgroups here.
         // These *can* be shared across all pipelines.
+
+        let frustum_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::STORAGE,
+            size: FRUSTUM_BUFFER_SIZE,
+            mapped_at_creation: false,
+            label: Some("frustum buffer"),
+        });
+
+        let light_list_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            usage: wgpu::BufferUsage::STORAGE,
+            size: LIGHT_LIST_BUFFER_SIZE,
+            mapped_at_creation: false,
+            label: Some("light list buffer"),
+        });
 
         let global_uniform_buffer = device.create_buffer_with_data(
             bytemuck::bytes_of(&GlobalUniform::default()),
@@ -45,7 +62,7 @@ impl GPUResourceManager {
                     wgpu::BindGroupLayoutEntry::new(
                         // CAMERA INFO
                         0,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::COMPUTE,
                         wgpu::BindingType::UniformBuffer {
                             dynamic: false,
                             min_binding_size: wgpu::BufferSize::new(
@@ -56,7 +73,7 @@ impl GPUResourceManager {
                     wgpu::BindGroupLayoutEntry::new(
                         // LIGHTING DATA
                         1,
-                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::COMPUTE,
                         wgpu::BindingType::UniformBuffer {
                             dynamic: false,
                             min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<
@@ -64,6 +81,26 @@ impl GPUResourceManager {
                             >()
                                 as _),
                         },
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster frustum data
+                        2,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::StorageBuffer {
+                            dynamic: false,
+                            readonly: true,
+                            min_binding_size: None
+                        }
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster Light index data
+                        3,
+                        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::StorageBuffer {
+                            dynamic: false,
+                            readonly: true,
+                            min_binding_size: None
+                        }
                     ),
                 ],
                 label: Some("Globals"),
@@ -79,6 +116,14 @@ impl GPUResourceManager {
                 wgpu::Binding {
                     binding: 1,
                     resource: wgpu::BindingResource::Buffer(global_lighting_buffer.slice(..)),
+                },
+                wgpu::Binding {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Buffer(frustum_buffer.slice(..)),
+                },
+                wgpu::Binding {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Buffer(light_list_buffer.slice(..)),
                 },
             ],
             label: Some("Globals"),
@@ -112,6 +157,8 @@ impl GPUResourceManager {
             global_bind_group,
             global_lighting_buffer,
             global_uniform_buffer,
+            frustum_buffer,
+            light_list_buffer,
         }
     }
 

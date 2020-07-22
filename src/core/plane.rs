@@ -1,4 +1,5 @@
 use nalgebra_glm::Vec3;
+use bytemuck::{Pod, Zeroable};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
@@ -27,3 +28,12 @@ impl Plane {
         self.normal.dot(&point) + self.distance
     }
 }
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct GpuPlane {
+    pub data: [f32; 4],
+}
+
+unsafe impl Zeroable for GpuPlane { }
+unsafe impl Pod for GpuPlane { }

@@ -1,2 +1,2 @@
-full_screen_quad_vert.glsl
-specular_brdf_frag.glsl
+full_screen_quad.vert.glsl
+specular_brdf.frag.glsl

@@ -21,6 +21,8 @@ pub struct PBRMaterialRon {
     pub normal_texture: String,
     pub roughness: f32,
     pub metallic: f32,
+    pub roughness_override: f32,
+    pub metallic_override: f32,
     pub color: Vec4,
 }
 
@@ -57,6 +59,8 @@ impl Material for PBRMaterialRon {
             normal_texture: textures.remove(0),
             roughness: self.roughness,
             metallic: self.metallic,
+            roughness_override: self.roughness_override,
+            metallic_override: self.metallic_override,
             color: self.color,
             bind_group: None,
         }
@@ -77,6 +81,8 @@ pub struct PBRMaterial {
     pub normal_texture: Arc<AssetHandle<Texture>>,
     pub roughness: f32,
     pub metallic: f32,
+    pub roughness_override: f32,
+    pub metallic_override: f32,
     pub color: Vec4,
     pub(crate) bind_group: Option<Arc<BindGroup>>,
 }
@@ -102,7 +108,7 @@ impl BindMaterial for PBRMaterial {
     fn create_bindgroup(&mut self, device: Arc<wgpu::Device>, layout: Arc<wgpu::BindGroupLayout>) {
         let uniform = PBRMaterialUniform {
             color: self.color,
-            info: Vec4::new(self.metallic, self.roughness, 0.0, 0.0),
+            info: Vec4::new(self.metallic, self.roughness, self.metallic_override, self.roughness_override),
         };
 
         // let material_uniform_size = std::mem::size_of::<PBRMaterialUniform>() as wgpu::BufferAddress;

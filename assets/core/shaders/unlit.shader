@@ -1,2 +1,2 @@
-unlit_fragment.glsl
-unlit_vertex.glsl
+unlit.frag.glsl
+unlit.vert.glsl

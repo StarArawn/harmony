@@ -1,4 +1,4 @@
-use super::resources::GPUResourceManager;
+use super::{lighting::cluster::Clustering, resources::GPUResourceManager, pipeline_manager::PipelineManager};
 use legion::systems::resource::Resources;
 use std::sync::Arc;
 
@@ -76,12 +76,15 @@ impl Renderer {
         });
         let device = Arc::new(device);
 
-        resources.insert(Arc::new(GPUResourceManager::new(device.clone())));
+        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
+        let pipeline_manager = PipelineManager::new();
+        resources.insert(pipeline_manager);
+        resources.insert(gpu_resource_manager);
         resources.insert(sc_desc);
         resources.insert(Arc::new(queue));
         resources.insert(device.clone());
         resources.insert(DepthTexture(depth_texture.create_default_view()));
-
+        
         Self {
             surface,
             size,

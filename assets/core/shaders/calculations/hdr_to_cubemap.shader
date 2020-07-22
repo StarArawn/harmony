@@ -1,2 +1,2 @@
-equirectangular_to_cube_faces_vert.glsl
-equirectangular_to_cube_faces_frag.glsl
+equirectangular_to_cube_faces.vert.glsl
+equirectangular_to_cube_faces.frag.glsl

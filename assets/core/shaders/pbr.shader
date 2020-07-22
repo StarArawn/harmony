@@ -1,2 +1,2 @@
-pbr_fragment.glsl
-pbr_vertex.glsl
+pbr.frag.glsl
+pbr.vert.glsl

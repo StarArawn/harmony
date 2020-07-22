@@ -18,7 +18,8 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Skybox rendering from an .hdr texture.
 - [x] Multi-threaded rendering
 - [x] Custom render pipelines
-- [x] Lighting (Directional, Point)
+- [x] Directional lighting
+- [x] Clustered Shading (Point)
 - [x] PBR shading model
 - [x] IMGui integration
 - [ ] Multiple Enviroment probes(almost done).
@@ -71,6 +72,7 @@ If more help is needed or you feel as though the issue you encountered is direct
 ## Acknowledgements:
 - Termhn: https://github.com/termhn/rendy-pbr
 - Floatingmountain: https://github.com/floatingmountain for helping out a ton!
+- Connor Fitzgerald https://github.com/cwfitzgerald Clustered shading help
 
 ### Help?
 You can find me on the rust game development discord server.

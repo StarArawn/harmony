@@ -20,7 +20,7 @@ impl ProjectionData {
     fn get_projection(&self, width: f32, height: f32) -> Mat4 {
         match self {
             ProjectionData::Perspective { fov, z_near, z_far } => {
-                nalgebra_glm::perspective_fov_rh_no(
+                nalgebra_glm::perspective_fov_lh_no(
                     fov.to_radians(),
                     width,
                     height,
@@ -32,7 +32,7 @@ impl ProjectionData {
                 world_height,
                 z_near,
                 z_far,
-            } => nalgebra_glm::ortho_rh_no(
+            } => nalgebra_glm::ortho_lh_no(
                 -0.5 * world_height * width / height,
                 0.5 * world_height * width / height,
                 -0.5 * world_height,
@@ -156,8 +156,12 @@ impl CameraData {
 
     /// updates the view matrix. Needs to be called when the camera moved
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {
-        self.view = nalgebra_glm::look_at_rh(&eye, &at, &up);
+        self.view = nalgebra_glm::look_at_lh(&eye, &at, &up);
         self.frustum = Frustum::from_matrix(self.projection * self.view);
+    }
+
+    pub fn get_inverse_proj(&self) -> Mat4 {
+        self.projection.try_inverse().unwrap()
     }
 
     /// returns the view-projection matrix
@@ -178,7 +182,7 @@ mod tests {
         let camera_data = CameraData::new_perspective(fov, width, height, z_near, z_far);
         assert_eq!(
             camera_data.projection,
-            nalgebra_glm::perspective_fov_rh_no(fov.to_radians(), width, height, z_near, z_far)
+            nalgebra_glm::perspective_fov_lh_no(fov.to_radians(), width, height, z_near, z_far)
         );
     }
     ///just tests for projection matrix calculation
@@ -192,7 +196,7 @@ mod tests {
         print!("{:#?}", camera_data.projection);
         assert_eq!(
             camera_data.projection,
-            nalgebra_glm::ortho_rh_no(
+            nalgebra_glm::ortho_lh_no(
                 -world_width / 2f32,
                 world_width / 2f32,
                 -world_height / 2f32,

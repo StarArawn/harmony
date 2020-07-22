@@ -25,7 +25,7 @@ use graphics::{
     renderer::{DepthTexture, DEPTH_FORMAT},
     // pipelines::{LinePipelineDesc, UnlitPipelineDesc},
     CommandBufferQueue,
-    CommandQueueItem,
+    CommandQueueItem, lighting::cluster::Clustering,
 };
 use nalgebra_glm::Vec2;
 
@@ -93,21 +93,25 @@ impl Application {
         // Add resources
         let mut resources = Resources::default();
         resources.insert(crate::scene::resources::DeltaTime(0.05));
-        resources.insert(PipelineManager::new());
 
         let renderer = futures::executor::block_on(Renderer::new(window, size, &mut resources));
 
-        let asset_manager = {
+        let (asset_manager, clustering) = {
             let device = resources.get::<Arc<wgpu::Device>>().unwrap();
             let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
             let gpu_resource_manager = resources.get::<Arc<GPUResourceManager>>().unwrap();
-            AssetManager::new(
+            let mut pipeline_manager = resources.get_mut::<PipelineManager>().unwrap();
+            let asset_manager = AssetManager::new(
                 asset_path.into(),
                 device.clone(),
                 queue.clone(),
                 gpu_resource_manager.clone(),
-            )
+            );
+            let clustering = Clustering::new(device.clone(), gpu_resource_manager.clone(), &mut pipeline_manager, &asset_manager);
+            (asset_manager, clustering)
         };
+        resources.insert(asset_manager);
+        resources.insert(clustering);
 
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
@@ -122,7 +126,6 @@ impl Application {
             .flush()
             .add_thread_local_fn(graphics::systems::render::create())
             .build();
-        resources.insert(asset_manager);
 
         resources.insert(TransformCount(0));
         resources.insert(CurrentRenderTarget(None));
