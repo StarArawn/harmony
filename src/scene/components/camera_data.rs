@@ -32,7 +32,7 @@ impl ProjectionData {
                 world_height,
                 z_near,
                 z_far,
-            } => nalgebra_glm::ortho_rh_no(
+            } => nalgebra_glm::ortho_lh_no(
                 -0.5 * world_height * width / height,
                 0.5 * world_height * width / height,
                 -0.5 * world_height,
@@ -182,7 +182,7 @@ mod tests {
         let camera_data = CameraData::new_perspective(fov, width, height, z_near, z_far);
         assert_eq!(
             camera_data.projection,
-            nalgebra_glm::perspective_fov_rh_no(fov.to_radians(), width, height, z_near, z_far)
+            nalgebra_glm::perspective_fov_lh_no(fov.to_radians(), width, height, z_near, z_far)
         );
     }
     ///just tests for projection matrix calculation
@@ -196,7 +196,7 @@ mod tests {
         print!("{:#?}", camera_data.projection);
         assert_eq!(
             camera_data.projection,
-            nalgebra_glm::ortho_rh_no(
+            nalgebra_glm::ortho_lh_no(
                 -world_width / 2f32,
                 world_width / 2f32,
                 -world_height / 2f32,

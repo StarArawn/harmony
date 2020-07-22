@@ -13,6 +13,7 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Scene's managed by specs world.
 - [x] Entity Transforms
 - [x] Perspective Camera
+- [x] Frustum Culling
 - [x] Render Graph
 - [x] Skybox rendering from an .hdr texture.
 - [x] Multi-threaded rendering
@@ -74,6 +75,5 @@ If more help is needed or you feel as though the issue you encountered is direct
 - Connor Fitzgerald https://github.com/cwfitzgerald Clustered shading help
 
 ### Help?
-You can find me on the rust game development discord server here:
-https://discord.gg/rHxrAPW
+You can find me on the rust game development discord server.
 I'm more than happy to help out if I am around!
