@@ -37,74 +37,7 @@ layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
 layout(location = 5) in vec4 i_clip_position;
 layout(location = 6) in vec4 i_view_position;
-layout(location = 0) out vec4 outColor;
-
-const float roughnessRescale = 1.0;
-const float specularIntensity = 0.0;
-
-const float PI = 3.14159265358979323;
-
-vec3 Uncharted2ToneMapping(vec3 color)
-{
-	float A = 0.15;
-	float B = 0.50;
-	float C = 0.10;
-	float D = 0.20;
-	float E = 0.02;
-	float F = 0.30;
-	float W = 11.2;
-	float exposure = 2.;
-	color *= exposure;
-	color = ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
-	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
-	color /= white;
-	color = pow(color, vec3(1. / 1.2));
-	return color;
-}
-
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-    float a      = roughness*roughness;
-    float a2     = a*a;
-    float NdotH  = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-	
-    float num   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-	
-    return num / denom;
-}
-
-float GeometrySchlickGGX(float NdotV, float roughness)
-{
-    float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
-
-    float num   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-	
-    return num / denom;
-}
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
-	
-    return ggx1 * ggx2;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
-{
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
-}   
+layout(location = 0) out vec4 outColor; 
 
 vec3 get_clip_position() {
     return i_clip_position.xyz / i_clip_position.w;
@@ -159,30 +92,35 @@ void main() {
     vec3 B = cross(N, T) * i_tbn_handedness;
     mat3 TBN = mat3(T, B, N);
     N = TBN * normalize(normal);
-    
+
     vec3 R = reflect(V, N);
 
     vec3 ambient_irradiance = texture(samplerCube(irradiance_cube_map, tex_sampler), N).rgb;
     
     // Convert irradiance to radiance
-    ambient_irradiance = (ambient_irradiance / 3.145) * 1.0; // 1.0 is enviroment scale
+    ambient_irradiance = (ambient_irradiance / PI) * 1.0; // 1.0 is enviroment scale
+    // TODO: Pass enviroment scale in.
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, main_color.rgb, metallic);
+    
+    float NdotV = abs(dot(N, V)) + 0.00001;
 
-    // ambient lighting (we now use IBL as the ambient term)
-    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    // Calculate the roughness.
+    vec3 F = fresnelSchlickRoughness(NdotV, F0, roughness);
     
     vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
+    // Our ambient radiance envrioment
     vec3 diffuse = ambient_irradiance * main_color.rgb;
     
-    vec3 prefilteredColor = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
-    vec2 brdf  = texture(sampler2D(spec_brdf_map, brdf_sampler), vec2(max(dot(N, V), 0), 1.0 - roughness)).rg;
-    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+    // Specular color
+    vec3 specularColor = textureLod(samplerCube(spec_cube_map, tex_sampler), R, roughness * MAX_SPEC_LOD).rgb;
+    vec2 brdf  = texture(sampler2D(spec_brdf_map, brdf_sampler), vec2(NdotV, roughness)).rg;
+    vec3 specular = specularColor * (F * brdf.x + brdf.y);
 
     vec3 ambient = (kD * diffuse + specular);
 
@@ -227,12 +165,9 @@ void main() {
 
         if (dist2 < range2)
 	    {
-            vec3 Lunnormalized = L;
             float dist = sqrt(dist2);
             L /= dist;
-
             vec3 H = normalize(V + L);
-
             vec3 radiance = light.color.xyz * light.color.w; // w is intensity
             
             // cook-torrance brdf

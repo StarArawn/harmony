@@ -1,4 +1,4 @@
-use super::{lighting::cluster::Clustering, resources::GPUResourceManager, pipeline_manager::PipelineManager};
+use super::{resources::GPUResourceManager, pipeline_manager::PipelineManager};
 use legion::systems::resource::Resources;
 use std::sync::Arc;
 
