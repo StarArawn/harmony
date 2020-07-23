@@ -6,6 +6,7 @@ use super::{
 };
 use futures::executor::{ThreadPool, ThreadPoolBuilder};
 use std::{convert::TryFrom, path::PathBuf, sync::Arc};
+use dashmap::DashSet;
 
 pub struct TextureManager {
     device: Arc<wgpu::Device>,
@@ -14,6 +15,7 @@ pub struct TextureManager {
     image_cache: AssetCache<Image>,
     ron_cache: AssetCache<ImageRon>,
     texture_cache: AssetCache<Texture>,
+    loaded: DashSet<PathBuf>,
 }
 
 impl TextureManager {
@@ -29,6 +31,7 @@ impl TextureManager {
             image_cache,
             ron_cache,
             texture_cache,
+            loaded: DashSet::new(),
         }
     }
 
@@ -36,9 +39,10 @@ impl TextureManager {
         let path = path.into();
         let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
 
-        if !self.texture_cache.contains_key(&path) {
-            let ext = path.extension().unwrap().to_str().unwrap().to_string();
-
+        if !self.loaded.contains(&path) {
+            let ext = path.extension().unwrap().to_str().unwrap().to_string(); 
+            self.loaded.insert(path.clone());
+        
             // Cross thread arcs passed to new thread.
             let image_cache = self.image_cache.clone();
             let ron_cache = self.ron_cache.clone();
@@ -70,8 +74,8 @@ impl TextureManager {
                             .insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                         let result = Ok(Arc::new(Texture::new(
-                            device,
-                            queue,
+                            device.clone(),
+                            queue.clone(),
                             image,
                             image_ron,
                             path.clone(),
@@ -84,8 +88,10 @@ impl TextureManager {
 
                         ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
 
-                        log::info!("{:?} loaded.", path.file_name().unwrap());
-
+                        // queue.submit(None);
+                        // device.poll(wgpu::Maintain::Wait);
+                        
+                        log::info!("{:?} loaded.", path);
                         result
                     }
                     Err(error) => match error.kind() {
@@ -106,9 +112,10 @@ impl TextureManager {
         let path = path.into();
         let texture_handle = Arc::new(AssetHandle::new(path.clone(), self.texture_cache.clone()));
 
-        if !self.texture_cache.contains_key(&path) {
-            let ext = path.extension().unwrap().to_str().unwrap().to_string();
-
+        if !self.loaded.contains(&path) {
+            let ext = path.extension().unwrap().to_str().unwrap().to_string(); 
+            self.loaded.insert(path.clone());
+            
             // Cross thread arcs passed to new thread.
             let image_cache = self.image_cache.clone();
             let ron_cache = self.ron_cache.clone();
@@ -137,8 +144,8 @@ impl TextureManager {
                     image_cache.insert(texture_thread_handle.handle_id.clone(), Ok(image.clone()));
 
                     let result = Ok(Arc::new(Texture::new(
-                        device,
-                        queue,
+                        device.clone(),
+                        queue.clone(),
                         image,
                         image_ron,
                         path.clone(),
@@ -150,8 +157,11 @@ impl TextureManager {
                     };
 
                     ron_cache.insert(texture_thread_handle.handle_id.clone(), image_ron);
+
+                    // queue.submit(None);
+                    // device.poll(wgpu::Maintain::Wait);
                     
-                    log::info!("{:?} loaded.", path.file_name().unwrap());
+                    log::info!("{:?} loaded.", path);
                     result
                 }
                 Err(error) => match error.kind() {

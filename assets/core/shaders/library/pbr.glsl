@@ -1,27 +1,67 @@
 const float MAX_SPEC_LOD = 9.0;
+const float PI = 3.14159265358979323;
 
-vec3 f_schlick(const vec3 f0, const float vh) {
-	return f0 + (1.0 - f0) * exp2((-5.55473 * vh - 6.98316) * vh);
+vec3 Uncharted2ToneMapping(vec3 color)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	float exposure = 2.;
+	color *= exposure;
+	color = ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+	float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
+	color /= white;
+	color = pow(color, vec3(1. / 1.2));
+	return color;
 }
 
-float v_smithschlick(const float nl, const float nv, const float a) {
-	return 1.0 / ((nl * (1.0 - a) + a) * (nv * (1.0 - a) + a));
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a      = roughness*roughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return num / denom;
 }
 
-float d_ggx(const float nh, const float a) {
-	float a2 = a * a;
-	float denom = pow(nh * nh * (a2 - 1.0) + 1.0, 2.0);
-	return a2 * (1.0 / 3.1415926535) / denom;
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
 }
 
-vec3 specularBRDF(const vec3 f0, const float roughness, const float nl, const float nh, const float nv, const float vh) {
-	float a = roughness * roughness;
-	return d_ggx(nh, a) * clamp(v_smithschlick(nl, nv, a), 0.0, 1.0) * f_schlick(f0, vh) / 4.0;
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-vec3 lambertDiffuseBRDF(const vec3 albedo, const float nl) {
-	return albedo * max(0.0, nl);
-}
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}  
 
 vec3 saturate(vec3 v) {
     return clamp(v, vec3(0.0), vec3(1.0));

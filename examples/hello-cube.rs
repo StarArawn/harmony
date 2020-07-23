@@ -1,6 +1,6 @@
 use legion::prelude::*;
 use log;
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Vec3};
 
 use winit::{
     dpi::LogicalSize,
@@ -148,13 +148,13 @@ impl harmony::AppState for AppState {
         // Add red point light to our scene.
         // Uncomment this code to see point light.
         // let mut transform = Transform::new(app);
-        // transform.position = Vec3::new(-5.0, 0.0, 0.0);
+        // transform.position = Vec3::new(-5.0, 50.0, 0.0);
         // harmony::scene::entities::light::create(
         //     &mut app.current_scene.world,
-        //     LightType::Point(PointLightData {
+        //     LightType::Point(harmony::scene::components::PointLightData {
         //         color: Vec3::new(1.0, 0.0, 0.0),
-        //         attenuation: 10.0,
-        //         intensity: 10.0,
+        //         attenuation: 1000.0,
+        //         intensity: 50.0,
         //     }),
         //     transform,
         // );
@@ -168,8 +168,8 @@ impl harmony::AppState for AppState {
             70.0,
             actual_window_size.width,
             actual_window_size.height,
-            0.01,
-            2000.0,
+            1.0,
+            4000.0,
         );
         // Turns on frustum culling.
         camera_data.cull = true;

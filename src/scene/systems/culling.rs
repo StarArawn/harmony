@@ -12,7 +12,7 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_, mut world, _, (camera_query, transform_mesh_query)| {
                 // TODO: store and display this stat somewhere..
-                let mut total = 0;
+                let mut _total = 0;
                 let camera_frustum = {
                     let filtered_camera_data: Vec<_> =
                         camera_query
@@ -41,7 +41,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     bounding_sphere.center = (transform.matrix * Vec4::new(bounding_sphere.center.x, bounding_sphere.center.y, bounding_sphere.center.z, 1.0)).xyz();
                     transform.cull = !camera_frustum.contains_sphere(bounding_sphere);
                     if transform.cull {
-                        total += 1;
+                        _total += 1;
                     }
                 }
            })
