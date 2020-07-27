@@ -66,6 +66,7 @@ If more help is needed or you feel as though the issue you encountered is direct
 ## Screenshots
 ![Hello Cube](/screenshots/screen2.jpg?raw=true "Hello cube!")
 ![PBR](/screenshots/screen3.jpg?raw=true "PBR")
+![shadow](/screenshots/shadow.jpg?raw=true "Shadow")
 
 ## Known issues
 - No WASM support yet..
