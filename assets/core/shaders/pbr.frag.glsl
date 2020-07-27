@@ -56,18 +56,6 @@ uvec3 compute_froxel() {
     return uvec3(frustum_xy, min(depth_frustum, cluster_count.z - 1));
 }
 
-float VectorToDepthValue(vec3 Vec)
-{
-    vec3 AbsVec = abs(Vec);
-    float LocalZcomp = max(AbsVec.x, max(AbsVec.y, AbsVec.z));
-
-    const float f = 1000.0;
-    const float n = 1.0;
-    float NormZComp = (f+n) / (f-n) - (2*f*n)/(f-n)/LocalZcomp;
-    return (NormZComp + 1.0) * 0.5;
-}
-
-
 // TODO: Point-lights?
 void main() {
 
