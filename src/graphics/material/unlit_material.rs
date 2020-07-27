@@ -61,16 +61,16 @@ impl UnlitMaterial {
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &local_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0, // We'll use 1 for our local bindings.
                     resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&image.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::Sampler(&image.sampler),
                 },

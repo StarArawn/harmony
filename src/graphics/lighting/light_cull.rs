@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use crate::{AssetManager, graphics::{pipeline_manager::{ComputePipelineDesc, PipelineManager}, resources::GPUResourceManager}};
 use super::cluster::{FROXEL_COUNT};
 
@@ -15,7 +15,7 @@ impl LightCulling {
         asset_manager: &AssetManager,
     ) -> Self {
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
+            entries: Cow::Borrowed(&[
                 wgpu::BindGroupLayoutEntry::new(0, wgpu::ShaderStage::COMPUTE, wgpu::BindingType::StorageBuffer {
                     dynamic: false,
                     readonly: true,
@@ -26,23 +26,23 @@ impl LightCulling {
                     readonly: false,
                     min_binding_size: None,
                 }),
-            ],
-            label: Some("light culling layout"),
+            ]),
+            label: Some(Cow::Borrowed("light culling layout")),
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(gpu_resource_manager.frustum_buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Buffer(gpu_resource_manager.light_list_buffer.slice(..)),
                 },
-            ],
-            label: Some("light culling bind group"),
+            ]),
+            label: Some(Cow::Borrowed("light culling bind group")),
         });
 
         gpu_resource_manager.add_bind_group_layout("froxel_cull_layout", bind_group_layout);

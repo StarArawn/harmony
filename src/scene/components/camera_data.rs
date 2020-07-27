@@ -42,6 +42,31 @@ impl ProjectionData {
             ),
         }
     }
+
+    fn get_projection_range(&self, width: f32, height: f32, z_near: f32, z_far: f32) -> Mat4 {
+        match self {
+            ProjectionData::Perspective { fov, .. } => {
+                nalgebra_glm::perspective_fov_lh_no(
+                    fov.to_radians(),
+                    width,
+                    height,
+                    z_near,
+                    z_far,
+                )
+            }
+            ProjectionData::Orthographic {
+                world_height,
+                ..
+            } => nalgebra_glm::ortho_lh_no(
+                -0.5 * world_height * width / height,
+                0.5 * world_height * width / height,
+                -0.5 * world_height,
+                0.5 * world_height,
+                z_near,
+                z_far,
+            ),
+        }
+    }
 }
 
 /// CameraData holds all necessary data to calculate the cameras matrices
@@ -154,6 +179,11 @@ impl CameraData {
         self.frustum = Frustum::from_matrix(self.projection * self.view);
     }
 
+    pub fn resize_range(&mut self, width: f32, height: f32, near: f32, far: f32) {
+        self.projection = self.projection_data.get_projection_range(width, height, near, far);
+        self.frustum = Frustum::from_matrix(self.projection * self.view);
+    }
+
     /// updates the view matrix. Needs to be called when the camera moved
     pub fn update_view(&mut self, eye: Vec3, at: Vec3, up: Vec3) {
         self.view = nalgebra_glm::look_at_lh(&eye, &at, &up);
@@ -167,6 +197,64 @@ impl CameraData {
     /// returns the view-projection matrix
     pub fn get_matrix(&self) -> Mat4 {
         self.projection * self.view
+    }
+
+    pub(crate) fn set_reflect_cubic_camera(&mut self, position: Vec3, face_id: u32) {
+        let mut eye = Vec3::zeros();
+        let mut up = Vec3::new(0.0, 1.0, 0.0);
+        match face_id {
+            0 => {
+                eye = Vec3::new(1.0, 0.0, 0.0);
+            } // X+
+            1 => {
+                eye = Vec3::new(-1.0, 0.0, 0.0);
+            } // X-
+            2 => {
+                eye = Vec3::new(0.0, 1.0, 0.0);
+                up = Vec3::new(0.0, 0.0, -1.0);
+            } // Y+
+            3 => {
+                eye = Vec3::new(0.0, -1.0, 0.0);
+                up = Vec3::new(0.0, 0.0, 1.0);
+            } // Y-
+            4 => {
+                eye = Vec3::new(0.0, 0.0, 1.0);
+            } // Z+
+            5 => {
+                eye = Vec3::new(0.0, 0.0, -1.0);
+            } // Z-
+            _ => (),
+        }
+        self.update_view(eye + position, position, up);
+    }
+
+    pub(crate) fn set_cubic_camera(&mut self, position: Vec3, face_id: u32) {
+        let mut eye = Vec3::zeros();
+        let mut up = Vec3::new(0.0, 1.0, 0.0);
+        match face_id {
+            0 => {
+                eye = Vec3::new(1.0, 0.0, 0.0);
+            } // X+
+            1 => {
+                eye = Vec3::new(-1.0, 0.0, 0.0);
+            } // X-
+            2 => {
+                eye = Vec3::new(0.0, 1.0, 0.0);
+                up = Vec3::new(0.0, 0.0, -1.0);
+            } // Y+
+            3 => {
+                eye = Vec3::new(0.0, -1.0, 0.0);
+                up = Vec3::new(0.0, 0.0, 1.0);
+            } // Y-
+            4 => {
+                eye = Vec3::new(0.0, 0.0, 1.0);
+            } // Z+
+            5 => {
+                eye = Vec3::new(0.0, 0.0, -1.0);
+            } // Z-
+            _ => (),
+        }
+        self.update_view(position, position + eye, up);
     }
 }
 
@@ -193,7 +281,6 @@ mod tests {
         let world_width = width * world_height / height;
         let (z_near, z_far) = (0.01f32, 10f32);
         let camera_data = CameraData::new_orthographic(world_height, width, height, z_near, z_far);
-        print!("{:#?}", camera_data.projection);
         assert_eq!(
             camera_data.projection,
             nalgebra_glm::ortho_lh_no(

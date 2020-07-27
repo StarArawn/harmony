@@ -87,7 +87,7 @@ pub fn create() -> Box<dyn Schedulable> {
 
                 {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
                             load_op: wgpu::LoadOp::Load,
@@ -102,13 +102,12 @@ pub fn create() -> Box<dyn Schedulable> {
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: &depth_texture.0,
-                                depth_load_op: wgpu::LoadOp::Load,
-                                depth_store_op: wgpu::StoreOp::Store,
-                                stencil_load_op: wgpu::LoadOp::Load,
-                                stencil_store_op: wgpu::StoreOp::Store,
-                                clear_depth: 1.0,
-                                clear_stencil: 0,
-                            },
+                                depth_ops: Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(1.0),
+                                    store: true,
+                                }),
+                                stencil_ops: None,
+                            }
                         ),
                     });
 

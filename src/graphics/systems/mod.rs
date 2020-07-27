@@ -4,6 +4,7 @@ pub mod mesh;
 pub mod render;
 pub mod skybox;
 pub mod froxel;
+pub mod shadow;
 
 use legion::prelude::*;
 use legion::systems::schedule::Builder;

@@ -7,7 +7,7 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 // mipmaps always run pretty much right away.
 pub fn create(
@@ -52,8 +52,8 @@ pub fn create(
     // Create bind group layout and bind group for passing in texture to mip map shader.
     if bind_group_layout.is_none() {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("mipmap"),
-            bindings: &[
+            label: Some(Cow::Borrowed("mipmap")),
+            entries: Cow::Borrowed(&[
                 wgpu::BindGroupLayoutEntry::new(
                     0,
                     wgpu::ShaderStage::FRAGMENT,
@@ -68,7 +68,7 @@ pub fn create(
                     wgpu::ShaderStage::FRAGMENT,
                     wgpu::BindingType::Sampler { comparison: false },
                 ),
-            ],
+            ]),
         });
         resource_manager.add_bind_group_layout("mipmap", layout);
         bind_group_layout = resource_manager.get_bind_group_layout("mipmap");
@@ -79,7 +79,7 @@ pub fn create(
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
         mipmap_desc.shader = "core/shaders/calculations/mipmap.shader".to_string();
-        mipmap_desc.color_state.format = format;
+        mipmap_desc.color_states[0].format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         mipmap_desc.layouts = vec!["mipmap".to_string()];
         pipeline_manager.add_pipeline(
@@ -132,29 +132,29 @@ pub fn create(
 
             // Create a bind group. In this case the bind group is new every time for mip maps.
             let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("mipmap"),
+                label: Some(Cow::Borrowed("mipmap")),
                 layout: bind_group_layout.as_ref().unwrap(),
-                bindings: &[
-                    wgpu::Binding {
+                entries: Cow::Borrowed(&[
+                    wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::TextureView(&view),
                     },
-                    wgpu::Binding {
+                    wgpu::BindGroupEntry {
                         binding: 1,
                         resource: wgpu::BindingResource::Sampler(&sampler),
                     },
-                ],
+                ]),
             });
 
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &new_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
                         store: true,
                     },
-                }],
+                }]),
                 depth_stencil_attachment: None,
             });
             rpass.set_pipeline(&pipeline.as_ref().unwrap().render_pipeline);

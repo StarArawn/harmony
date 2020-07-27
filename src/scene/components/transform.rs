@@ -4,7 +4,7 @@ use crate::{
 };
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::{Mat4, Quat, Vec3};
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -28,7 +28,7 @@ impl Default for LocalUniform {
 /// scale: A Vector3 representing it's world scale.
 /// rotation: A quaternion representing it's world rotation.
 /// matrix: A world matrix.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Transform {
     /// Index of the transform used internally.
     pub(crate) index: u32,
@@ -121,10 +121,10 @@ impl Transform {
 
         let local_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            bindings: &[wgpu::Binding {
+            entries: Cow::Borrowed(&[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(local_buffer.slice(..)),
-            }],
+            }]),
             label: None,
         });
 

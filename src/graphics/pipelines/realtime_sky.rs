@@ -8,7 +8,7 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub fn create(resources: &Resources) {
     let asset_manager = resources.get::<AssetManager>().unwrap();
@@ -19,7 +19,7 @@ pub fn create(resources: &Resources) {
 
     let mut skybox_desc = PipelineDesc::default();
     skybox_desc.shader = "core/shaders/sky/sky.shader".to_string();
-    skybox_desc.color_state.format = sc_desc.format;
+    skybox_desc.color_states[0].format = sc_desc.format;
     skybox_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,
         depth_write_enabled: false,
@@ -32,7 +32,7 @@ pub fn create(resources: &Resources) {
 
     let skybox_material_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
+            entries: Cow::Borrowed(&[
                 wgpu::BindGroupLayoutEntry::new(
                     0,
                     wgpu::ShaderStage::FRAGMENT,
@@ -56,7 +56,7 @@ pub fn create(resources: &Resources) {
                         dimension: wgpu::TextureViewDimension::D2,
                     },
                 ),
-            ],
+            ]),
             label: None,
         });
     resource_manager.add_bind_group_layout("realtime_skybox_material", skybox_material_layout);

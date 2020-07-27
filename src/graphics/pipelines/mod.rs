@@ -73,6 +73,7 @@ pub struct PointLight {
     pub view_position: Vec4,
     pub color: Vec4,
     pub attenuation: Vec4,
+    pub shadow_matrix: Mat4,
 }
 
 impl Default for PointLight {
@@ -82,6 +83,7 @@ impl Default for PointLight {
             position: Vec4::zeros(),
             color: Vec4::zeros(),
             view_position: Vec4::zeros(),
+            shadow_matrix: Mat4::zeros(),
         }
     }
 }

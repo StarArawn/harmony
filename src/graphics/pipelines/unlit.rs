@@ -82,7 +82,7 @@ impl SimplePipelineDesc for UnlitPipelineDesc {
     ) -> Vec<&'a wgpu::BindGroupLayout> {
         let material_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[
+                entries: Cow::Borrowed(&[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStage::VERTEX,

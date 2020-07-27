@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use legion::prelude::*;
 use nalgebra_glm::{Vec3, Vec4};
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use super::{BindGroup, GPUResourceManager, RenderTarget};
 use crate::{
@@ -164,24 +164,24 @@ impl Probe {
         let bind_group = BindGroup::new(
             3,
             device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Probe"),
+                label: Some(Cow::Borrowed("Probe")),
                 layout: &bind_group_layout,
-                bindings: &[
-                    wgpu::Binding {
+                entries: Cow::Borrowed(&[
+                    wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::TextureView(
                             &irradiance_target.texture_view,
                         ),
                     },
-                    wgpu::Binding {
+                    wgpu::BindGroupEntry {
                         binding: 1,
                         resource: wgpu::BindingResource::TextureView(&specular_target.texture_view),
                     },
-                    wgpu::Binding {
+                    wgpu::BindGroupEntry {
                         binding: 2,
                         resource: wgpu::BindingResource::TextureView(&brdf_texture.texture_view),
                     },
-                ],
+                ]),
             }),
         );
         resource_manager.add_single_bind_group("probe_material", bind_group);
@@ -244,8 +244,8 @@ impl Probe {
             let realtime_skybox_pipeline = pipeline_manager.get("realtime_skybox", None).unwrap();
             let mut new_skybox_desc = skybox_pipeline.desc.clone();
             let mut new_realtime_skybox_desc = realtime_skybox_pipeline.desc.clone();
-            new_skybox_desc.color_state.format = self.format.into();
-            new_realtime_skybox_desc.color_state.format = self.format.into();
+            new_skybox_desc.color_states[0].format = self.format.into();
+            new_realtime_skybox_desc.color_states[0].format = self.format.into();
             let hash = new_skybox_desc.create_hash();
             let realtime_hash = new_realtime_skybox_desc.create_hash();
             pipeline_manager.add_pipeline(
@@ -311,7 +311,7 @@ impl Probe {
 
                 for (mut camera_data,) in camera_query.iter_mut(&mut scene.world) {
                     if camera_data.active {
-                        Self::update_camera(self.position, &mut camera_data, i);
+                        camera_data.set_reflect_cubic_camera(self.position, i);
                     }
                 }
 
@@ -454,32 +454,32 @@ impl Probe {
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &global_bind_group,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&self.probe_cube.texture_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(
                         &self.irradiance_target.texture_view,
                     ),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::Sampler(&self.probe_cube.sampler),
                 },
-            ],
+            ]),
             label: None,
         });
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -491,7 +491,7 @@ impl Probe {
                         }),
                         store: true,
                     },
-                }],
+                }]),
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&node_pipeline.render_pipeline);
@@ -559,26 +559,26 @@ impl Probe {
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &global_bind_group,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&self.probe_cube.texture_view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(
                         &self.specular_target.texture_view,
                     ),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::Sampler(&self.probe_cube.sampler),
                 },
-            ],
+            ]),
             label: None,
         });
 
@@ -620,7 +620,7 @@ impl Probe {
 
             {
                 let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                         attachment: &new_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
@@ -632,7 +632,7 @@ impl Probe {
                             }),
                             store: true,
                         },
-                    }],
+                    }]),
                     depth_stencil_attachment: None,
                 });
                 render_pass.set_pipeline(&pipeline.render_pipeline);
@@ -672,35 +672,6 @@ impl Probe {
 
         let queue = resources.get::<Arc<wgpu::Queue>>().unwrap();
         queue.submit(Some(encoder.finish()));
-    }
-
-    fn update_camera(position: Vec3, camera: &mut CameraData, face_id: u32) {
-        let mut eye = Vec3::zeros();
-        let mut up = Vec3::new(0.0, 1.0, 0.0);
-        match face_id {
-            0 => {
-                eye = Vec3::new(1.0, 0.0, 0.0);
-            } // X+
-            1 => {
-                eye = Vec3::new(-1.0, 0.0, 0.0);
-            } // X-
-            2 => {
-                eye = Vec3::new(0.0, 1.0, 0.0);
-                up = Vec3::new(0.0, 0.0, -1.0);
-            } // Y+
-            3 => {
-                eye = Vec3::new(0.0, -1.0, 0.0);
-                up = Vec3::new(0.0, 0.0, 1.0);
-            } // Y-
-            4 => {
-                eye = Vec3::new(0.0, 0.0, 1.0);
-            } // Z+
-            5 => {
-                eye = Vec3::new(0.0, 0.0, -1.0);
-            } // Z-
-            _ => (),
-        }
-        camera.update_view(eye, position, up);
     }
 }
 

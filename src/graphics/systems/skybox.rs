@@ -6,7 +6,7 @@ use crate::graphics::{
     CommandBufferQueue, CommandQueueItem,
 };
 use legion::prelude::*;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_skybox")
@@ -60,7 +60,7 @@ pub fn create() -> Box<dyn Schedulable> {
 
                 for (skybox,) in skyboxes.iter(&world) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: view_attachment,
                             resolve_target: None,
                             ops: wgpu::Operations {
@@ -72,7 +72,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                 }),
                                 store: true,
                             },
-                        }],
+                        }]),
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: depth_attachment,

@@ -25,7 +25,7 @@ use graphics::{
     renderer::{DepthTexture, DEPTH_FORMAT},
     // pipelines::{LinePipelineDesc, UnlitPipelineDesc},
     CommandBufferQueue,
-    CommandQueueItem, lighting::cluster::Clustering,
+    CommandQueueItem, lighting::cluster::Clustering, shadows::{ShadowCamera, OmniShadowManager},
 };
 use nalgebra_glm::Vec2;
 
@@ -108,14 +108,28 @@ impl Application {
                 gpu_resource_manager.clone(),
             );
             let clustering = Clustering::new(device.clone(), gpu_resource_manager.clone(), &mut pipeline_manager, &asset_manager);
+
+            OmniShadowManager::create_pipeline(device.clone(), &asset_manager, gpu_resource_manager.clone(), &mut pipeline_manager);
+
             (asset_manager, clustering)
         };
         resources.insert(asset_manager);
         resources.insert(clustering);
 
+        // Setup default cube shadow camera.
+        resources.insert(ShadowCamera::new_perspective(
+            90.0,
+            1024.0,
+            1024.0,
+            0.1,
+            1000.0,
+        ));
+
         let mut render_schedule_builder = create_render_schedule_builder();
         render_schedule_builder =
-            render_schedule_builder.add_system(crate::graphics::systems::mesh::create());
+            render_schedule_builder
+                .add_system(crate::graphics::systems::shadow::create())
+                .add_system(crate::graphics::systems::mesh::create());
 
         for index in 0..render_systems.len() {
             let system = render_systems.remove(index);
@@ -273,7 +287,7 @@ impl Application {
         // Global Node
         {
             let mut pipeline_manager = self.resources.get_mut::<PipelineManager>().unwrap();
-            pipeline_manager.add_node("globals", vec![]);
+            pipeline_manager.add_node("globals", vec!["shadow"]);
         }
 
         // Create new pipelines

@@ -1,4 +1,4 @@
-use super::{resources::GPUResourceManager, pipeline_manager::PipelineManager};
+use super::{resources::GPUResourceManager, pipeline_manager::PipelineManager, shadows::ShadowQuality};
 use legion::systems::resource::Resources;
 use std::sync::Arc;
 
@@ -24,16 +24,12 @@ impl Renderer {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
 
-        let (needed_features, unsafe_extensions) =
-            (wgpu::Features::empty(), wgt::UnsafeFeatures::disallow());
-
         let adapter = instance
             .request_adapter(
                 &wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::HighPerformance,
                     compatible_surface: Some(&surface),
                 },
-                unsafe_extensions,
             )
             .await
             .unwrap();
@@ -43,8 +39,11 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: adapter_features & needed_features,
-                    limits: wgpu::Limits::default(),
+                    features: adapter_features & wgpu::Features::PUSH_CONSTANTS,
+                    limits:  wgpu::Limits {
+                        max_push_constant_size: 128,
+                        ..wgpu::Limits::default()
+                    },
                     shader_validation: true,
                 },
                 None,
@@ -76,8 +75,17 @@ impl Renderer {
         });
         let device = Arc::new(device);
 
-        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
+        // Omni Shadow manager
+        // TODO: Expose this as configurable to the user.
+        let omni_manager = crate::graphics::shadows::OmniShadowManager::new(
+            device.clone(),
+            ShadowQuality::Medium
+        );
+        
+        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone(), &omni_manager));
         let pipeline_manager = PipelineManager::new();
+
+        resources.insert(omni_manager);
         resources.insert(pipeline_manager);
         resources.insert(gpu_resource_manager);
         resources.insert(sc_desc);
@@ -95,7 +103,7 @@ impl Renderer {
     }
 
     pub(crate) fn render(&mut self) -> wgpu::SwapChainFrame {
-        let output = self.swap_chain.get_next_frame().unwrap();
+        let output = self.swap_chain.get_current_frame().unwrap();
 
         output
     }

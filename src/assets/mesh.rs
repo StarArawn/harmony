@@ -346,9 +346,6 @@ mod tests {
     fn should_load_mesh() {
         futures::executor::block_on(async {
             let (_, device, queue) = async_std::task::block_on(async {
-                let (needed_features, unsafe_features) =
-                    (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
-
                 let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
                 let adapter = instance
                     .request_adapter(
@@ -356,7 +353,6 @@ mod tests {
                             power_preference: wgpu::PowerPreference::Default,
                             compatible_surface: None,
                         },
-                        unsafe_features,
                     )
                     .await
                     .unwrap();
@@ -365,7 +361,7 @@ mod tests {
                 let (device, queue) = adapter
                     .request_device(
                         &wgpu::DeviceDescriptor {
-                            features: adapter_features & needed_features,
+                            features: adapter_features,
                             limits: wgpu::Limits::default(),
                             shader_validation: true,
                         },

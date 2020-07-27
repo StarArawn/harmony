@@ -11,6 +11,42 @@ use crate::{
     scene::components,
 };
 
+// ******************************************************************************
+// This section is meant to prepare our global uniforms and pass them to the GPU.
+// ******************************************************************************
+pub fn update_globals<'a>(camera_data: &components::CameraData, encoder: &'a mut wgpu::CommandEncoder, device: Arc<wgpu::Device>, resource_manager: Arc<GPUResourceManager>) -> Mat4 {
+    let camera_matrix = camera_data.get_matrix();
+
+    let camera_view = camera_data.view;
+
+    let uniforms = GlobalUniform {
+        view_projection: camera_matrix,
+        camera_pos: Vec4::new(
+            camera_data.position.x,
+            camera_data.position.y,
+            camera_data.position.z,
+            0.0,
+        ),
+        view: camera_data.view,
+        projection: camera_data.projection,
+    };
+
+    let constants_buffer = device.create_buffer_with_data(
+        bytemuck::bytes_of(&uniforms),
+        wgpu::BufferUsage::COPY_SRC,
+    );
+
+    encoder.copy_buffer_to_buffer(
+        &constants_buffer,
+        0,
+        &resource_manager.global_uniform_buffer,
+        0,
+        std::mem::size_of::<GlobalUniform>() as u64,
+    );
+
+    return camera_view;
+}
+
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("encoder_globals")
         .write_resource::<CommandBufferQueue>()
@@ -26,59 +62,26 @@ pub fn create() -> Box<dyn Schedulable> {
             |_,
              world,
              (command_buffer_queue, resource_manager, device),
-             (camera_data, directional_lights, point_lights)| {
+             (camera_query, directional_lights, point_lights)| {
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("globals"),
                 });
 
-                let mut camera_view: Option<Mat4> = None;
-
-                // ******************************************************************************
-                // This section is meant to prepare our global uniforms and pass them to the GPU.
-                // ******************************************************************************
-                {
-                    let filtered_camera_data: Vec<_> = camera_data
-                        .iter(&world)
-                        .filter(|(camera,)| camera.active)
-                        .collect();
-                    let camera_data: Option<&(
-                        legion::borrow::Ref<'_, crate::scene::components::camera_data::CameraData>,
-                    )> = filtered_camera_data.first();
-
-                    if camera_data.is_none() {
-                        return;
-                    }
-
-                    let camera_data = &camera_data.as_ref().unwrap().0;
-                    let camera_matrix = camera_data.get_matrix();
-
-                    camera_view = Some(camera_data.view);
-
-                    let uniforms = GlobalUniform {
-                        view_projection: camera_matrix,
-                        camera_pos: Vec4::new(
-                            camera_data.position.x,
-                            camera_data.position.y,
-                            camera_data.position.z,
-                            0.0,
-                        ),
-                        view: camera_data.view,
-                        projection: camera_data.projection,
-                    };
-
-                    let constants_buffer = device.create_buffer_with_data(
-                        bytemuck::bytes_of(&uniforms),
-                        wgpu::BufferUsage::COPY_SRC,
-                    );
-
-                    encoder.copy_buffer_to_buffer(
-                        &constants_buffer,
-                        0,
-                        &resource_manager.global_uniform_buffer,
-                        0,
-                        std::mem::size_of::<GlobalUniform>() as u64,
-                    );
+                // Get camera for update_globals function.
+                let filtered_camera_data: Vec<_> = camera_query
+                    .iter(&world)
+                    .filter(|(camera,)| camera.active)
+                    .collect();
+                let camera_data: Option<&(
+                    legion::borrow::Ref<'_, crate::scene::components::camera_data::CameraData>,
+                )> = filtered_camera_data.first();
+                
+                if camera_data.is_none() {
+                    return;
                 }
+                let camera_data = &camera_data.as_ref().unwrap().0;
+
+                let camera_view: Mat4 = update_globals(camera_data, &mut encoder, device.clone(), resource_manager.clone());
 
                 // ******************************************************************************
                 // This section is where we upload our lighting uniforms to the GPU
@@ -108,10 +111,18 @@ pub fn create() -> Box<dyn Schedulable> {
                                 1.0,
                             );
                             PointLight {
-                                attenuation: Vec4::new(data.attenuation, 0.0, 0.0, 0.0),
+                                attenuation: Vec4::new(data.attenuation, if data.shadow { 1.0 } else { 0.0 }, data.shadow_texture_id.0 as f32, data.shadow_texture_id.1 as f32),
                                 color: Vec4::new(data.color.x, data.color.y, data.color.z, data.intensity),
                                 position,
-                                view_position: camera_view.unwrap() * position,
+                                view_position: camera_view * position,
+                                shadow_matrix: nalgebra_glm::perspective_fov_lh_no(
+                                    90f32.to_radians(),
+                                    512.0,
+                                    512.0,
+                                    0.1,
+                                    data.attenuation,
+                                ),
+                                ..Default::default()
                             }
                         })
                         .collect();

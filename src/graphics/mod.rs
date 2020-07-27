@@ -17,4 +17,6 @@ pub mod systems;
 
 pub mod pipeline_manager;
 
+pub mod shadows;
+
 pub(crate) mod lighting;

@@ -2,7 +2,7 @@ use ordered_float::OrderedFloat;
 use std::collections::{hash_map::DefaultHasher, HashMap};
 use std::{
     hash::{Hash, Hasher},
-    sync::Arc,
+    sync::Arc, borrow::Cow,
 };
 
 use super::{
@@ -19,7 +19,7 @@ pub struct PipelineDesc {
     pub shader: String,
     pub vertex_state: VertexStateBuilder,
     pub primitive_topology: wgpu::PrimitiveTopology,
-    pub color_state: wgpu::ColorStateDescriptor,
+    pub color_states: Vec<wgpu::ColorStateDescriptor>,
     pub depth_state: Option<wgpu::DepthStencilStateDescriptor>,
     pub sample_count: u32,
     pub sampler_mask: u32,
@@ -28,8 +28,9 @@ pub struct PipelineDesc {
     pub front_face: wgpu::FrontFace,
     pub cull_mode: wgpu::CullMode,
     pub depth_bias: i32,
-    pub depth_bias_slope_scale: OrderedFloat<f32>,
+    pub depth_bias_slope_scale: OrderedFloat<f32>, // Use OrderedFloat because of hash.
     pub depth_bias_clamp: OrderedFloat<f32>,
+    pub push_constant_ranges: Vec<wgpu::PushConstantRange>,
 }
 
 impl Default for PipelineDesc {
@@ -38,12 +39,12 @@ impl Default for PipelineDesc {
             shader: "".to_string(),
             vertex_state: VertexStateBuilder::new(),
             primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_state: wgpu::ColorStateDescriptor {
+            color_states: vec![wgpu::ColorStateDescriptor {
                 format: FRAME_FORMAT,
                 color_blend: wgpu::BlendDescriptor::REPLACE,
                 alpha_blend: wgpu::BlendDescriptor::REPLACE,
                 write_mask: wgpu::ColorWrite::ALL,
-            },
+            }],
             depth_state: None,
             sample_count: 1,
             sampler_mask: !0,
@@ -54,6 +55,7 @@ impl Default for PipelineDesc {
             depth_bias: 0,
             depth_bias_slope_scale: 0.0.into(),
             depth_bias_clamp: 0.0.into(),
+            push_constant_ranges: Vec::new(),
         }
     }
 }
@@ -81,11 +83,11 @@ impl PipelineDesc {
         };
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
-            entry_point: "main",
+            entry_point: Cow::Borrowed("main"),
         };
         let fragment_stage = Some(wgpu::ProgrammableStageDescriptor {
             module: &shader.fragment,
-            entry_point: "main",
+            entry_point: Cow::Borrowed("main"),
         });
 
         let bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>> = self
@@ -104,9 +106,10 @@ impl PipelineDesc {
             depth_bias: self.depth_bias,
             depth_bias_slope_scale: self.depth_bias_slope_scale.into(),
             depth_bias_clamp: self.depth_bias_clamp.into(),
+            ..Default::default()
         };
         let primitive_topology = self.primitive_topology;
-        let color_states = self.color_state.clone();
+        let color_states = self.color_states.clone();
         let depth_stencil_state = self.depth_state.clone();
         let vertex_state_builder = self.vertex_state.clone();
         let sample_count = self.sample_count;
@@ -115,10 +118,11 @@ impl PipelineDesc {
 
         // Once we create the layout we don't need the bind group layouts.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts
+            bind_group_layouts: Cow::Owned(bind_group_layouts
                 .iter()
                 .map(|x| x.as_ref())
-                .collect::<Vec<&wgpu::BindGroupLayout>>(),
+                .collect::<Vec<&wgpu::BindGroupLayout>>()),
+            push_constant_ranges: Cow::Borrowed(&self.push_constant_ranges.clone()),
         });
 
         // Creates our vertex descriptor.
@@ -128,13 +132,13 @@ impl PipelineDesc {
             .map(|desc| wgpu::VertexBufferDescriptor {
                 stride: desc.stride,
                 step_mode: desc.step_mode,
-                attributes: &desc.attributes,
+                attributes: Cow::Borrowed(&desc.attributes),
             })
             .collect();
 
         let vertex_state = wgpu::VertexStateDescriptor {
             index_format: vertex_state_builder.index_format,
-            vertex_buffers: &vertex_buffers,
+            vertex_buffers: Cow::Borrowed(&vertex_buffers),
         };
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -142,7 +146,7 @@ impl PipelineDesc {
             vertex_stage,
             fragment_stage,
             primitive_topology,
-            color_states: &[color_states],
+            color_states: Cow::Borrowed(&color_states),
             rasterization_state: Some(rasterization_state),
             depth_stencil_state,
             vertex_state,
@@ -195,7 +199,7 @@ impl ComputePipelineDesc {
 
         let compute_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.compute,
-            entry_point: "main",
+            entry_point: Cow::Borrowed("main"),
         };
 
         let bind_group_layouts: Vec<Arc<wgpu::BindGroupLayout>> = self
@@ -211,10 +215,11 @@ impl ComputePipelineDesc {
 
         // Once we create the layout we don't need the bind group layouts.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts
+            bind_group_layouts: Cow::Owned(bind_group_layouts
                 .iter()
                 .map(|x| x.as_ref())
-                .collect::<Vec<&wgpu::BindGroupLayout>>(),
+                .collect::<Vec<&wgpu::BindGroupLayout>>()),
+            push_constant_ranges: Cow::Borrowed(&[]),
         });
 
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
