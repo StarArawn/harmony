@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use nalgebra_glm::{Mat4, Vec2};
 use bytemuck::{Pod, Zeroable};
 use crate::{AssetManager, graphics::{resources::{GPUResourceManager}, pipeline_manager::{PipelineManager, ComputePipelineDesc}}, core::{Frustum, GpuFrustum}};
@@ -39,7 +39,7 @@ impl FrustumCreation {
         let uniform_buffer = device.create_buffer_with_data(bytemuck::bytes_of(&uniform), wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST);
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
+            entries: Cow::Borrowed(&[
                 wgpu::BindGroupLayoutEntry::new(0, wgpu::ShaderStage::COMPUTE, wgpu::BindingType::UniformBuffer {
                     dynamic: false,
                     min_binding_size: None,
@@ -49,23 +49,23 @@ impl FrustumCreation {
                     dynamic: false,
                     min_binding_size: None,
                 }),
-            ],
-            label: Some("froxel layout"),
+            ]),
+            label: Some(Cow::Borrowed("froxel layout")),
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(uniform_buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Buffer(gpu_resource_manager.frustum_buffer.slice(..)),
                 },
-            ],
-            label: Some("froxel bindings"),
+            ]),
+            label: Some(Cow::Borrowed("froxel bindings")),
         });
 
         gpu_resource_manager.add_bind_group_layout("froxel_layout", bind_group_layout);

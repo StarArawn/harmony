@@ -13,12 +13,14 @@ layout(location = 3) out vec3 o_tangent;
 layout(location = 4) out float o_tbn_handedness;
 layout(location = 5) out vec4 o_clip_position;
 layout(location = 6) out vec4 o_view_position;
+layout(location = 7) out vec3 o_vertex;
 
 layout(set = 0, binding = 0) uniform Locals {
     mat4 world;
 };
 
 void main() {
+    o_vertex = i_Pos;
     v_TexCoord = vec2(i_uv.x, i_uv.y);
     mat3 normalMatrix = mat3(transpose(inverse(world)));
     o_position = (world * vec4(i_Pos, 1.0)).xyz;

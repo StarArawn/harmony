@@ -144,8 +144,8 @@ impl Theme {
         style.scrollbar_size = self.scrollbar_size;
         style.window_rounding = self.window_rounding; // Radius of window corners rounding. Set to 0.0f to have rectangular windows
 
-        colors[imgui::StyleColor::Border as usize] = self.border_shadow.into();
-        colors[imgui::StyleColor::BorderShadow as usize] = self.border.into();
+        colors[imgui::StyleColor::Border as usize] = self.border.into();
+        colors[imgui::StyleColor::BorderShadow as usize] = self.border_shadow.into();
         colors[imgui::StyleColor::Button as usize] = self.button_active.into();
         colors[imgui::StyleColor::ButtonActive as usize] = self.button_hovered.into();
         colors[imgui::StyleColor::ButtonHovered as usize] = self.button.into();

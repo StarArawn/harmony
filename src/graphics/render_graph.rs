@@ -60,7 +60,7 @@ impl RenderGraph {
         name: T2,
         mut pipeline_desc: T,
         dependency: Vec<&str>,
-        _include_local_bindings: bool,
+        _include_local_entries: bool,
         output: Option<RenderTarget>,
         use_output_from_dependency: bool,
     ) {

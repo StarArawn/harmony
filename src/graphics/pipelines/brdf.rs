@@ -7,7 +7,7 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 // mipmaps always run pretty much right away.
 pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::TextureFormat) {
@@ -25,7 +25,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
     if pipeline.is_none() {
         let mut mipmap_desc = PipelineDesc::default();
         mipmap_desc.shader = "core/shaders/calculations/specular_brdf.shader".to_string();
-        mipmap_desc.color_state.format = format;
+        mipmap_desc.color_states[0].format = format;
         mipmap_desc.cull_mode = wgpu::CullMode::None;
         pipeline_manager.add_pipeline(
             "brdf",
@@ -40,7 +40,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
 
     {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+            color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &output.texture_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -52,7 +52,7 @@ pub fn create(resources: &Resources, output: &RenderTarget, format: wgpu::Textur
                     }),
                     store: true,
                 },
-            }],
+            }]),
             depth_stencil_attachment: None,
         });
         render_pass.set_pipeline(&pipeline.as_ref().unwrap().render_pipeline);

@@ -14,7 +14,7 @@ use crate::{
 };
 use components::transform::LocalUniform;
 use legion::prelude::*;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_mesh")
@@ -84,14 +84,14 @@ pub fn create() -> Box<dyn Schedulable> {
                 let asset_materials: Vec<Arc<AssetHandle<PBRMaterial>>> = asset_manager.get_all_materials::<PBRMaterialRon>();
                 {
                     let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
                                 store: true,
                             },
-                        }],
+                        }]),
                         depth_stencil_attachment: Some(
                             wgpu::RenderPassDepthStencilAttachmentDescriptor {
                                 attachment: &depth_texture.0,
@@ -99,10 +99,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     load: wgpu::LoadOp::Load,
                                     store: true,
                                 }),
-                                stencil_ops: Some(wgpu::Operations {
-                                    load: wgpu::LoadOp::Load,
-                                    store: true,
-                                }),
+                                stencil_ops: None,
                             },
                         ),
                     });

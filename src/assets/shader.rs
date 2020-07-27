@@ -1,7 +1,7 @@
 use shaderc;
 use std::io::BufRead;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub enum Shader {
     Core(CoreShader),
@@ -91,7 +91,7 @@ impl Shader {
                     Some(&options),
                 )
                 .unwrap();
-            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(&spirv.as_binary())))
+            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(Cow::Borrowed(spirv.as_binary()))))
         } else { None };
 
         let fragment = if frag_contents.is_ok() {
@@ -104,7 +104,7 @@ impl Shader {
                     Some(&options),
                 )
                 .unwrap();
-            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(spirv.as_binary())))
+            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(Cow::Borrowed(spirv.as_binary()))))
         } else { None };
 
         let compute = if comp_contents.is_ok() {
@@ -117,7 +117,7 @@ impl Shader {
                     Some(&options),
                 )
                 .unwrap();
-            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(spirv.as_binary())))
+            Some(device.create_shader_module(wgpu::ShaderModuleSource::SpirV(Cow::Borrowed(spirv.as_binary()))))
         } else { None };
 
         if fragment.is_some() && vertex.is_some() {
@@ -143,9 +143,6 @@ mod tests {
     #[test]
     fn should_load_shader() {
         async_std::task::block_on(async {
-            let (needed_features, unsafe_features) =
-                (wgpu::Features::empty(), wgpu::UnsafeFeatures::disallow());
-
             let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
             let adapter = instance
                 .request_adapter(
@@ -153,7 +150,6 @@ mod tests {
                         power_preference: wgpu::PowerPreference::Default,
                         compatible_surface: None,
                     },
-                    unsafe_features,
                 )
                 .await
                 .unwrap();
@@ -162,7 +158,7 @@ mod tests {
             let (device, _) = adapter
                 .request_device(
                     &wgpu::DeviceDescriptor {
-                        features: adapter_features & needed_features,
+                        features: adapter_features,
                         limits: wgpu::Limits::default(),
                         shader_validation: true,
                     },

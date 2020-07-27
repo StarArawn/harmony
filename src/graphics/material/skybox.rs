@@ -7,7 +7,7 @@ use crate::{
     },
     Application, AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub const SPEC_CUBEMAP_MIP_LEVELS: u32 = 6;
 
@@ -187,20 +187,20 @@ impl Skybox {
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &material_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&rayleigh_texture.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(&mie_texture.view),
                 },
-            ],
+            ]),
             label: None,
         });
         self.cubemap_bind_group = Some(bind_group);
@@ -213,18 +213,18 @@ impl Skybox {
     ) {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &material_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(self.color_view.as_ref().unwrap()),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(
                         self.cubemap_sampler.as_ref().unwrap(),
                     ),
                 },
-            ],
+            ]),
             label: None,
         });
         self.cubemap_bind_group = Some(bind_group);

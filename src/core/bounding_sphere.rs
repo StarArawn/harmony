@@ -140,5 +140,19 @@ impl BoundingSphere {
         }
     }
 
+    pub fn intersects_sphere(&self, other: &BoundingSphere) -> bool {
+        let sq_dist = nalgebra_glm::distance2(&self.center, &other.center);
+        let sphere_radius_combined = other.radius + self.radius;
+        let sphere_radius_subtracted = self.radius - other.radius;
+
+        if sq_dist > sphere_radius_combined * sphere_radius_combined {
+            return false;
+        } else if sq_dist <= sphere_radius_subtracted * sphere_radius_subtracted {
+            return true;
+        } else {
+            return true;
+        }
+    }
+
         
 }

@@ -1,4 +1,4 @@
-use nalgebra_glm::Vec3;
+use nalgebra_glm::{Vec3};
 
 /// An enum representing different light types
 pub enum LightType {
@@ -39,6 +39,10 @@ pub struct PointLightData {
     pub attenuation: f32,
     /// Light intensity
     pub intensity: f32,
+    // Will generate a shadow map.
+    pub shadow: bool,
+    // Auto calculated by the omni shadow manager.
+    pub(crate) shadow_texture_id: (u32, u32),
 }
 
 impl Default for PointLightData {
@@ -47,6 +51,20 @@ impl Default for PointLightData {
             color: Vec3::zeros(),
             attenuation: 0.0,
             intensity: 10.0,
+            shadow: false,
+            shadow_texture_id: (0, 0),
+        }
+    }
+}
+
+impl PointLightData {
+    pub fn new(color: Vec3, attenuation: f32, intensity: f32, shadow: bool) -> Self {
+        Self {
+            color,
+            attenuation,
+            intensity,
+            shadow,
+            shadow_texture_id: (0, 0),
         }
     }
 }

@@ -2,7 +2,7 @@ use super::{file_manager::AssetHandle, texture::Texture};
 use crate::graphics::resources::{BindGroup, GPUResourceManager};
 use bytemuck::{Pod, Zeroable};
 use nalgebra_glm::Vec4;
-use std::{convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc};
+use std::{convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc, borrow::Cow};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -165,32 +165,32 @@ impl BindMaterial for PBRMaterial {
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(uniform_buf.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::Sampler(&brdf_sampler),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(&main_texture.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&normal_texture.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 5,
                     resource: wgpu::BindingResource::TextureView(&roughness_texture.view),
                 },
-            ],
+            ]),
             label: None,
         });
 

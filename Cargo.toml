@@ -19,7 +19,7 @@ futures = { version = "0.3.5", features = ["default", "thread-pool"] }
 gltf="0.15.2"
 image = "0.23.4"
 imgui = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0" }
-imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="c13c6dbc04dfd5189828afac980ce3d2fc39859c" }
+imgui-wgpu = { git="https://github.com/StarArawn/imgui-wgpu-rs", rev="dc19b8436f5ba86f9c0d546912e1a1e6d2688007" }
 imgui-winit-support = { version = "0.4.0-pre", git = "https://github.com/jaynus/imgui-rs", rev = "fd3caf3e5b1141e8af3725f8c6898524c14426b0", default-features = true }
 legion = { git = "https://github.com/TomGillen/legion", rev="bd441f4811e7a9e877a0f479a674bbdbf4e4cda3" }
 log = "0.4"
@@ -35,10 +35,5 @@ solvent = "0.8.1"
 typed-arena = "2.0.1"
 uuid = { version = "0.8.1", features = ["v4"] }
 walkdir = "2"
-wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="0c7c3afebb12bf411d6964887b85e5fd152057f5" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev="e785b213e409460649da5c78068f653d2634bafc" }
 winit = { version = "0.22.0", features = ["web-sys"] }
-
-[dependencies.wgt]
-package = "wgpu-types"
-git = "https://github.com/gfx-rs/wgpu"
-rev = "43c67ac59c2dedaa4d78601bc460aab7c3257973"

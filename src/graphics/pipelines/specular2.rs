@@ -7,7 +7,7 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     let asset_manager = resources.get_mut::<AssetManager>().unwrap();
@@ -16,7 +16,7 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
     let device = resources.get::<Arc<wgpu::Device>>().unwrap();
     let specular_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
+            entries: Cow::Borrowed(&[
                 wgpu::BindGroupLayoutEntry::new(
                     0,
                     wgpu::ShaderStage::FRAGMENT,
@@ -50,14 +50,14 @@ pub fn create(resources: &Resources, format: wgpu::TextureFormat) {
                     wgpu::ShaderStage::FRAGMENT,
                     wgpu::BindingType::Sampler { comparison: false },
                 ),
-            ],
+            ]),
             label: None,
         });
     resource_manager.add_bind_group_layout("specular_globals", specular_bind_group_layout);
 
     let mut skybox_desc = PipelineDesc::default();
     skybox_desc.shader = "core/shaders/calculations/specular2.shader".to_string();
-    skybox_desc.color_state.format = format;
+    skybox_desc.color_states[0].format = format;
 
     skybox_desc.layouts = vec!["specular_globals".to_string()];
     skybox_desc.cull_mode = wgpu::CullMode::None;

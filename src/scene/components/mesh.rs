@@ -2,6 +2,7 @@ use crate::assets::{mesh::Gltf, AssetHandle};
 use std::sync::Arc;
 
 /// A reference to the mesh.
+#[derive(PartialEq, Clone)]
 pub struct Mesh {
     pub mesh_handle: Arc<AssetHandle<Gltf>>,
 }

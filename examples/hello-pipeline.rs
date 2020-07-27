@@ -14,7 +14,7 @@ use harmony::{
     AssetManager, WinitState,
 };
 use nalgebra_glm::Vec3;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 struct WindowSize {
     width: u32,
@@ -60,14 +60,14 @@ pub fn create_triangle_render_system() -> Box<dyn Schedulable> {
                 let triangle_bind_group = resource_manager.get_bind_group("triangle", 0).unwrap();
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                        color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                             attachment: &output.view,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
                                 store: true,
                             },
-                        }],
+                        }]),
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&node.render_pipeline);
@@ -96,13 +96,13 @@ impl harmony::AppState for AppState {
 
         // Setup our bind groups and layouts
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[],
+            entries: Cow::Borrowed(&[]),
             label: None,
         });
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            bindings: &[],
-            label: Some("triangle"),
+            entries: Cow::Borrowed(&[]),
+            label: Some(Cow::Borrowed("triangle")),
         });
         gpu_resource_manager.add_single_bind_group("triangle", BindGroup::new(0, bind_group));
         gpu_resource_manager.add_bind_group_layout("triangle_layout", bind_group_layout);

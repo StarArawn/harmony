@@ -1,6 +1,6 @@
 use super::resources::{GPUResourceManager, RenderTarget};
 use crate::{assets::shader::Shader, AssetManager};
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub struct BindGroupWithData {
     pub(crate) uniform_buf: wgpu::Buffer,
@@ -61,11 +61,11 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
         let vertex_stage = wgpu::ProgrammableStageDescriptor {
             module: &shader.vertex,
-            entry_point: "main",
+            entry_point: Cow::Borrowed("main"),
         };
         let fragment_stage = Some(wgpu::ProgrammableStageDescriptor {
             module: &shader.fragment,
-            entry_point: "main",
+            entry_point: Cow::Borrowed("main"),
         });
 
         let mut bind_group_layouts = self.create_layout(&device, resource_manager);
@@ -84,10 +84,11 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
 
         // Once we create the layout we don't need the bind group layout.
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            bind_group_layouts: &bind_group_layouts
+            bind_group_layouts: Cow::Owned(bind_group_layouts
                 .iter()
                 .map(|x| x.as_ref())
-                .collect::<Vec<&wgpu::BindGroupLayout>>(),
+                .collect::<Vec<&wgpu::BindGroupLayout>>()),
+                push_constant_ranges: Cow::Borrowed(&[]),
         });
 
         let vertex_buffers: Vec<wgpu::VertexBufferDescriptor<'_>> = vertex_state_builder
@@ -96,13 +97,13 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
             .map(|desc| wgpu::VertexBufferDescriptor {
                 stride: desc.stride,
                 step_mode: desc.step_mode,
-                attributes: &desc.attributes,
+                attributes: Cow::Borrowed(&desc.attributes),
             })
             .collect();
 
         let vertex_state = wgpu::VertexStateDescriptor {
             index_format: vertex_state_builder.index_format,
-            vertex_buffers: &vertex_buffers,
+            vertex_buffers: Cow::Borrowed(&vertex_buffers),
         };
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -110,7 +111,7 @@ pub trait SimplePipelineDesc: std::fmt::Debug {
             vertex_stage,
             fragment_stage,
             primitive_topology,
-            color_states: &color_states,
+            color_states: Cow::Borrowed(&color_states),
             rasterization_state: Some(rasterization_state),
             depth_stencil_state,
             vertex_state,

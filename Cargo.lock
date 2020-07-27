@@ -801,7 +801,7 @@ dependencies = [
 [[package]]
 name = "gfx-descriptor"
 version = "0.1.0"
-source = "git+https://github.com/gfx-rs/gfx-extras?rev=6387d81773e29be2220cb15186ceb875ed88303b#6387d81773e29be2220cb15186ceb875ed88303b"
+source = "git+https://github.com/gfx-rs/gfx-extras?rev=473a4cdc63463e7986707507c4a7f6a3a767e329#473a4cdc63463e7986707507c4a7f6a3a767e329"
 dependencies = [
  "fxhash",
  "gfx-hal",
@@ -821,7 +821,7 @@ dependencies = [
 [[package]]
 name = "gfx-memory"
 version = "0.1.3"
-source = "git+https://github.com/gfx-rs/gfx-extras?rev=6387d81773e29be2220cb15186ceb875ed88303b#6387d81773e29be2220cb15186ceb875ed88303b"
+source = "git+https://github.com/gfx-rs/gfx-extras?rev=473a4cdc63463e7986707507c4a7f6a3a767e329#473a4cdc63463e7986707507c4a7f6a3a767e329"
 dependencies = [
  "fxhash",
  "gfx-hal",
@@ -907,7 +907,6 @@ dependencies = [
  "uuid",
  "walkdir",
  "wgpu",
- "wgpu-types",
  "winit",
 ]
 
@@ -978,7 +977,7 @@ dependencies = [
 [[package]]
 name = "imgui-wgpu"
 version = "0.6.0"
-source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=c13c6dbc04dfd5189828afac980ce3d2fc39859c#c13c6dbc04dfd5189828afac980ce3d2fc39859c"
+source = "git+https://github.com/StarArawn/imgui-wgpu-rs?rev=dc19b8436f5ba86f9c0d546912e1a1e6d2688007#dc19b8436f5ba86f9c0d546912e1a1e6d2688007"
 dependencies = [
  "imgui",
  "log",
@@ -1336,13 +1335,14 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "0.1.0"
-source = "git+https://github.com/gfx-rs/naga?rev=a9228d2aed38c71388489a95817238ff98198fa3#a9228d2aed38c71388489a95817238ff98198fa3"
+source = "git+https://github.com/gfx-rs/naga?rev=94802078c3bc5d138f497419ea3e7a869f10916d#94802078c3bc5d138f497419ea3e7a869f10916d"
 dependencies = [
  "bitflags",
  "fxhash",
  "log",
  "num-traits",
  "spirv_headers",
+ "thiserror",
 ]
 
 [[package]]
@@ -2289,12 +2289,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vec_map"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
-
-[[package]]
 name = "void"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2471,10 +2465,9 @@ dependencies = [
 [[package]]
 name = "wgpu"
 version = "0.5.0"
-source = "git+https://github.com/gfx-rs/wgpu-rs?rev=0c7c3afebb12bf411d6964887b85e5fd152057f5#0c7c3afebb12bf411d6964887b85e5fd152057f5"
+source = "git+https://github.com/gfx-rs/wgpu-rs?rev=e785b213e409460649da5c78068f653d2634bafc#e785b213e409460649da5c78068f653d2634bafc"
 dependencies = [
  "arrayvec",
- "env_logger",
  "futures",
  "gfx-backend-vulkan",
  "js-sys",
@@ -2494,7 +2487,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "0.5.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=43c67ac59c2dedaa4d78601bc460aab7c3257973#43c67ac59c2dedaa4d78601bc460aab7c3257973"
+source = "git+https://github.com/gfx-rs/wgpu?rev=0591c48fd234b4faa4c60346454568548ecbe507#0591c48fd234b4faa4c60346454568548ecbe507"
 dependencies = [
  "arrayvec",
  "bitflags",
@@ -2513,16 +2506,15 @@ dependencies = [
  "parking_lot 0.10.2",
  "raw-window-handle",
  "smallvec",
- "spirv_headers",
+ "thiserror",
  "tracing",
- "vec_map",
  "wgpu-types",
 ]
 
 [[package]]
 name = "wgpu-types"
 version = "0.5.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=43c67ac59c2dedaa4d78601bc460aab7c3257973#43c67ac59c2dedaa4d78601bc460aab7c3257973"
+source = "git+https://github.com/gfx-rs/wgpu?rev=0591c48fd234b4faa4c60346454568548ecbe507#0591c48fd234b4faa4c60346454568548ecbe507"
 dependencies = [
  "bitflags",
 ]

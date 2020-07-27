@@ -6,7 +6,7 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub struct CubeProjectionPipeline {
     texture: String,
@@ -60,21 +60,21 @@ impl SimplePipeline for CubeProjectionPipeline {
 
             self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &global_bind_group,
-                bindings: &[
-                    wgpu::Binding {
+                entries: Cow::Borrowed(&[
+                    wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::TextureView(&texture.view),
                     },
-                    wgpu::Binding {
+                    wgpu::BindGroupEntry {
                         binding: 1,
                         resource: wgpu::BindingResource::Sampler(&sampler),
                     },
-                ],
+                ]),
                 label: None,
             }));
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                color_attachments: Cow::Borrowed(&[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &output.as_ref().unwrap().texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -86,7 +86,7 @@ impl SimplePipeline for CubeProjectionPipeline {
                         }),
                         store: true,
                     },
-                }],
+                }]),
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&pipeline);
@@ -167,7 +167,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         // We can create whatever layout we want here.
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[
+                entries: Cow::Borrowed(&[
                     wgpu::BindGroupLayoutEntry::new(
                         0,
                         wgpu::ShaderStage::FRAGMENT,
@@ -182,7 +182,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
                         wgpu::ShaderStage::FRAGMENT,
                         wgpu::BindingType::Sampler { comparison: false },
                     ),
-                ],
+                ]),
                 label: None,
             });
         resource_manager.add_bind_group_layout("equirectangular_globals", global_bind_group_layout);
@@ -196,9 +196,7 @@ impl SimplePipelineDesc for CubeProjectionPipelineDesc {
         wgpu::RasterizationStateDescriptor {
             front_face: wgpu::FrontFace::Cw,
             cull_mode: wgpu::CullMode::None,
-            depth_bias: 0,
-            depth_bias_slope_scale: 0.0,
-            depth_bias_clamp: 0.0,
+            ..Default::default()
         }
     }
     fn primitive_topology(&self) -> wgpu::PrimitiveTopology {

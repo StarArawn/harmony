@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use super::{ArcRenderPass, BindGroup};
 use crate::{
-    graphics::{lighting::cluster::{LIGHT_LIST_BUFFER_SIZE, FRUSTUM_BUFFER_SIZE}, pipelines::{GlobalUniform, LightingUniform}},
+    graphics::{lighting::cluster::{LIGHT_LIST_BUFFER_SIZE, FRUSTUM_BUFFER_SIZE}, pipelines::{GlobalUniform, LightingUniform}, shadows::OmniShadowManager},
     scene::components::transform::LocalUniform,
 };
 use dashmap::DashMap;
@@ -26,7 +26,7 @@ pub struct GPUResourceManager {
 }
 
 impl GPUResourceManager {
-    pub fn new(device: Arc<wgpu::Device>) -> Self {
+    pub fn new(device: Arc<wgpu::Device>, omni_manager: &OmniShadowManager) -> Self {
         let bind_group_layouts = DashMap::new();
 
         // Create our global uniforms buffers, layouts, and bindgroups here.
@@ -58,7 +58,7 @@ impl GPUResourceManager {
 
         let global_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[
+                entries: Cow::Borrowed(&[
                     wgpu::BindGroupLayoutEntry::new(
                         // CAMERA INFO
                         0,
@@ -102,31 +102,99 @@ impl GPUResourceManager {
                             min_binding_size: None
                         }
                     ),
-                ],
-                label: Some("Globals"),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // omni shadow map sampler
+                        4,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::Sampler {
+                            comparison: true,
+                        }
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster Light index data
+                        5,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            dimension: wgpu::TextureViewDimension::CubeArray,
+                            component_type: wgpu::TextureComponentType::Float,
+                            multisampled: false,
+                        }
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster Light index data
+                        6,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            dimension: wgpu::TextureViewDimension::CubeArray,
+                            component_type: wgpu::TextureComponentType::Float,
+                            multisampled: false,
+                        }
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster Light index data
+                        7,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            dimension: wgpu::TextureViewDimension::CubeArray,
+                            component_type: wgpu::TextureComponentType::Float,
+                            multisampled: false,
+                        }
+                    ),
+                    wgpu::BindGroupLayoutEntry::new(
+                        // Cluster Light index data
+                        8,
+                        wgpu::ShaderStage::FRAGMENT,
+                        wgpu::BindingType::SampledTexture {
+                            dimension: wgpu::TextureViewDimension::CubeArray,
+                            component_type: wgpu::TextureComponentType::Float,
+                            multisampled: false,
+                        }
+                    ),
+                ]),
+                label: Some(Cow::Borrowed("Globals")),
             });
 
         let global_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &global_bind_group_layout,
-            bindings: &[
-                wgpu::Binding {
+            entries: Cow::Borrowed(&[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::Buffer(global_uniform_buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Buffer(global_lighting_buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::Buffer(frustum_buffer.slice(..)),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::Buffer(light_list_buffer.slice(..)),
                 },
-            ],
-            label: Some("Globals"),
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::Sampler(&omni_manager.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::TextureView(&omni_manager.quad_textures[0].view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::TextureView(&omni_manager.quad_textures[1].view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: wgpu::BindingResource::TextureView(&omni_manager.quad_textures[2].view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: wgpu::BindingResource::TextureView(&omni_manager.quad_textures[3].view),
+                },
+            ]),
+            label: Some(Cow::Borrowed("Globals")),
         });
 
         bind_group_layouts.insert("globals".to_string(), Arc::new(global_bind_group_layout));
@@ -134,7 +202,7 @@ impl GPUResourceManager {
         // Local bind group layout
         let local_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[wgpu::BindGroupLayoutEntry::new(
+                entries: Cow::Borrowed(&[wgpu::BindGroupLayoutEntry::new(
                     0,
                     wgpu::ShaderStage::VERTEX,
                     wgpu::BindingType::UniformBuffer {
@@ -143,8 +211,8 @@ impl GPUResourceManager {
                             std::mem::size_of::<LocalUniform>() as _,
                         ),
                     },
-                )],
-                label: Some("Locals"),
+                )]),
+                label: Some(Cow::Borrowed("Locals")),
             });
         bind_group_layouts.insert("locals".to_string(), Arc::new(local_bind_group_layout));
 

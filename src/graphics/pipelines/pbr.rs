@@ -10,11 +10,11 @@ use crate::{
     },
     AssetManager,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroupLayout {
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: Cow::Borrowed(&[
             wgpu::BindGroupLayoutEntry::new(
                 0,
                 wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
@@ -62,8 +62,8 @@ pub fn create_pbr_bindgroup_layout(device: Arc<wgpu::Device>) -> wgpu::BindGroup
                     dimension: wgpu::TextureViewDimension::D2,
                 },
             ),
-        ],
-        label: Some("pbr_material_layout"),
+        ]),
+        label: Some(Cow::Borrowed("pbr_material_layout")),
     })
 }
 
@@ -76,7 +76,7 @@ pub fn create(resources: &Resources) {
 
     let mut pbr_desc = PipelineDesc::default();
     pbr_desc.shader = "core/shaders/pbr.shader".to_string();
-    pbr_desc.color_state.format = sc_desc.format;
+    pbr_desc.color_states[0].format = sc_desc.format;
     pbr_desc.depth_state = Some(wgpu::DepthStencilStateDescriptor {
         format: DEPTH_FORMAT,
         depth_write_enabled: true,
@@ -87,12 +87,16 @@ pub fn create(resources: &Resources) {
         stencil_write_mask: 0,
     });
 
+    pbr_desc.depth_bias = 2; // corresponds to bilinear filtering
+    pbr_desc.depth_bias_slope_scale = 2.0.into();
+    pbr_desc.depth_bias_clamp = (0.0).into();
+
     // Create skybox bind group layouts.
     let pbr_material_layout = create_pbr_bindgroup_layout(device.clone());
     resource_manager.add_bind_group_layout("pbr_material_layout", pbr_material_layout);
 
     let probe_material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        bindings: &[
+        entries: Cow::Borrowed(&[
             wgpu::BindGroupLayoutEntry::new(
                 0,
                 wgpu::ShaderStage::FRAGMENT,
@@ -120,8 +124,8 @@ pub fn create(resources: &Resources) {
                     dimension: wgpu::TextureViewDimension::D2,
                 },
             ),
-        ],
-        label: Some("probe_material_layout"),
+        ]),
+        label: Some(Cow::Borrowed("probe_material_layout")),
     });
 
     resource_manager.add_bind_group_layout("probe_material_layout", probe_material_layout);

@@ -37,6 +37,7 @@ layout(location = 3) in vec3 i_tangent;
 layout(location = 4) in float i_tbn_handedness;
 layout(location = 5) in vec4 i_clip_position;
 layout(location = 6) in vec4 i_view_position;
+layout(location = 7) in vec3 i_vertex;
 layout(location = 0) out vec4 outColor; 
 
 vec3 get_clip_position() {
@@ -160,6 +161,7 @@ void main() {
         PointLight light = point_lights[light_index_list[froxel_index].indices[l]];
         // calculate per-light radiance
         vec3 L = light.position.xyz - i_position.xyz;
+
         const float dist2 = dot(L, L);
 	    const float range2 = light.attenuation.x * light.attenuation.x;
 
@@ -186,11 +188,31 @@ void main() {
             float att = saturate(1.0 - (dist2 / range2));
             float attenuation = att * att;
             radiance *= attenuation;
-
-            // add to outgoing radiance Lo
             float NdotL = max(dot(N, L), 0.0);                
-            light_acc += (kD * main_color / PI + specular) * radiance * NdotL; 
-        }     
+            
+            // Only if we have shadows enabled
+            float shadow = 1.0;
+            if (light.attenuation.y > 0) {
+                vec3 frag_ls = light.position.xyz - i_position.xyz;
+                vec3 abs_position_ls = abs(frag_ls);
+                float major_axis_magnitude = max(abs_position_ls.x, max(abs_position_ls.y, abs_position_ls.z));
+                vec4 clip = light.shadow_matrix * vec4(0.0, 0.0, major_axis_magnitude * 0.5, 1.0);
+                float depth = (clip.z / clip.w) * 0.5 + 0.5;
+
+                int quad_id = int(light.attenuation.z);
+                if (quad_id == 0) {
+                    shadow = texture(samplerCubeArrayShadow(omni_shadow_quad_1, shadow_sampler), vec4(-frag_ls, int(light.attenuation.w)), depth);
+                } else if (quad_id == 1) {
+                    shadow = texture(samplerCubeArrayShadow(omni_shadow_quad_2, shadow_sampler), vec4(-frag_ls, int(light.attenuation.w)), depth);
+                } else if (quad_id == 2) {
+                    shadow = texture(samplerCubeArrayShadow(omni_shadow_quad_3, shadow_sampler), vec4(-frag_ls, int(light.attenuation.w)), depth);
+                } else if (quad_id == 3) {
+                    shadow = texture(samplerCubeArrayShadow(omni_shadow_quad_4, shadow_sampler), vec4(-frag_ls, int(light.attenuation.w)), depth);
+                }
+            }
+            
+            light_acc += (kD * main_color / PI + specular) * radiance * (NdotL * shadow); 
+        }
     }
 
     vec3 color = ambient + light_acc; //Uncharted2ToneMapping(ambient + light_acc);

@@ -51,8 +51,16 @@ impl<'a> ArcRenderPass<'a> {
         self.render_pass.set_pipeline(&pipeline.render_pipeline);
     }
 
+    pub fn set_push_constants(&mut self, stages: wgpu::ShaderStage, offset: u32, data: &[u32]) {
+        self.render_pass.set_push_constants(stages, offset, data);
+    }
+
     pub fn draw_indexed(&mut self, indices: Range<u32>, base_vertex: i32, instances: Range<u32>) {
         self.render_pass
             .draw_indexed(indices, base_vertex, instances);
+    }
+
+    pub fn set_viewport(&mut self, x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32) {
+        self.render_pass.set_viewport(x, y, w, h, min_depth, max_depth);
     }
 }
