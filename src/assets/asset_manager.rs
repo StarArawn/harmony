@@ -185,7 +185,7 @@ mod tests {
     use super::AssetManager;
     use crate::{
         assets::material::PBRMaterialRon,
-        graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager},
+        graphics::{pipelines::pbr::create_pbr_bindgroup_layout, resources::GPUResourceManager, shadows::ShadowQuality},
     };
     use std::{path::PathBuf, sync::Arc};
 
@@ -219,7 +219,12 @@ mod tests {
             let arc_queue = Arc::new(queue);
             (adapter, arc_device, arc_queue)
         });
-        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone()));
+
+        let omni_manager = crate::graphics::shadows::OmniShadowManager::new(
+            device.clone(),
+            ShadowQuality::Medium
+        );
+        let gpu_resource_manager = Arc::new(GPUResourceManager::new(device.clone(), &omni_manager));
 
         let pbr_bind_group_layout = create_pbr_bindgroup_layout(device.clone());
         gpu_resource_manager.add_bind_group_layout("pbr_material_layout", pbr_bind_group_layout);

@@ -58,7 +58,6 @@ impl OmniShadowManager {
 
             // This might result in more memory consumption then what we want..
             let texture_count = ((division * division) as f32 / 6.0).ceil() as u32;
-            dbg!(texture_count);
 
             let tex_size = half_size.x as u32 / division; 
 

@@ -3,16 +3,15 @@ use log;
 use nalgebra_glm::{Vec3};
 use winit::{
     dpi::LogicalSize,
-    event::{Event, WindowEvent, VirtualKeyCode},
+    event::{Event, WindowEvent},
     event_loop::ControlFlow,
 };
 
 use harmony::scene::{
-    components::{CameraData, LightType, Mesh, Transform, PointLightData},
+    components::{CameraData, LightType, Mesh, Transform},
     resources::DeltaTime,
     Scene,
 };
-// use harmony::scene::components::PointLightData;
 
 use harmony::{
     core::input::{Input, MouseButton},
@@ -45,8 +44,8 @@ fn create_rotate_system() -> Box<dyn Schedulable> {
         .build(|_, mut world, delta_time, transform_query| {
             for mut transform in transform_query.iter_mut(&mut world) {
                 if transform.position.y == 0.0 {
-                    // transform.rotate_on_y(-0.5 * delta_time.0);
-                    // transform.rotate_on_x(-0.5 * delta_time.0);
+                    transform.rotate_on_y(-0.5 * delta_time.0);
+                    transform.rotate_on_x(-0.5 * delta_time.0);
                 }
             }
         })
