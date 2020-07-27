@@ -29,7 +29,7 @@ Note: Currently this library is very early in development. Things are very likel
 4. [ ] HDR/Tonemap rendering
 5. [ ] Temporal SMAA
 6. [ ] SSAO
-7. [ ] Shadow Mapping
+7. [ ] Directional Shadow Mapping
 8. [ ] Asset Bundling
 9. [ ] More useful scene features
 10. [ ] WASM Support
