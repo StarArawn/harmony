@@ -21,6 +21,7 @@ Note: Currently this library is very early in development. Things are very likel
 - [x] Directional lighting
 - [x] Clustered Shading (Point)
 - [x] PBR shading model
+- [x] Multi-point light shadow mapping.
 - [x] IMGui integration
 - [ ] Multiple Enviroment probes(almost done).
 
