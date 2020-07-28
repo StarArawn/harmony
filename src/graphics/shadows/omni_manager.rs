@@ -28,6 +28,7 @@ pub struct OmniShadowManager {
     pub(crate) quality: ShadowQuality,
     pub(crate) quad_textures: Vec<ShadowTexture>,
     pub(crate) sampler: Arc<wgpu::Sampler>,
+    pub(crate) max_casters_per_frame: u32,
 }
 
 pub enum ShadowQuality {
@@ -89,6 +90,8 @@ impl OmniShadowManager {
             let mut face_views = Vec::new();
 
             for tex_id in 0..texture_count {
+                let tex_index = tex_id * 6;
+
                 let mut inner_face_views = Vec::new();
                 for face in 0..6 {
                     let view = Arc::new(texture.create_view(&wgpu::TextureViewDescriptor {
@@ -98,7 +101,7 @@ impl OmniShadowManager {
                         aspect: wgpu::TextureAspect::All,
                         base_mip_level: 0,
                         level_count: 1,
-                        base_array_layer: (tex_id * 6) + face,
+                        base_array_layer: tex_index + face,
                         array_layer_count: 1,
                     }));
                     inner_face_views.push(view);
@@ -132,6 +135,7 @@ impl OmniShadowManager {
             quality,
             quad_textures,
             sampler,
+            max_casters_per_frame: 5,
         }
     }
 
@@ -173,7 +177,7 @@ impl OmniShadowManager {
     }
 
     pub fn update(&mut self,
-        sorted_point_lights: Vec<(f32, Vec3)>, // (light attenuation, world position)
+        sorted_point_lights: Vec<(f32, Vec3, (u32, u32))>, // (light attenuation, world position)
         pipeline_manager: &PipelineManager,
         resource_manager: Arc<GPUResourceManager>,
         encoder: &mut wgpu::CommandEncoder,
@@ -185,8 +189,18 @@ impl OmniShadowManager {
     
         self.reset_used();
 
-        let mut i = 0;
-        for (light_range, pos) in sorted_point_lights {
+        let mut total = 0;
+        for (light_range, pos, texture_coords) in sorted_point_lights {
+            // Step 1: reserve space this frame for the point light to render in.
+            // Figures out which quad/texture to use.
+            // let (quad_id, inner_texture_id) = self.get_cube_coords();
+            let current_quad = &self.quad_textures[texture_coords.0 as usize];
+
+            if total >= self.max_casters_per_frame {
+                // We only render X number of shadow casters a frame.
+                break;
+            }
+
             // Find meshes within light radius.
             let mut light_bounds = BoundingSphere::new();
             light_bounds.center = pos;
@@ -213,15 +227,10 @@ impl OmniShadowManager {
                     (mesh.clone(), transform.clone())
                 })
                 .collect::<Vec<_>>();
-
-            // Step 1: reserve space this frame for the point light to render in.
-            // Figures out which quad/texture to use.
-            let (quad_id, inner_texture_id) = self.get_cube_coords();
-            let current_quad = &self.quad_textures[quad_id];
             
             for face in 0..6 {
                 // Get view for the current face.
-                let face_view = &current_quad.face_views[inner_texture_id][face];
+                let face_view = &current_quad.face_views[texture_coords.1 as usize][face];
 
                 // Start render pass.
                 let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -274,9 +283,8 @@ impl OmniShadowManager {
                         }
                     }
                 }
-                
-                i += 1;
             }
+            total += 1;
         }
     }
 
@@ -294,6 +302,7 @@ impl OmniShadowManager {
             if t.free < t.size {
                 inner_index = t.free as usize;
                 t.free += 1;
+                break;
             } else {
                 quad_index += 1;
             }

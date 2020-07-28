@@ -43,6 +43,8 @@ pub struct PointLightData {
     pub shadow: bool,
     // Auto calculated by the omni shadow manager.
     pub(crate) shadow_texture_id: (u32, u32),
+    // The age of the shadow map in frames.
+    pub(crate) age: u32,
 }
 
 impl Default for PointLightData {
@@ -53,6 +55,7 @@ impl Default for PointLightData {
             intensity: 10.0,
             shadow: false,
             shadow_texture_id: (0, 0),
+            age: 0,
         }
     }
 }
@@ -65,6 +68,7 @@ impl PointLightData {
             intensity,
             shadow,
             shadow_texture_id: (0, 0),
+            age: 0,
         }
     }
 }

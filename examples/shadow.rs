@@ -99,22 +99,9 @@ impl harmony::AppState for AppState {
             asset_manager.get_mesh("example/meshes/cube/cube.gltf")
         };
 
-        // Here we create our game entity that contains 3 components.
-        // 1. Mesh - This is our handle to let the renderer know which asset to use from the asset pipeline.
-        // 2. Material - GLTF files come with their own materials this is a reference to which material globally
-        // we are picking from the asset manager. In the future we'll have an API to retrieve the material index
-        // in a friendly way. For now we only have 1 GLTF file and 1 material in the file so our material index is 0.
-        // 3. The transform which allows us to render the mesh using it's world cords. This also includes stuff like
-        // rotation and scale.
-
-        let transform = Transform::new(app);
-        app.current_scene
-            .world
-            .insert((), vec![(Mesh::new(mesh_handle.clone()), transform)]);
-
         // Ground mesh..
         let mut transform = Transform::new(app);
-        transform.scale = Vec3::new(10.0, 0.5, 10.0);
+        transform.scale = Vec3::new(10.0, 0.5, 100.0);
         transform.position = Vec3::new(0.0, -5.0, 0.0);
         app.current_scene
             .world
@@ -141,99 +128,29 @@ impl harmony::AppState for AppState {
             ProbeFormat::RGBA16,
         );
 
-        // Add point light
-        let mut transform = Transform::new(app);
-        transform.position =Vec3::new(1.0, 6.0, -0.5);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
 
-        // Add point light.
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(-1.0, 6.0, 0.5);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
+        for i in 0..20 {
+            let mut transform = Transform::new(app);
+            transform.position.z = -i as f32 * 4.0;
+            app.current_scene
+                .world
+                .insert((), vec![(Mesh::new(mesh_handle.clone()), transform)]);
 
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(0.5, 6.0, -1.0);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
+            // Add point light
+            let mut transform = Transform::new(app);
+            transform.position = Vec3::new(0.0, 6.0, -i as f32 * 4.0);
+            harmony::scene::entities::light::create(
+                &mut app.current_scene.world,
+                LightType::Point(harmony::scene::components::PointLightData::new(
+                    Vec3::new(1.0, 1.0, 1.0), // Color
+                    20.0, // Range
+                    1.0, // Intensity 
+                    true, // Casts shadows?
+                )),
+                transform,
+            );
+        }
 
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(-0.5, 6.0, 1.0);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
-
-        // Add point light.
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(-1.0, 5.0, 0.5);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
-
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(0.5, 5.0, -1.0);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
-
-        let mut transform = Transform::new(app);
-        transform.position = Vec3::new(-0.5, 5.0, 1.0);
-        harmony::scene::entities::light::create(
-            &mut app.current_scene.world,
-            LightType::Point(harmony::scene::components::PointLightData::new(
-                Vec3::new(1.0, 1.0, 1.0), // Color
-                40.0, // Range
-                1.0, // Intensity 
-                true, // Casts shadows?
-            )),
-            transform,
-        );
 
         let actual_window_size = app.get_window_actual_size();
 
@@ -242,7 +159,7 @@ impl harmony::AppState for AppState {
             actual_window_size.width,
             actual_window_size.height,
             1.0,
-            100.0,
+            1000.0,
         );
         // Turns on frustum culling.
         camera_data.cull = true;
