@@ -18,6 +18,7 @@ use std::{borrow::Cow, sync::Arc};
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("render_mesh")
+        .write_resource::<crate::core::PerformanceMetrics>()
         .write_resource::<AssetManager>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<Arc<wgpu::Device>>()
@@ -32,6 +33,7 @@ pub fn create() -> Box<dyn Schedulable> {
             |_,
              mut world,
              (
+                perf_metrics,
                 asset_manager,
                 command_buffer_queue,
                 device,
@@ -43,6 +45,7 @@ pub fn create() -> Box<dyn Schedulable> {
             ),
              (transform_query, mesh_query)| {
                 // Create mesh encoder
+                let mesh_render_time = std::time::Instant::now();
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("mesh"),
                 });
@@ -280,6 +283,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         name: "pbr".to_string(),
                     })
                     .unwrap();
+                perf_metrics.insert("mesh render", std::time::Instant::now().duration_since(mesh_render_time));
             },
         )
 }
