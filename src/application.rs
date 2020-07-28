@@ -194,6 +194,8 @@ impl Application {
 
         let last_frame = Instant::now();
 
+        resources.insert(crate::core::PerformanceMetrics::new());
+
         Application {
             renderer,
             clock: Instant::now(),
@@ -394,6 +396,13 @@ impl Application {
 
                 // Allow user to render UI stuff.
                 let scale = self.renderer.window.scale_factor() as f32;
+
+                {
+                    let mut performance_metrics = self.resources.get_mut::<crate::core::PerformanceMetrics>().unwrap();
+                    let input = self.resources.get::<crate::core::input::Input>().unwrap();
+                    performance_metrics.display(&mut ui, &input);
+                }
+
                 app_state.draw_ui(
                     &mut ui,
                     Vec2::new(

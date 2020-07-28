@@ -7,12 +7,15 @@ use crate::{
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("culling")
+        .write_resource::<crate::core::PerformanceMetrics>()
         .with_query(<Read<components::CameraData>>::query())
         .with_query(<(Write<components::Transform>, Read<components::Mesh>)>::query())
         .build(
-            |_, mut world, _, (camera_query, transform_mesh_query)| {
+            |_, mut world, perf_metrics, (camera_query, transform_mesh_query)| {
+                let cull_time = std::time::Instant::now();
+
                 // TODO: store and display this stat somewhere..
-                let mut _total = 0;
+                let mut total = 0;
                 let camera_frustum = {
                     let filtered_camera_data: Vec<_> =
                         camera_query
@@ -41,8 +44,11 @@ pub fn create() -> Box<dyn Schedulable> {
                     bounding_sphere.center = (transform.matrix * Vec4::new(bounding_sphere.center.x, bounding_sphere.center.y, bounding_sphere.center.z, 1.0)).xyz();
                     transform.cull = !camera_frustum.contains_sphere(bounding_sphere);
                     if transform.cull {
-                        _total += 1;
+                        total += 1;
                     }
                 }
+
+                perf_metrics.insert("frustum cull", std::time::Instant::now().duration_since(cull_time));
+                perf_metrics.insert("meshes culled", std::time::Duration::new(total, 0));
            })
 }

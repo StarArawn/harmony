@@ -49,6 +49,7 @@ pub fn update_globals<'a>(camera_data: &components::CameraData, encoder: &'a mut
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("encoder_globals")
+        .write_resource::<crate::core::PerformanceMetrics>()
         .write_resource::<CommandBufferQueue>()
         .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<Arc<wgpu::Device>>()
@@ -61,8 +62,9 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              world,
-             (command_buffer_queue, resource_manager, device),
+             (perf_metrics, command_buffer_queue, resource_manager, device),
              (camera_query, directional_lights, point_lights)| {
+                let global_time = std::time::Instant::now();
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("globals"),
                 });
@@ -170,6 +172,7 @@ pub fn create() -> Box<dyn Schedulable> {
                         name: "globals".to_string(),
                     })
                     .unwrap();
+                perf_metrics.insert("transform calculations", std::time::Instant::now().duration_since(global_time));
             },
         )
 }

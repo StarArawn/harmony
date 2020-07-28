@@ -13,6 +13,7 @@ use crate::{
 
 pub fn create() -> Box<dyn Schedulable> {
     SystemBuilder::new("shadows")
+        .write_resource::<crate::core::PerformanceMetrics>()
         .read_resource::<Arc<wgpu::Device>>()
         .write_resource::<ShadowCamera>()
         .write_resource::<CommandBufferQueue>()
@@ -25,8 +26,8 @@ pub fn create() -> Box<dyn Schedulable> {
         .build(
             |_,
              world,
-             (device, shadow_camera, command_buffer_queue, gpu_resource_manager, pipeline_manager, omni_shadow_manager),
-             (point_light_query, transform_mesh_query, camera_query)| {
+             (perf_metrics, device, shadow_camera, command_buffer_queue, gpu_resource_manager, pipeline_manager, omni_shadow_manager),
+             (point_light_query, transform_mesh_query, _camera_query)| {
 
                 // Get camera for update_globals function.
                 // let cam_pos = {
@@ -51,11 +52,12 @@ pub fn create() -> Box<dyn Schedulable> {
                     label: Some("shadow"),
                 });
 
-
+                let shadow_sort_time = std::time::Instant::now();
                 let point_lights = {
                     let mut point_lights = point_light_query.iter_mut(world)
                         .filter(|(light, _)| light.shadow)
                         .collect::<Vec<_>>();
+
                     
                     // TODO: This doesn't really work because of the threaded nature of our application.
                     // Essentially we could change light.shadow_texture_id here by sorting based off of some criteria,
@@ -108,7 +110,9 @@ pub fn create() -> Box<dyn Schedulable> {
                     })
                     .collect::<Vec<_>>()
                 };
+                perf_metrics.insert("shadow light sort", std::time::Instant::now().duration_since(shadow_sort_time));
 
+                let shadow_time = std::time::Instant::now();
                 omni_shadow_manager.update(
                     point_lights,
                     pipeline_manager,
@@ -118,6 +122,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     transform_mesh_query,
                     world,
                 );
+                perf_metrics.insert("shadow generation", std::time::Instant::now().duration_since(shadow_time));
 
                 command_buffer_queue
                     .push(CommandQueueItem {
