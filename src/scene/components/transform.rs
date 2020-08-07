@@ -28,10 +28,10 @@ impl Default for LocalUniform {
 /// scale: A Vector3 representing it's world scale.
 /// rotation: A quaternion representing it's world rotation.
 /// matrix: A world matrix.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Transform {
     /// Index of the transform used internally.
-    pub(crate) index: u32,
+    pub index: i32,
     /// Position of the transform.
     pub position: Vec3,
     /// Scale of the transform.
@@ -55,7 +55,7 @@ impl Transform {
         Self::create_bindings(app, index.0);
 
         Self {
-            index: index.0,
+            index: index.0 as i32,
             position: Vec3::new(0.0, 0.0, 0.0),
             scale: Vec3::new(1.0, 1.0, 1.0),
             rotation: Quat::identity(),

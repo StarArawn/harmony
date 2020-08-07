@@ -6,9 +6,9 @@
 pub mod core;
 pub mod graphics;
 pub mod scene;
+pub mod assets;
 
 mod application;
-mod assets;
 mod winit_state;
 
 pub use application::{AppState, Application};

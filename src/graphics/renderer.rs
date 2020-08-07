@@ -39,7 +39,7 @@ impl Renderer {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: adapter_features & wgpu::Features::PUSH_CONSTANTS,
+                    features: adapter_features & (wgpu::Features::PUSH_CONSTANTS | wgpu::Features::DEPTH_CLAMPING),
                     limits:  wgpu::Limits {
                         max_push_constant_size: 128,
                         ..wgpu::Limits::default()

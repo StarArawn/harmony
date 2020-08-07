@@ -68,8 +68,14 @@ pub fn create() -> Box<dyn Schedulable> {
                             continue;
                         }
                         transform.update();
+
+                        // Not an transform that should be sent to the GPU..
+                        if transform.index == -1 {
+                            continue;
+                        }
+                        
                         let transform_buffer =
-                            resource_manager.get_multi_buffer("transform", transform.index);
+                            resource_manager.get_multi_buffer("transform", transform.index as u32);
                         queue.write_buffer(
                             &transform_buffer,
                             0,
@@ -140,7 +146,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     &mut render_pass,
                                     "transform",
                                     0,
-                                    transform.index,
+                                    transform.index as u32,
                                 );
 
                                 // If mesh is ready render it!
@@ -155,7 +161,7 @@ pub fn create() -> Box<dyn Schedulable> {
                                     if material_mesh.is_some() {
                                         let material_mesh = material_mesh.unwrap();
                                         render_pass
-                                            .set_index_buffer(material_mesh.index_buffer.clone());
+                                            .set_index_buffer(material_mesh.index_buffer.as_ref().unwrap().clone());
                                         render_pass.set_vertex_buffer(
                                             0,
                                             material_mesh.vertex_buffer.as_ref().unwrap().clone(),

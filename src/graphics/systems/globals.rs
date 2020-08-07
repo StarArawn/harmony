@@ -1,12 +1,12 @@
 use legion::prelude::*;
 use nalgebra_glm::{Mat4, Vec4};
-use std::{convert::TryInto, sync::Arc};
+use std::{sync::Arc};
 
 use crate::{
     graphics::{
-        pipelines::{DirectionalLight, GlobalUniform, LightingUniform, PointLight, MAX_LIGHTS},
+        pipelines::{GlobalUniform},
         resources::GPUResourceManager,
-        CommandBufferQueue, CommandQueueItem, lighting::cluster::{FROXELS_Y, FROXELS_X, FROXELS_Z, FAR_PLANE_DISTANCE},
+        CommandBufferQueue, CommandQueueItem,
     },
     scene::components,
 };
@@ -54,16 +54,11 @@ pub fn create() -> Box<dyn Schedulable> {
         .read_resource::<Arc<GPUResourceManager>>()
         .read_resource::<Arc<wgpu::Device>>()
         .with_query(<(Read<components::CameraData>,)>::query())
-        .with_query(<(Read<components::DirectionalLightData>,)>::query())
-        .with_query(<(
-            Read<components::PointLightData>,
-            Read<components::Transform>,
-        )>::query())
         .build(
             |_,
              world,
              (perf_metrics, command_buffer_queue, resource_manager, device),
-             (camera_query, directional_lights, point_lights)| {
+             camera_query| {
                 let global_time = std::time::Instant::now();
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("globals"),
@@ -83,8 +78,7 @@ pub fn create() -> Box<dyn Schedulable> {
                 }
                 let camera_data = &camera_data.as_ref().unwrap().0;
 
-                let camera_view: Mat4 = update_globals(camera_data, &mut encoder, device.clone(), resource_manager.clone());
-
+                update_globals(camera_data, &mut encoder, device.clone(), resource_manager.clone());
 
                 command_buffer_queue
                     .push(CommandQueueItem {

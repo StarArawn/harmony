@@ -14,14 +14,31 @@ use legion::{prelude::Resources, systems::resource::Resource};
 use std::{any::TypeId, convert::TryFrom, fmt::Debug, path::PathBuf, sync::Arc};
 use walkdir::WalkDir;
 
+/// Lets you load specific assets uses different methods depending on the assets being loaded.
+/// Typically generic assets can be found in `Resources`. 
+/// More advanced resources have their own specific managers IE `texture_manager`
+/// These managers are publicly avaliable as they allow you to specifically await
+/// loading of those assets in your own custom asset manager.
+/// Example: Say you have a custom `MapManager` loader you can pass in
+/// mesh_manager, material_manager which will allow you to load those assets
+/// when the map file loads.
+/// Note: `MaterialManager`'s are stored in the generic `loaders` field.
+/// to access a specific material manager you can use the following code:
+/// `let my_material_manager = loaders.get::<MaterialManager<MyMaterial>>().unwrap();`
+/// See `MaterialManager` for more info.
 pub struct AssetManager {
-    loaders: Resources,
-    texture_manager: Arc<TextureManager>,
-    shader_manager: Arc<ShaderManager>,
-    mesh_manager: Arc<MeshManager>,
+    /// Gives you access to less specific asset loaders
+    pub loaders: Resources,
+    /// Texture manager
+    pub texture_manager: Arc<TextureManager>,
+    /// Shader manager
+    pub shader_manager: Arc<ShaderManager>,
+    /// Mesh manager
+    pub mesh_manager: Arc<MeshManager>,
     device: Arc<wgpu::Device>,
     queue: Arc<wgpu::Queue>,
-    path: PathBuf,
+    /// Path uses to access assets.
+    pub path: PathBuf,
     gpu_resource_manager: Arc<GPUResourceManager>,
 }
 
@@ -44,8 +61,9 @@ impl AssetManager {
             path.clone(),
         ));
         let mesh_manager = Arc::new(MeshManager::new(device.clone(), material_manager.clone()));
-
+        
         loaders.insert(material_manager);
+
         Self {
             loaders,
             texture_manager,

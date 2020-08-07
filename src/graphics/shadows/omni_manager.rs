@@ -160,9 +160,11 @@ impl OmniShadowManager {
                 range: 0..80,
             },
         ];
-        pipeline_desc.depth_bias = 2;
-        pipeline_desc.depth_bias_slope_scale = 2.0.into();
+        pipeline_desc.cull_mode = wgpu::CullMode::Back;
+        pipeline_desc.depth_bias = 10;
+        pipeline_desc.depth_bias_slope_scale = 5.5.into();
         pipeline_desc.depth_bias_clamp = 0.0.into();
+        pipeline_desc.clamp_depth = true;
         let vertex_size = std::mem::size_of::<MeshVertexData>();
         pipeline_desc
             .vertex_state
@@ -211,7 +213,7 @@ impl OmniShadowManager {
                 .filter(|(mesh, transform)| {
                     let mesh_data = mesh.mesh_handle.get();
                     
-                    if mesh_data.is_err() || transform.cull {
+                    if mesh_data.is_err() {
                         return false;
                     }
                     
@@ -263,13 +265,13 @@ impl OmniShadowManager {
                         &mut render_pass,
                         "transform",
                         0,
-                        transform.index,
+                        transform.index as u32,
                     );
 
                     for mesh in asset_mesh.meshes.iter() {
                         for (_, sub_mesh) in mesh.meshes.iter() {
                             render_pass
-                                .set_index_buffer(sub_mesh.index_buffer.clone());
+                                .set_index_buffer(sub_mesh.index_buffer.as_ref().unwrap().clone());
                             render_pass.set_vertex_buffer(
                                 0,
                                 sub_mesh.vertex_buffer.as_ref().unwrap().clone(),

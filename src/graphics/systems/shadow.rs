@@ -76,7 +76,7 @@ pub fn create() -> Box<dyn Schedulable> {
                     let mut j = 0;
 
                     // Allocate shadow maps
-                    point_lights.iter_mut().for_each(|(light, transform)| {
+                    point_lights.iter_mut().for_each(|(light, _)| {
                         light.shadow_texture_id = (j, i);
                         
                         i += 1;

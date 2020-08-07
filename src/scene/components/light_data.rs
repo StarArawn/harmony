@@ -1,6 +1,7 @@
 use nalgebra_glm::{Vec3};
 
 /// An enum representing different light types
+#[derive(Clone, Debug)]
 pub enum LightType {
     /// Directional Light
     Directional(DirectionalLightData),
@@ -9,6 +10,7 @@ pub enum LightType {
 }
 
 /// Directional light information
+#[derive(Clone, Debug)]
 pub struct DirectionalLightData {
     /// The direction of the light.
     pub direction: Vec3,
@@ -32,6 +34,7 @@ impl Default for DirectionalLightData {
 /// Position is defined by the transform.
 /// Currently point lights do not render.
 /// TODO: Fix point lighting rendering.
+#[derive(Clone, Debug)]
 pub struct PointLightData {
     /// Color of the light.
     pub color: Vec3,

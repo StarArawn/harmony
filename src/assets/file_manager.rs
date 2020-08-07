@@ -28,7 +28,7 @@ impl<T> AssetHandle<T>
 where
     T: Send + Sync + 'static,
 {
-    pub(crate) fn new(id: PathBuf, cache: AssetCache<T>) -> Self {
+    pub fn new(id: PathBuf, cache: AssetCache<T>) -> Self {
         Self {
             handle_id: id,
             cache,

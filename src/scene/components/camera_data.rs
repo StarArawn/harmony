@@ -20,7 +20,7 @@ impl ProjectionData {
     fn get_projection(&self, width: f32, height: f32) -> Mat4 {
         match self {
             ProjectionData::Perspective { fov, z_near, z_far } => {
-                nalgebra_glm::perspective_fov_lh_no(
+                nalgebra_glm::perspective_fov_lh_zo(
                     fov.to_radians(),
                     width,
                     height,
@@ -32,7 +32,7 @@ impl ProjectionData {
                 world_height,
                 z_near,
                 z_far,
-            } => nalgebra_glm::ortho_lh_no(
+            } => nalgebra_glm::ortho_lh_zo(
                 -0.5 * world_height * width / height,
                 0.5 * world_height * width / height,
                 -0.5 * world_height,

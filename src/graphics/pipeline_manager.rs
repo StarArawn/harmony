@@ -30,6 +30,7 @@ pub struct PipelineDesc {
     pub depth_bias: i32,
     pub depth_bias_slope_scale: OrderedFloat<f32>, // Use OrderedFloat because of hash.
     pub depth_bias_clamp: OrderedFloat<f32>,
+    pub clamp_depth: bool,
     pub push_constant_ranges: Vec<wgpu::PushConstantRange>,
 }
 
@@ -56,6 +57,7 @@ impl Default for PipelineDesc {
             depth_bias_slope_scale: 0.0.into(),
             depth_bias_clamp: 0.0.into(),
             push_constant_ranges: Vec::new(),
+            clamp_depth: false,
         }
     }
 }
@@ -106,6 +108,7 @@ impl PipelineDesc {
             depth_bias: self.depth_bias,
             depth_bias_slope_scale: self.depth_bias_slope_scale.into(),
             depth_bias_clamp: self.depth_bias_clamp.into(),
+            clamp_depth: self.clamp_depth,
             ..Default::default()
         };
         let primitive_topology = self.primitive_topology;

@@ -196,8 +196,8 @@ void main() {
                 vec3 frag_ls = light.position.xyz - i_position.xyz;
                 vec3 abs_position_ls = abs(frag_ls);
                 float major_axis_magnitude = max(abs_position_ls.x, max(abs_position_ls.y, abs_position_ls.z));
-                vec4 clip = light.shadow_matrix * vec4(0.0, 0.0, major_axis_magnitude * 0.5, 1.0);
-                float depth = (clip.z / clip.w) * 0.5 + 0.5;
+                vec4 clip = light.shadow_matrix * vec4(0.0, 0.0, major_axis_magnitude, 1.0);
+                float depth = (clip.z / clip.w);// * 0.5 + 0.5;
 
                 int quad_id = int(light.attenuation.z);
                 if (quad_id == 0) {

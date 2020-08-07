@@ -137,6 +137,7 @@ pub fn create(resources: &Resources) {
         "probe_material_layout".to_string(),
     ];
     pbr_desc.cull_mode = wgpu::CullMode::Back;
+    pbr_desc.primitive_topology = wgpu::PrimitiveTopology::TriangleList;
     let vertex_size = std::mem::size_of::<MeshVertexData>();
     pbr_desc
         .vertex_state

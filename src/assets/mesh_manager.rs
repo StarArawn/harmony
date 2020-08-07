@@ -30,6 +30,20 @@ impl MeshManager {
         }
     }
 
+    pub fn insert<P: Into<PathBuf>>(&self, path: P, mesh: Gltf) -> Arc<AssetHandle<Gltf>> {
+        let path = path.into();
+        let asset_handle = Arc::new(AssetHandle::new(path.clone(), self.cache.clone()));
+
+        if !self.cache.contains_key(&path) {
+            let cache = self.cache.clone();
+            
+            log::info!("{:?} loaded.", path.file_name().unwrap());
+            cache.insert(asset_handle.handle_id.clone(), Ok(Arc::new(mesh)));
+        }
+
+        asset_handle
+    }
+
     pub fn get<P: Into<PathBuf>>(&self, path: P) -> Arc<AssetHandle<Gltf>> {
         let path = path.into();
 

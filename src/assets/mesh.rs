@@ -39,11 +39,11 @@ unsafe impl Pod for MeshVertexData {}
 
 pub struct SubMesh {
     pub vertices: Vec<MeshVertexData>,
-    indices: Vec<u32>,
-    pub(crate) index_count: usize,
-    mode: wgpu::PrimitiveTopology,
-    pub(crate) vertex_buffer: Option<Arc<wgpu::Buffer>>,
-    pub(crate) index_buffer: Arc<wgpu::Buffer>,
+    pub indices: Vec<u32>,
+    pub index_count: u32,
+    pub mode: wgpu::PrimitiveTopology,
+    pub vertex_buffer: Option<Arc<wgpu::Buffer>>,
+    pub index_buffer: Option<Arc<wgpu::Buffer>>,
     pub bounding_sphere: BoundingSphere,
 }
 
@@ -66,6 +66,8 @@ pub struct Mesh {
 }
 
 #[derive(Debug)]
+// TODO: We shouldn't have a Gltf struct. Instead we should just create new entities per mesh..
+// And allow the user to attach those to another entity using parent/child.
 pub struct Gltf {
     pub meshes: Vec<Mesh>,
     pub bounding_sphere: BoundingSphere,
@@ -217,7 +219,7 @@ impl Gltf {
                     &bytemuck::cast_slice(&indices),
                     wgpu::BufferUsage::INDEX,
                 ));
-                let index_count = indices.len();
+                let index_count = indices.len() as u32;
 
                 let bounding_sphere = BoundingSphere::from_points(vertices.iter().map(|x| x.position).collect());
 
@@ -227,7 +229,7 @@ impl Gltf {
                     index_count,
                     mode: primitive_topology,
                     vertex_buffer: None,
-                    index_buffer,
+                    index_buffer: Some(index_buffer),
                     bounding_sphere,
                 };
 

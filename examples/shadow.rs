@@ -69,7 +69,7 @@ fn create_camera_orbit_system() -> Box<dyn Schedulable> {
                     .min(std::f32::consts::FRAC_PI_2 - 0.0001);
                 let eye = Vec3::new(0.0, 0.0, 0.0)
                     + (10.0
-                        * nalgebra::Vector3::new(
+                        * Vec3::new(
                             camera.yaw.sin() * camera.pitch.cos(),
                             camera.pitch.sin(),
                             camera.yaw.cos() * camera.pitch.cos(),
